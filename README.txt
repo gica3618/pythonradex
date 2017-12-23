@@ -2,11 +2,7 @@ pythonradex is a python implementation of the RADEX code. It allows to solve the
 
 Installation
 ---------------
-The easiest way to install pythonradex is by using pip:
-
-pip install pythonradex
-
-Alternatively, one can also download the package and install using the provided setup.py file:
+To install pythonradex, download the package and install using the provided setup.py file:
 
 python setup.py install
 
