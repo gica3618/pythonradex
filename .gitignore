@@ -63,6 +63,10 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+#Gianni added:
+docs/__static/
+docs/_templates/
+
 
 # PyBuilder
 target/
