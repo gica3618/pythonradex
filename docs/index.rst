@@ -15,7 +15,7 @@ Installation
 ================
 ``pythonradex`` requires you to have python 3 installed on your system.
 
-On can also install ``pythonradex`` by downloading the package from github. Then, in a terminal, cd into the directory containing the setup.py file. Install by typing
+On can also install ``pythonradex`` by downloading the package from github at https://github.com/gica3618/pythonradex. Then, in a terminal, cd into the directory containing the setup.py file. Install by typing
 
 .. code::
 
