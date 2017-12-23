@@ -13,13 +13,9 @@ Welcome to the ``pyhonradex`` documentation!
 
 Installation
 ================
-``pythonradex`` requires you to have python 3 installed on your system. The easiest way to install ``pythonradex`` is by using pip. In a terminal, type
+``pythonradex`` requires you to have python 3 installed on your system.
 
-.. code::
-
-    pip install pythonradex
-
-On can also install ``pythonradex`` by downloading the package from github (link??????). Then, in a terminal, cd into the directory containing the setup.py file. Install by typing
+On can also install ``pythonradex`` by downloading the package from github. Then, in a terminal, cd into the directory containing the setup.py file. Install by typing
 
 .. code::
 
