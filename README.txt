@@ -11,3 +11,4 @@ Alternatively, one can also download the package and install using the provided 
 python setup.py install
 
 For more details, please refer to the documentation: http://pythonradex.readthedocs.io/
+The documentation is also available as pdf: https://media.readthedocs.org/pdf/pythonradex/latest/pythonradex.pdf
