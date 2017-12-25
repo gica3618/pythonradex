@@ -6,5 +6,6 @@ To install pythonradex, download the package and install using the provided setu
 
 python setup.py install
 
+Examples of usage can be found in the examples folder.
 For more details, please refer to the documentation: http://pythonradex.readthedocs.io/
 The documentation is also available as pdf: https://media.readthedocs.org/pdf/pythonradex/latest/pythonradex.pdf
