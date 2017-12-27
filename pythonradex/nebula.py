@@ -109,18 +109,25 @@ class Nebula():
 
     - emitting_molecule: EmittingMolecule
         An object containing atomic data and line profile information
+    
     - geometry: str
         geometry of the gas cloud
+
     - ext_background: func
         function returning the external background radiation field for given frequency
+
     - Tkin: float
         kinetic temperature of colliders
+
     - coll_partner_densities: dict
         densities of the collision partners
-    - Ntot:
+
+    - Ntot: float
         total column density
+
     - rate_equations: RateEquations
         object used to set up and solve the equations of statistical equilibrium
+
     - verbose: bool
         if True, additional information is printed out
         
@@ -148,22 +155,31 @@ class Nebula():
         '''
         Parameters:    
         ---------------        
+        
         data_filepath: str
              path to the LAMDA data file that contains the atomic data
+
         geometry: str
             geometry of the gas cloud. Currently available are "uniform sphere"and "uniform sphere RADEX". The latter uses the forumla for a uniform sphere for the escape probability and the formula for a uniform slab to calculate the flux, as in RADEX.
+
         ext_background: func
             The function should take the frequency in Hz as input and return the background radiation field in [W/m2/Hz/sr]
+
         Tkin: float
             kinetic temperature of the colliders
+
         coll_partner_densities: dict
             number densities of the collision partners in [1/m3]. Following keys are recognised: "H2", "para-H2", "ortho-H2", "e", "H", "He", "H+"
+
         Ntot: float
             total column density in [1/m2]
+
         line_profile: str
             type of line profile. Available are "Gaussian" and "square".
+
         width_v: float
             width of the line in [m/s]. For Gaussian, this is the FWHM.
+
         verbose: bool
             if True, additional information is printed out
         '''

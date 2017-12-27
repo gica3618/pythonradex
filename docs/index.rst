@@ -10,32 +10,28 @@ Welcome to the ``pyhonradex`` documentation!
 .. toctree::
    :maxdepth: 2
 
-
-Installation
-================
-``pythonradex`` requires you to have python 3 installed on your system.
-
-On can install ``pythonradex`` by downloading the package from github at https://github.com/gica3618/pythonradex. Then, in a terminal, cd into the directory containing the setup.py file. Install by typing
-
-.. code::
-
-    python setup.py install
-
-After the installation finished, you may test that everything works by typing
-
-.. code::
-
-    python setup.py test
-
-This will run the unit tests of the package.
-
 Summary
 ==============
 ``pythonradex`` is a python re-implementation of the RADEX_ code [vanderTak07]_. It solves the radiative transfer for a uniform medium in non-LTE using the Accelerated Lambda Iteration (ALI) method in combination with an escape probability formalism. The code can be used to quickly estimate the emission from an astrophysical gas given input parameters such as the density and kinetic temperature of the collision partners, the column density of the gas and width of the emission lines.
 
 ``pyhonradex`` also provides a convenient method to read files from the LAMDA_ database.
 
-Note that ``pythonradex`` uses SI units.
+
+Installation
+================
+Note that ``pythonradex`` requires python 3. On can install ``pythonradex`` by downloading the package from github at https://github.com/gica3618/pythonradex. Then, in a terminal, change into the directory containing the ``setup.py`` file. Install by typing
+
+.. code::
+
+    python setup.py install
+
+You might need to run this command with root privileges. Also, an active internet connection might be necessary to download package dependencies. After the installation finished, you may test that everything works by typing
+
+.. code::
+
+    python setup.py test
+
+This will run the unit tests of the package.
 
 
 Example
@@ -44,13 +40,13 @@ Example
 Radiative transfer
 ------------------------
 
-Let us consider a typical example of how ``pyhonradex`` is used. Note that all input should be in SI units. Assume you want to compute the emission of a CO cloud. First, let's import the necessary modules::
+Let us consider a typical example of how ``pyhonradex`` is used. Note that all input should be in SI units. Assume you want to compute the emission of a spherical CO cloud. First, let's import the necessary modules::
 
     >>> from pythonradex import nebula, helpers
     >>> from scipy import constants
     >>> import numpy as np
 
-``pyhonradex`` needs a file containing atomic data. Download the file for CO from the LAMDA database. We need to tell ``pyhonradex`` where the file is located::
+``pyhonradex`` needs a file containing the atomic data. Download the file for CO from the LAMDA_ database. We need to tell ``pyhonradex`` where the file is located::
 
     >>> data_filepath = 'path/to/file/co.dat'
 
@@ -58,7 +54,7 @@ We need to define the geometry of the nebula. Let's consider a uniform sphere::
 
     >>> geometry = 'uniform sphere'
 
-We need to set the kinetic temperature, total colum density, line profile type and width of the emission lines in velocity space::
+We need to set the kinetic temperature, total colum density, line profile type (square or Gaussian) and width of the emission lines in velocity space::
 
     >>> Tkin = 150
     >>> Ntot = 1e16/constants.centi**2
@@ -103,7 +99,7 @@ To solve, simply do::
 
     >>> example_nebula.solve_radiative_transfer()
 
-To print out the results to the terminal, you can do::
+This will determine the non-LTE level populations. To print out the results to the terminal, you can do::
 
     >>> example_nebula.print_results()
         up   low      nu [GHz]    T_ex [K]      poplow         popup          tau_nu0
@@ -163,7 +159,7 @@ The data is stored in a dictionary containing all levels, radiative transitions 
     >>> rad_transitions = data['radiative transitions']
     >>> coll_transitions = data['collisional transitions']
 
-Lets first look at the levels. This is a list containing all atomic energy levels (as instances of the ``Level`` class, see :ref:'rad_trans_doc') listed in the file. It is ordered the same way as in the file. Let's access the statistical weight, energy, and number of the 3rd level as an example (note that the index is 0 based)::
+Lets first look at the levels. This is a list containing all atomic energy levels (as instances of the ``Level`` class, see :ref:`rad_trans_doc`) listed in the file. It is ordered the same way as in the file. Let's access the statistical weight, energy, and number of the 3rd level as an example (note that the index is 0--based)::
 
     >>> levels[2].g
     5.0
@@ -220,7 +216,7 @@ Let's look at collisions with ortho-H\ :sub:`2`. This is a list with instances o
     >>> len(coll_transitions['ortho-H2'])
     820
 
-Similarly to the radiative transition, there are a number of attributes we can access::
+Similarly to the radiative transition, there are a number of attributes we can access. Let's look at a randomly chosen transition::
 
     >>> coll_trans = coll_transitions['ortho-H2'][99]
     >>> coll_trans.up.number
@@ -250,23 +246,23 @@ Radiative transfer theory
 Basics
 --------
 
-We briefly discuss the basics theory of radiative transfer that is relevant for ``pyhonradex``. A more detailed discussion can for example be found in [Rybicki04]_.
+We briefly discuss basic theory of radiative transfer that is relevant for ``pyhonradex``. A more detailed discussion can for example be found in [Rybicki04]_.
 
 The radiation field in every point of space can be described by the specific intensity :math:`I_{\nu}`, defined as the energy radiated per unit of time, surface, frequency and solid angle, i.e., :math:`I_{\nu}` has units of W/m\ :sup:`2`\ /sr/Hz. The differential equation describing the change of the specific intensity along a spatial coordinate :math:`s` is given by
 
 .. math::
     \frac{\mathrm{d}I_\nu}{\mathrm{d}s} = -\alpha_\nu I_\nu + j_\nu
 
-Here, :math:`\alpha_\nu` is the absorption coefficient in m\ :sup:`-1`. It describes how much energy is removed from the beam per unit length. On the other hand, the emission coefficient :math:`j_\nu` is the energy emitted per unit time per unit solid angle per unit volume. The subscript :math:`\nu` reminds the reader that the quantities are given per unit of frequency. Defining the optical depth as :math:`\mathrm{d}\tau_\nu=\alpha_\nu\mathrm{d}s`, we can rewrite the equation as
+Here, :math:`\alpha_\nu` is the absorption coefficient in m\ :sup:`-1`. It describes how much is removed from the beam per unit length. On the other hand, the emission coefficient :math:`j_\nu` is the energy emitted per unit time, solid angle, volume and frequency. Defining the optical depth as :math:`\mathrm{d}\tau_\nu=\alpha_\nu\mathrm{d}s`, we can rewrite the equation as
 
 .. math::
     \frac{\mathrm{d}I_\nu}{\mathrm{d}\tau_\nu} = -I_\nu + S_\nu
 
-with the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. In general, the goal of radiative transfer is to solve this equation. Fro example, for a uniform medium (the emission and absorption coefficients are the same everywhere) as assumed for ``pythonradex``, the solution reads :math:`I_\nu=I_\nu(0)e^{-\tau_\nu}+S_\nu(1-e^{-\tau_\nu})`.
+with the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. In general, the goal of radiative transfer is to solve this equation. For example, for a uniform medium (the emission and absorption coefficients are the same everywhere) as assumed for ``pythonradex``, the solution reads :math:`I_\nu=I_\nu(0)e^{-\tau_\nu}+S_\nu(1-e^{-\tau_\nu})`.
 
 Gas emission
 --------------
-Now let's consider radiation from a gas. An atom can spontaneously emit a photon when it transits from an upper to a lower energy level. The transition probability per unit time is given by the Einstein coefficient for spontaneous emission, :math:`A_{21}`, in units of s\ :sup:`-1`. Thus, we can write the emission coefficient of the gas as.
+Next, let's consider radiation from a gas. An atom can spontaneously emit a photon when it transits from an upper to a lower energy level. The transition rate is given by the Einstein coefficient for spontaneous emission, :math:`A_{21}`, in units of s\ :sup:`-1`. Thus, we can write the emission coefficient of the gas as
 
 .. math::
     j_\nu = \frac{h\nu_0}{4\pi}n_2A_\mathrm{21}\phi_\nu
@@ -276,7 +272,7 @@ where :math:`h` is the Planck constant, :math:`\nu_0` is the central frequency o
 .. math::
     J_\nu = \frac{1}{4\pi}\int I_\nu \mathrm{d}\Omega
 
-and :math:`\bar{J}=\int J_\nu\phi_\nu\mathrm{d}\nu`, the transition probability per unit time for absorption is :math:`B_{12}\bar{J}`, i.e. the transition rate is proportional to the flux of incoming photons. There is a third process, called stimulated emission, that results in the *emission* of a photon (and a transition from an upper to a lower level) when the atom interacts with an incoming photon. The probability per unit time for stimulated emission :math:`B_{21}\bar{J}`. Thus, we can write the absorption coefficient as
+and :math:`\bar{J}=\int J_\nu\phi_\nu\mathrm{d}\nu` the mean over the line profile, the transition rate for absorption is :math:`B_{12}\bar{J}`, i.e. the transition rate is proportional to the flux of incoming photons. There is a third process, called stimulated emission, that results in the *emission* of a photon (and a transition from an upper to a lower level) when the atom interacts with an incoming photon. The rate for stimulated emission is :math:`B_{21}\bar{J}`. The absorption coefficient can be then be written [Rybicki04]_
 
 .. math::
     \alpha_\nu = \frac{h\nu_0}{4\pi}(n_1B_{12}-n_2B_{21})\phi_\nu
@@ -293,7 +289,7 @@ where :math:`B_\nu(T)` is the blackbody radiation field (Planck's law) and :math
 .. math::
     \frac{n_2}{n_1}=\frac{g_2}{g_1}\exp\left(-\frac{h\nu_0}{kT_\mathrm{ex}}\right)
 
-with :math:`k` the Boltzmann constant and :math:`g_1` and :math:`g_2` the statistical weights of the lower and upper level respectively. The excitation temperature is thus the temperatue we need to plug into the Boltzmann equation to get the observed level ratio. In LTE, the levels are indeed populated according to the Boltzmann distribution. But in non-LTE, this is not true, and the excitation temperature is not equal to the kinetic temperature.
+with :math:`k` the Boltzmann constant and :math:`g_1` and :math:`g_2` the statistical weights of the lower and upper level respectively. The excitation temperature is thus the temperatue we need to plug into the Boltzmann equation to get the observed level ratio. In LTE, the kinetic temperature equals the excitation temperature, and the levels are indeed populated according to the Boltzmann distribution. But in non-LTE, this is not true, and the excitation temperature is different from the kinetic temperature.
 
 In summary, we need to know the level populations (i.e. the excitation temperature) in order to compute the radiation field. To do this, we first need to consider another process that can populate and depopulate the energy levels of an atom: collisions, for example with hydrogen or electrons. The rate of collision-induced transitions between two levels :math:`i` and :math:`j` is given by :math:`C_{ij}=K_{ij}(T_\mathrm{kin})n_\mathrm{col}` where :math:`K_{ij}(T_\mathrm{kin})` is the collision rate coefficient in m\ :sup:`3`\ s\ :sup:`-1` and :math:`n_\mathrm{col}` is the number density of the collision partner. The collision rate coefficient in general depends on the kinetic temperature of the collision partner. If several collision partners are present, the total rate is simply the sum of the individual rates.
 
@@ -305,7 +301,7 @@ We can now write down the equations of statistical equilibrium (SE) that determi
 
 where :math:`x_k=\frac{n_k}{n}` is the fractional population of level :math:`k`. In the above equation, the positive terms populate the level, while the negative terms depopulate the level.
 
-The level populations can be computed by solving this linear system of equations. But there is a problem: we see that to solve for the level populations, we need to know the radiation field :math:`\bar{J}`. This is a fundamental issue in radiative transfer: to compute the radiation field, we need to know the level population. But in order to compute the radiation field, we need to know the level populations.
+The level populations can be computed by solving this linear system of equations. But there is a problem: we see that to solve for the level populations, we need to know the radiation field :math:`\bar{J}`. This is a fundamental issue in radiative transfer: to compute the radiation field, we need to know the level population. But in order to compute the level population, we need to know the radiation field.
 
 Escape probability
 ---------------------
@@ -330,17 +326,17 @@ where :math:`\tau_\nu` is the optical depth of the diameter of the sphere. The f
 Accelerated Lamda Iteration (ALI)
 ------------------------------------
 
-The task of computing the mean radiation field knowing the source function is generally represented with a 'Lambda Operator' like this:
+The task of computing the mean radiation field from the source function is generally represented with a 'Lambda Operator' like this:
 
 .. math::
     J_\nu = \Lambda(S_\nu)
 
-We mentioned earlier that the SE equations are solved iteratively. This approach falls into the class of Lamda Iteration methods. A first guess of the level population (which determines :math:`S_\nu`) is made. The :math:`\Lambda` operator allows to compute :math:`J_\nu`. From this, an updated :math:`S_\nu` can be determined. And so on, until convergence is reached. In our case, the Lambda operator is given by
+We mentioned earlier that the SE equations are solved iteratively. This approach falls into the class of Lamda Iteration methods. A first guess of the level population (which determines :math:`S_\nu`) is made. The :math:`\Lambda` operator allows to compute :math:`J_\nu`. From this, an updated :math:`S_\nu` can be determined from the SE equations. And so on, until convergence is reached. In our case, the Lambda operator is given by
 
 .. math::
     J_\nu=\Lambda(S_\nu)=\beta(S_\nu) I_\mathrm{ext}+(1-\beta(S_\nu))S_\nu
 
-where :math:`I_\mathrm{ext}` is the external field. However, the Lambda Iteration method is known to converge extremely slowly at large optical depth. In fact, one can easily be fooled to think that convergence is reached, while in reality one is far from convergence. Without going into detail, the basic reason is that the number of iterations corresponds to the number scattering events that are treated. For large optical depth, a photon is scattered many times before it exits the cloud. Thus, many iterations are necessary.
+where :math:`I_\mathrm{ext}` is the external field. However, the Lambda Iteration method is known to converge extremely slowly at large optical depth. In fact, one can easily be fooled to think that convergence is reached, while in reality one is far from convergence. Without going into detail, the basic reason is that the number of iterations corresponds to the number of scattering events that are treated. For large optical depth, a photon is scattered many times before it exits the cloud. Thus, many iterations are necessary.
 
 There is a method to circumvent this problem known as Accelerated Lambda Iteration (ALI). Details can be found in [Rybicki91]_ and the lectures notes of Dullemond_, sections 4.4 and 7.8--7.10. The basic idea is to decompose the Lambda opertor like this:
 
@@ -364,9 +360,10 @@ There is a difference between the outputs of ``RADEX`` and ``pythonradex``. The 
 Detailed documentation of ``pyhonradex``
 ========================================================
 
+.. _rad_trans_doc:
 
 Radiative transfer
-------------------------------------
+--------------------------
 The core of ``pyhonradex`` is the Nebula class which is used to solve the radiative transfer.
 
 .. autoclass:: pythonradex.nebula.Nebula
