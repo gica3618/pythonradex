@@ -343,7 +343,7 @@ There is a method to circumvent this problem known as Accelerated Lambda Iterati
 .. math::
     \Lambda = \Lambda^*+(\Lambda-\Lambda^*)
 
-and then iterate using the :math:`(\Lambda-\Lambda^*)`, while keeping the :math:`\Lambda^*` out of the iteration scheme. The simplest choice for :math:`\Lambda^*` is the `local` part, of the operator. In 3D, :math:`\Lambda` can be represented as a matrix, and the local part would be the diagonal, corresponding to the self-coupling of each grid cell. Loosly speaking, by splitting out the local contribution, photons that scatter within the same grid cell are not considered in the iteration, resulting in considerably faster convergence. This is reasonable since such we are not interested in what photons do at sub-cell resolution.
+and then iterate using the :math:`(\Lambda-\Lambda^*)`, while keeping the :math:`\Lambda^*` out of the iteration scheme. The simplest choice for :math:`\Lambda^*` is the `local` part of the operator. In 3D, :math:`\Lambda` can be represented as a matrix, and the local part would be the diagonal, corresponding to the self-coupling of each grid cell. Loosly speaking, by splitting out the local contribution, photons that scatter within the same grid cell are not considered in the iteration, resulting in considerably faster convergence. This is reasonable since we are not interested in what photons do at sub-cell resolution.
 
 In our case, the ALI scheme is found by inserting the expression for :math:`J_\nu` into the SE equations. By expressing the source function in terms of the Einstein coefficients, one finds
 
