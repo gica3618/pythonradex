@@ -284,7 +284,7 @@ class CollisionalTransition(Transition):
             The keys "K12" and "K21" of the dict correspond to the collision coefficients at the requested temperature(s)'''
         #interpolate in log space
         assert np.all((self.Tmin <= Tkin) & (Tkin <= self.Tmax)),\
-                                  'Requested Tkin out of interpolation range'
+            'Requested Tkin out of interpolation range. Tkin must be within {:g}-{:g} K'.format(self.Tmin,self.Tmax)
         logTkin = np.log(Tkin)
         logK21 = np.interp(logTkin,self.log_Tkin_data,self.log_K21_data)
         K21 = np.exp(logK21)
