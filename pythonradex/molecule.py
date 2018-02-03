@@ -40,7 +40,7 @@ class Molecule():
         '''Computes the level populations in LTE for a given temperature T'''
         return np.array([l.g*np.exp(-l.E/(constants.k*T))/self.Z(T) for l in self.levels])
 
-    def get_transition_number(self,transition_name):
+    def get_rad_transition_number(self,transition_name):
         '''Returns the transition number for a given transition name'''
         candidate_numbers = [i for i,line in enumerate(self.rad_transitions) if
                              line.name==transition_name]
