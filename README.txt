@@ -10,4 +10,4 @@ You might need to run this command with "sudo". Also, pythonradex requires pytho
 Example code can be found in the examples folder.
 For more details, please refer to the documentation: http://pythonradex.readthedocs.io/
 The documentation is also available as pdf: https://media.readthedocs.org/pdf/pythonradex/latest/pythonradex.pdf
-pythonradex is written by Gianni Cataldi
+pythonradex is written and maintained by Gianni Cataldi
