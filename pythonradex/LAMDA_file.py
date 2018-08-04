@@ -8,6 +8,11 @@ from pythonradex import atomic_transition
 from scipy import constants
 import numpy as np
 
+def is_comment(line):
+    if line.replace(' ','')[0] == '!':
+        return True
+    else:
+        return False
 
 def read(datafilepath):
     '''
@@ -45,8 +50,8 @@ def read(datafilepath):
     for i,line in enumerate(datafile):
         if i<5:
             continue
-        if line[0] == '!':
-            continue #comments start with !
+        if is_comment(line):
+            continue
         if line=='' or line=='\n':
             continue
         if i == 5:
