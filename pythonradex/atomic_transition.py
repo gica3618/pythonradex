@@ -234,6 +234,7 @@ class CollisionalTransition(Transition):
 
     - name: str
         transition name, for example '3-2' for the transition between the fourth and the third level
+
     - K21_data: numpy.ndarray
         value of the collision rate coefficient K21 at different temperatures
 

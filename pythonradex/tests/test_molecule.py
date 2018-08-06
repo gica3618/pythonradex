@@ -42,7 +42,7 @@ def test_LTE_level_pop():
         assert np.isclose(Tex,trans_Tex,rtol=1e-3)
 
 def test_get_transition_number():
-    rad_trans_number = test_molecule.get_transition_number('11-10')
+    rad_trans_number = test_molecule.get_rad_transition_number('11-10')
     assert rad_trans_number == 10
 
 def test_emitting_molecule_constructor():
