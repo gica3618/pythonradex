@@ -8,6 +8,11 @@ from pythonradex import atomic_transition
 from scipy import constants
 import numpy as np
 
+def is_comment(line):
+    if line.replace(' ','')[0] == '!':
+        return True
+    else:
+        return False
 
 def is_comment(line):
     if line.replace(' ','')[0] == '!':
