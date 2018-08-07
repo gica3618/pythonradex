@@ -1,7 +1,0 @@
-attrs==17.3.0
-numpy==1.13.3
-pluggy==0.6.0
-py==1.5.2
-pytest==3.3.0
-scipy==1.0.0
-six==1.11.0
