@@ -141,8 +141,8 @@ class Nebula():
         excitation temperature of each transition.
     '''
 
-    relative_convergence = 1e-4
-    min_iter = 40
+    relative_convergence = 1e-2
+    min_iter = 30
     max_iter = 10000
     underrelaxation = 0.3
     geometries = {'uniform sphere':escape_probability.UniformSphere,
@@ -225,12 +225,16 @@ class Nebula():
         while np.any(Tex_residual > self.relative_convergence) or\
                   counter < self.min_iter:
             counter += 1
+            if counter%10 == 0 and self.verbose:
+                print('iteration {:d}'.format(counter))
             if counter > self.max_iter:
                 raise RuntimeError('maximum number of iterations reached')
             new_level_pop = self.rate_equations.solve(
                                  beta_lines=beta_lines,I_ext_lines=I_ext_lines)
             Tex = self.emitting_molecule.get_Tex(new_level_pop)
             Tex_residual = helpers.relative_difference(Tex,old_Tex)
+            if self.verbose:
+                print('max relative Tex residual: {:g}'.format(np.max(Tex_residual)))
             old_Tex = Tex.copy()
             level_pop = self.underrelaxation*new_level_pop\
                         + (1-self.underrelaxation)*level_pop
