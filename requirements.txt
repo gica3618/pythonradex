@@ -1,0 +1,11 @@
+atomicwrites==1.2.1
+attrs==18.2.0
+more-itertools==4.3.0
+numpy==1.15.1
+pkg-resources==0.0.0
+pluggy==0.7.1
+py==1.6.0
+pytest==3.8.0
+-e git+https://gica3618@github.com/gica3618/pythonradex.git@0cc286fece3e9eb5f029605021d2bb82d99e99c5#egg=pythonradex
+scipy==1.1.0
+six==1.11.0
