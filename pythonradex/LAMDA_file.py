@@ -14,11 +14,6 @@ def is_comment(line):
     else:
         return False
 
-def is_comment(line):
-    if line.replace(' ','')[0] == '!':
-        return True
-    else:
-        return False
 
 def read(datafilepath):
     '''
