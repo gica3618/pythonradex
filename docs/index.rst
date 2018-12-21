@@ -133,7 +133,7 @@ Now we want to calculate the flux recorded by the telescope. Define the distance
 
     >>> d_observer = 20*constants.parsec
     >>> source_radius = 3*constants.au
-    >>> source_surface = 4/3*source_radius**3*np.pi
+    >>> source_surface = 4*source_radius**2*np.pi
 
 Then calculate the observed fluxes::
 
