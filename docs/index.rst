@@ -143,7 +143,7 @@ Then calculate the observed fluxes::
 This returns a list with the flux for each line in W/m\ :sup:`2`. To get the flux of the second transition::
 
     >>> obs_fluxes[1]
-        1.6189817656980213e-11
+        1.0822225387248477e-22
 
 Reading a file from the LAMDA database
 --------------------------------------------
