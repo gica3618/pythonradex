@@ -33,12 +33,30 @@ class Molecule():
                    coll_transitions=data['collisional transitions'])
 
     def Z(self,T):
-        '''Computes the partition function for a given temperature T'''
-        return np.sum([l.g*np.exp(-l.E/(constants.k*T)) for l in self.levels])
+        '''Computes the partition function for a given temperature T. T can
+        be a float or an array'''
+        T = np.array(T)
+        weights = np.array([l.g for l in self.levels])
+        energies = np.array([l.E for l in self.levels])
+        if T.ndim > 0:
+            shape = [self.n_levels,]+[1 for i in range(T.ndim)] #needs to come before T is modified
+            T = np.expand_dims(T,axis=0) #insert new axis at first position (axis=0)
+            weights = weights.reshape(shape)
+            energies = energies.reshape(shape)
+        return np.sum(weights*np.exp(-energies/(constants.k*T)),axis=0)
 
     def LTE_level_pop(self,T):
-        '''Computes the level populations in LTE for a given temperature T'''
-        return np.array([l.g*np.exp(-l.E/(constants.k*T))/self.Z(T) for l in self.levels])
+        '''Computes the level populations in LTE for a given temperature T.
+        Axis 0 of the output runs along levels, the other axes (if any)
+        correspond to the shape of T'''
+        T = np.array(T)
+        Z = self.Z(T)
+        pops = [l.LTE_level_pop(T=T,Z=Z) for l in self.levels]
+        if T.ndim > 0:
+            shape = [1,]+list(T.shape)
+            return np.concatenate([p.reshape(shape) for p in pops],axis=0)
+        else:
+            return np.array(pops)
 
     def get_rad_transition_number(self,transition_name):
         '''Returns the transition number for a given transition name'''

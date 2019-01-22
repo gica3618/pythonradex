@@ -11,6 +11,25 @@ import pytest
 import numpy as np
 
 
+class TestLevel():
+
+    g = 2
+    E = 3
+    level = atomic_transition.Level(g=g,E=E,number=1)
+    
+    def test_LTE_level_pop(self):
+        T = 50
+        Z = 3
+        lte_level_pop = self.level.LTE_level_pop(Z=Z,T=T)
+        assert lte_level_pop == self.g*np.exp(-self.E/(constants.k*T))/Z
+        shape = (5,5)
+        T_array = np.ones(shape)*T
+        Z_array = np.ones(shape)*Z
+        lte_level_pop_array = self.level.LTE_level_pop(Z=Z_array,T=T_array)
+        assert lte_level_pop_array.shape == shape
+        assert np.all(lte_level_pop==lte_level_pop_array)
+
+
 class TestLineProfile():
     nu0 = 400*constants.giga
     width_v = 10*constants.kilo

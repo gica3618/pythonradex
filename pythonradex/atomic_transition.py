@@ -97,6 +97,10 @@ class Level():
         self.E = E
         self.number = number
 
+    def LTE_level_pop(self,Z,T):
+        '''LTE level population for partition function Z and temperature T'''
+        return self.g*np.exp(-self.E/(constants.k*T))/Z
+
 
 class Transition():
 

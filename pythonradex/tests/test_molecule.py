@@ -29,6 +29,8 @@ emitting_molecule_lamda = molecule.EmittingMolecule.from_LAMDA_datafile(
 
 Tex = 101
 LTE_level_pop = emitting_molecule_lamda.LTE_level_pop(Tex)
+shape = (5,5,5)
+Tex_array = np.ones((shape))*Tex
 
 def test_LTE_level_pop_normalisation():
     assert np.isclose(np.sum(LTE_level_pop),1)
@@ -87,3 +89,19 @@ def test_get_tau_nu0():
                           N=1e10,level_population=LTE_level_pop)
     assert len(tau_nu0) == emitting_molecule_lamda.n_rad_transitions
     
+def test_Z_array():
+    assert test_molecule.Z(Tex_array).shape == shape
+
+def test_Tex_array():
+    LTE_level_pop_array = emitting_molecule_lamda.LTE_level_pop(Tex_array)
+    assert list(LTE_level_pop_array.shape) == [LTE_level_pop.size,] + list(Tex_array.shape)
+    expanded_shape = [LTE_level_pop.size,]+[1 for i in range(len(shape))]
+    assert np.all(LTE_level_pop_array==LTE_level_pop.reshape(expanded_shape))
+    assert np.allclose(np.sum(LTE_level_pop_array,axis=0),1)
+    alt_Tex_array = Tex_array.copy()
+    alt_Tex = 300
+    alt_Tex_array[2,3,1] = alt_Tex
+    alt_LTE_level_pop_array = emitting_molecule_lamda.LTE_level_pop(alt_Tex_array)
+    assert np.all(alt_LTE_level_pop_array[:,2,3,1]
+                              ==emitting_molecule_lamda.LTE_level_pop(alt_Tex))
+    assert np.all(alt_LTE_level_pop_array[:,3,3,1]==LTE_level_pop)
