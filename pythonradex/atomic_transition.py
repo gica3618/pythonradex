@@ -208,13 +208,18 @@ class EmissionLine(RadiativeTransition):
                    A21=radiative_transition.A21,line_profile_cls=line_profile_cls,
                    width_v=width_v)
 
+    def tau_nu(self,N1,N2,nu):
+        '''Compute the optical depth from the column densities N1 and N2 in the lower
+        and upper level respectively.'''
+        return (constants.c**2/(8*np.pi*nu**2)
+                *self.A21*self.line_profile.phi_nu(nu)
+                *(self.up.g/self.low.g*N1-N2))
+
     def tau_nu_array(self,N1,N2):
         '''Compute the optical depth from the column densities N1 and N2 in the lower
         and upper level respectively. Returns an array corresponding to the
         frequencies defined in the line profile'''
-        return (constants.c**2/(8*np.pi*self.line_profile.nu_array**2)
-                *self.A21*self.line_profile.phi_nu_array
-                *(self.up.g/self.low.g*N1-N2))
+        return self.tau_nu(N1=N1,N2=N2,nu=self.line_profile.nu_array)
 
     def tau_nu0(self,N1,N2):
         '''Computes the optical depth at the line center from the column densities

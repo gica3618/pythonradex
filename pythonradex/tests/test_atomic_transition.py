@@ -110,17 +110,17 @@ class TestTransition():
     Tkin_data=np.array((1,2,3,4,5))
     coll_transition = atomic_transition.CollisionalTransition(
                             up=up,low=low,K21_data=K21_data,Tkin_data=Tkin_data)
+    test_emission_line = atomic_transition.EmissionLine(
+                              up=up,low=low,A21=A21,
+                              line_profile_cls=line_profile_cls,
+                              width_v=width_v)
 
     def test_transition(self):
         with pytest.raises(AssertionError):
             atomic_transition.Transition(up=self.low,low=self.up)
 
     def test_emission_line_constructor(self):
-        emission_line = atomic_transition.EmissionLine(
-                              up=self.up,low=self.low,A21=self.A21,
-                              line_profile_cls=self.line_profile_cls,
-                              width_v=self.width_v)
-        assert emission_line.nu0 == emission_line.line_profile.nu0
+        assert self.test_emission_line.nu0 == self.test_emission_line.line_profile.nu0
 
     def test_constructor_from_radiative_transition(self):
         emission_line = atomic_transition.EmissionLine.from_radiative_transition(
@@ -145,3 +145,16 @@ class TestTransition():
         assert self.radiative_transition.Tex(x1=0,x2=0) == 0
         assert self.radiative_transition.Tex(x1=1,x2=0) == 0
         assert self.radiative_transition.Tex(x1=0.5,x2=0) == 0
+
+    def tau_nu(self):
+        nu = np.ones((2,4,7))*50
+        N1 = 1
+        N2 = 3
+        tau_nu = self.test_emission_line.tau_nu(N1=N1,N2=N2,nu=nu)
+        assert tau_nu.shape == nu.shape
+        tau_nu_array = self.test_emission_line.tau_nu_array(N1=N1,N2=N2)
+        tau_nu_array_explicit = self.test_emission_line.tau_nu(
+                                   N1=N1,N2=N2,
+                                   nu=self.test_emission_line.line_profile.nu_array)
+        assert np.all(tau_nu_array==tau_nu_array_explicit)
+        
