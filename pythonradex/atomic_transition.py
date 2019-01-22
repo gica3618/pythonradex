@@ -37,6 +37,10 @@ class LineProfile():
     def phi_nu(self,nu):
         raise NotImplementedError
 
+    def phi_v(self,v):
+        nu = self.nu0*(1-v/constants.c)
+        return self.phi_nu(nu)*self.nu0/constants.c
+
     def average_over_nu_array(self,x_nu_array):
         """Computes the average over the line profile of some quantity
         (i.e. line profile weighted integral), given
