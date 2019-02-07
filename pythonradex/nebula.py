@@ -95,7 +95,6 @@ class RateEquations():
         #steady state; A*x=b, x=fractional population that we search:
         b = np.zeros(self.molecule.n_levels)
         b[0] = 1
-        #Step 6: solve
         fractional_population = np.linalg.solve(matrix,b)
         return fractional_population
 
