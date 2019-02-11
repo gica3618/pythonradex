@@ -22,8 +22,9 @@ class LineProfile():
         '''nu0 is the central frequency, width_v is the width of the line in velocity
         space. The exact meaning of width_v depends on the type of the line profile'''
         self.nu0 = nu0
+        self.width_v = width_v
         #transfer width to frequency:
-        self.width_nu = helpers.Delta_nu(Delta_v=width_v,nu0=self.nu0)
+        self.width_nu = helpers.Delta_nu(Delta_v=self.width_v,nu0=self.nu0)
         self.initialise_phi_nu_params()
         #array of nu values covering the line
         self.nu_array = np.linspace(self.nu0-self.window_width/2*self.width_nu,
