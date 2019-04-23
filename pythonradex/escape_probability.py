@@ -7,14 +7,14 @@ Created on Sun Nov 12 17:31:02 2017
 import numpy as np
 
 
-class FluxUniformSlab():
+class Flux0D():
 
-    '''Represents the computation of the flux from a uniform slab'''
+    '''Represents the computation of the flux when considering only a single direction'''
 
     def compute_flux_nu(self,tau_nu,source_function):
         '''Computes the emerging flux in [W/m2/Hz], given the optical depth
         tau_nu and the source function.'''
-        return  np.pi*source_function*(1-np.exp(-tau_nu))
+        return np.pi*source_function*(1-np.exp(-tau_nu))
 
 
 class FluxUniformSphere():
@@ -87,7 +87,7 @@ class UniformSphere(EscapeProbabilityUniformSphere,FluxUniformSphere):
     pass
 
 
-class UniformSphereRADEX(EscapeProbabilityUniformSphere,FluxUniformSlab):
+class UniformSphereRADEX(EscapeProbabilityUniformSphere,Flux0D):
     """Represents the escape probability from a uniform sphere, but uses the
     uniform slab assumption to compute the emerging flux. This is what is done in the
     original RADEX code."""
