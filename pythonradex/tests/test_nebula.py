@@ -67,67 +67,103 @@ def test_compute_level_populations_LTE_rad_and_coll():
         assert np.allclose(level_pop,expected_LTE_level_pop,rtol=1e-3,atol=0)
 
 
-geometry = 'uniform sphere'
+geometries = list(nebula.Nebula.geometries.keys())
 Ntot = 1e15/constants.centi**2
 line_profile = 'square'
 width_v = 2*constants.kilo
 ext_background = helpers.CMB_background
-general_test_nebula = nebula.Nebula(
-                         data_filepath=lamda_filepath,geometry=geometry,
-                         ext_background=ext_background,Tkin=Tkin,
-                         coll_partner_densities=coll_partner_densities_default,
-                         Ntot=Ntot,line_profile=line_profile,width_v=width_v)
-LTE_test_nebula = nebula.Nebula(
-                         data_filepath=lamda_filepath,geometry=geometry,
-                         ext_background=ext_background,Tkin=Tkin,
-                         coll_partner_densities=coll_partner_densities_large,
-                         Ntot=Ntot,line_profile=line_profile,width_v=width_v)
-thin_LTE_test_nebula = nebula.Nebula(
-                         data_filepath=lamda_filepath,geometry=geometry,
-                         ext_background=ext_background,Tkin=Tkin,
-                         coll_partner_densities=coll_partner_densities_large,
-                         Ntot=Ntot/1e6,line_profile=line_profile,width_v=width_v)
-thick_LTE_test_nebula = nebula.Nebula(
-                         data_filepath=lamda_filepath,geometry=geometry,
-                         ext_background=ext_background,Tkin=Tkin,
-                         coll_partner_densities=coll_partner_densities_large,
-                         Ntot=Ntot*1e10,line_profile=line_profile,width_v=width_v)
+nebulae = {}
+for geo in geometries:
+    nebulae[geo] = {}
+    nebulae[geo]['general'] = nebula.Nebula(
+                             data_filepath=lamda_filepath,geometry=geo,
+                             ext_background=ext_background,Tkin=Tkin,
+                             coll_partner_densities=coll_partner_densities_default,
+                             Ntot=Ntot,line_profile=line_profile,width_v=width_v)
+    nebulae[geo]['LTE'] = nebula.Nebula(
+                             data_filepath=lamda_filepath,geometry=geo,
+                             ext_background=ext_background,Tkin=Tkin,
+                             coll_partner_densities=coll_partner_densities_large,
+                             Ntot=Ntot,line_profile=line_profile,width_v=width_v)
+    nebulae[geo]['thin_LTE'] = nebula.Nebula(
+                             data_filepath=lamda_filepath,geometry=geo,
+                             ext_background=ext_background,Tkin=Tkin,
+                             coll_partner_densities=coll_partner_densities_large,
+                             Ntot=Ntot/1e6,line_profile=line_profile,width_v=width_v)
+    nebulae[geo]['thick_LTE'] = nebula.Nebula(
+                             data_filepath=lamda_filepath,geometry=geo,
+                             ext_background=ext_background,Tkin=Tkin,
+                             coll_partner_densities=coll_partner_densities_large,
+                             Ntot=Ntot*1e10,line_profile=line_profile,width_v=width_v)
+
+for neb in nebulae.values():
+    for n in neb.values():
+        n.solve_radiative_transfer()
 
 def test_solve_radiative_transfer():
-    LTE_test_nebula.solve_radiative_transfer()
-    assert np.allclose(LTE_test_nebula.level_pop,expected_LTE_level_pop,rtol=1e-2)
-    assert np.allclose(LTE_test_nebula.Tex,Tkin,rtol=1e-2)
-    thin_LTE_test_nebula.solve_radiative_transfer()
-    assert np.allclose(thin_LTE_test_nebula.level_pop,expected_LTE_level_pop,rtol=1e-2)
-    assert np.allclose(thin_LTE_test_nebula.Tex,Tkin,rtol=1e-2)
-    assert np.allclose(thin_LTE_test_nebula.tau_nu0,0,atol=1e-2)
+    for geo,neb in nebulae.items():
+        for mode in ('LTE','thin_LTE','thick_LTE'):
+            assert np.allclose(neb[mode].level_pop,expected_LTE_level_pop,rtol=1e-2)
+            assert np.allclose(neb[mode].Tex,Tkin,rtol=1e-2)
+        assert np.allclose(neb['thin_LTE'].tau_nu0,0,atol=1e-2)
 
 r = 1
+S = 1 #surface of the slab
+def get_surface(geo):
+    if 'sphere' in geo:
+        return 4*np.pi*r**2
+    elif 'slab' in geo:
+        return 2*S #the slab has two sides
+
 def test_compute_line_fluxes():
-    n = thin_LTE_test_nebula.Ntot/(2*r)
-    tot_particles = n*4/3*r**3*np.pi
-    up_level_particles = np.array([tot_particles*expected_LTE_level_pop[trans.up.number]
-                                   for trans in thin_LTE_test_nebula.emitting_molecule.rad_transitions])
-    A21 = [trans.A21 for trans in thin_LTE_test_nebula.emitting_molecule.rad_transitions]
-    Delta_E = [trans.Delta_E for trans in thin_LTE_test_nebula.emitting_molecule.rad_transitions]
-    expected_LTE_fluxes_thin = up_level_particles*A21*Delta_E/(4*np.pi*r**2)
-    assert np.allclose(thin_LTE_test_nebula.line_fluxes,expected_LTE_fluxes_thin,
-                       atol=0,rtol=1e-2)
-    thick_LTE_test_nebula.solve_radiative_transfer()
-    #the higher transitions might not be optically thick, so just test the lowest transition:
-    lowest_trans = thick_LTE_test_nebula.emitting_molecule.rad_transitions[0]
-    expected_thick_LTE_flux_lowest_trans = np.pi*helpers.B_nu(nu=lowest_trans.nu0,T=Tkin)\
-                                           * lowest_trans.line_profile.width_nu
-    assert np.isclose(thick_LTE_test_nebula.line_fluxes[0],
-                       expected_thick_LTE_flux_lowest_trans,atol=0,rtol=1e-2)
+    for geo,neb in nebulae.items():
+        if 'RADEX' in geo:
+            continue
+        Ntot = neb['thin_LTE'].Ntot
+        if 'sphere' in geo:
+            volume = 4/3*r**3*np.pi
+            surface = get_surface(geo)
+            n = Ntot/(2*r)
+        elif 'slab' in geo:
+            volume = r*S
+            surface = get_surface(geo)
+            n = Ntot/r
+        tot_particles = n*volume
+        up_level_particles = np.array(
+                              [tot_particles*expected_LTE_level_pop[trans.up.number]
+                              for trans in neb['thin_LTE'].emitting_molecule.rad_transitions])
+        A21 = [trans.A21 for trans in neb['thin_LTE'].emitting_molecule.rad_transitions]
+        Delta_E = [trans.Delta_E for trans in neb['thin_LTE'].emitting_molecule.rad_transitions]
+        expected_LTE_fluxes_thin = up_level_particles*A21*Delta_E/surface
+        assert np.allclose(neb['thin_LTE'].line_fluxes,expected_LTE_fluxes_thin,
+                           atol=0,rtol=1e-2)
+        #the higher transitions might not be optically thick, so just test the
+        #lowest transition:
+        lowest_trans = neb['thick_LTE'].emitting_molecule.rad_transitions[0]
+        expected_thick_LTE_flux_lowest_trans = np.pi*helpers.B_nu(nu=lowest_trans.nu0,T=Tkin)\
+                                               * lowest_trans.line_profile.width_nu
+        assert np.isclose(neb['thick_LTE'].line_fluxes[0],
+                           expected_thick_LTE_flux_lowest_trans,atol=0,rtol=1e-2)
 
 def test_determine_observed_fluxes():
-    general_test_nebula.solve_radiative_transfer()
-    line_fluxes = general_test_nebula.line_fluxes
-    surface = 4*np.pi*r**2
-    obs_fluxes = general_test_nebula.observed_fluxes(
+    geo = 'uniform sphere'
+    neb = nebulae[geo]
+    line_fluxes = neb['general'].line_fluxes
+    surface = get_surface(geo)
+    obs_fluxes = neb['general'].observed_fluxes(
                        source_surface=surface,d_observer=r)
     assert np.allclose(obs_fluxes,line_fluxes,atol=0)
 
+def test_energy_conservation():
+    distance = 1
+    for geo,neb in nebulae.items():
+        surface = get_surface(geo)
+        line_fluxes = neb['general'].line_fluxes
+        emitted_energy = np.array(line_fluxes)*surface
+        obs_fluxes = neb['general'].observed_fluxes(
+                       source_surface=surface,d_observer=distance)
+        assert np.allclose(emitted_energy,obs_fluxes*4*np.pi*distance**2,atol=0)
+
 def test_print_results():
-    general_test_nebula.print_results()
+    for neb in nebulae.values():
+        neb['general'].print_results()
