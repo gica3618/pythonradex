@@ -17,9 +17,11 @@ class Flux0D():
         return np.pi*source_function*(1-np.exp(-tau_nu))
 
 
-class FluxUniformSlab():
+class FluxUniformFaceOnSlab():
 
-    '''Represents the computation of the flux from a uniform slab'''
+    '''Represents the computation of the flux from a uniform slab that is seen
+    face-on (think of a face-on disk, i.e. x-y-size of much larger than the z-size,
+    where z is along the line of sight)'''
     theta = np.linspace(0,np.pi/2,200)
     tau_grid = np.logspace(-3,2,1000)
 
@@ -131,14 +133,14 @@ class UniformSphereRADEX(EscapeProbabilityUniformSphere,Flux0D):
     pass
 
 
-class UniformSlab(FluxUniformSlab):
+class UniformFaceOnSlab(FluxUniformFaceOnSlab):
     """The escape probability and emerging flux from a uniform slab"""
 
-    min_tau_nu = np.min(FluxUniformSlab.tau_grid)
+    min_tau_nu = np.min(FluxUniformFaceOnSlab.tau_grid)
 
     def beta(self,tau_nu):
         with np.errstate(divide='ignore',invalid='ignore',over='ignore'):
-            prob = FluxUniformSlab.interpolated_integral_term(self,tau_nu)/tau_nu
+            prob = FluxUniformFaceOnSlab.interpolated_integral_term(self,tau_nu)/tau_nu
         prob = np.where(tau_nu<self.min_tau_nu,1,prob)
         assert np.all(np.isfinite(prob))
         return prob
