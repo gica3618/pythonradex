@@ -146,7 +146,7 @@ class Nebula():
     underrelaxation = 0.3
     geometries = {'uniform sphere':escape_probability.UniformSphere,
                   'uniform sphere RADEX':escape_probability.UniformSphereRADEX,
-                  'uniform slab':escape_probability.UniformSlab,
+                  'face-on uniform slab':escape_probability.UniformSlab,
                   'uniform slab RADEX':escape_probability.UniformSlabRADEX}
     line_profiles = {'Gaussian':atomic_transition.GaussianLineProfile,
                      'square':atomic_transition.SquareLineProfile}
