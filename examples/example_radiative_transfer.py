@@ -37,8 +37,8 @@ print('optical depth lowest transition: {:g}'.format(example_nebula.tau_nu0[0]))
 #compute the flux observed for a target at 20 pc with a radius of 3 au
 d_observer = 20*constants.parsec
 source_radius = 3*constants.au
-source_surface = 4/3*source_radius**3*np.pi
+solid_angle = source_radius**2*np.pi/d_observer**2
 #a list of observed fluxes for all transitions:
-obs_fluxes = example_nebula.observed_fluxes(
-                     source_surface=source_surface,d_observer=d_observer)
-print('observed flux of second transition: {:g} W/m2'.format(obs_fluxes[1]))
+example_nebula.compute_line_fluxes(solid_angle=solid_angle)
+print('observed flux of second transition: {:g} W/m2'.format(
+                                         example_nebula.obs_line_fluxes[1]))

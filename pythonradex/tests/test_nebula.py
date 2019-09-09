@@ -73,6 +73,20 @@ line_profile = 'square'
 width_v = 2*constants.kilo
 ext_background = helpers.CMB_background
 nebulae = {}
+
+r = 10*constants.au
+slab_surface = (10*constants.au)**2 #surface of the slab
+slab_depth = 0.1*constants.au
+d = 1*constants.parsec
+def get_solid_angle(geo):
+    if 'sphere' in geo:
+        Omega = np.pi*r**2/d**2
+    elif 'slab' in geo:
+        Omega = slab_surface/d**2
+    else:
+        raise ValueError('geo: {:s}'.format(geo))
+    return Omega
+
 for geo in geometries:
     nebulae[geo] = {}
     nebulae[geo]['general'] = nebula.Nebula(
@@ -96,9 +110,10 @@ for geo in geometries:
                              coll_partner_densities=coll_partner_densities_large,
                              Ntot=Ntot*1e10,line_profile=line_profile,width_v=width_v)
 
-for neb in nebulae.values():
+for geo,neb in nebulae.items():
     for n in neb.values():
         n.solve_radiative_transfer()
+        n.compute_line_fluxes(solid_angle=get_solid_angle(geo))
 
 def test_solve_radiative_transfer():
     for geo,neb in nebulae.items():
@@ -107,62 +122,49 @@ def test_solve_radiative_transfer():
             assert np.allclose(neb[mode].Tex,Tkin,rtol=1e-2)
         assert np.allclose(neb['thin_LTE'].tau_nu0,0,atol=1e-2)
 
-r = 1
-S = 1 #surface of the slab
-def get_surface(geo):
-    if 'sphere' in geo:
-        return 4*np.pi*r**2
-    elif 'slab' in geo:
-        return 2*S #the slab has two sides
-
 def test_compute_line_fluxes():
     for geo,neb in nebulae.items():
-        if 'RADEX' in geo:
+        if 'RADEX' in geo or 'slab' in geo:
             continue
         Ntot = neb['thin_LTE'].Ntot
         if 'sphere' in geo:
             volume = 4/3*r**3*np.pi
-            surface = get_surface(geo)
             n = Ntot/(2*r)
         elif 'slab' in geo:
-            volume = r*S
-            surface = get_surface(geo)
-            n = Ntot/r
+            volume = slab_surface*slab_depth
+            n = Ntot/slab_depth
         tot_particles = n*volume
+        thin_LTE_rad_transitions = neb['thin_LTE'].emitting_molecule.rad_transitions
         up_level_particles = np.array(
                               [tot_particles*expected_LTE_level_pop[trans.up.number]
-                              for trans in neb['thin_LTE'].emitting_molecule.rad_transitions])
-        A21 = [trans.A21 for trans in neb['thin_LTE'].emitting_molecule.rad_transitions]
-        Delta_E = [trans.Delta_E for trans in neb['thin_LTE'].emitting_molecule.rad_transitions]
-        expected_LTE_fluxes_thin = up_level_particles*A21*Delta_E/surface
-        assert np.allclose(neb['thin_LTE'].line_fluxes,expected_LTE_fluxes_thin,
+                              for trans in thin_LTE_rad_transitions])
+        A21 = np.array([trans.A21 for trans in thin_LTE_rad_transitions])
+        Delta_E = np.array([trans.Delta_E for trans in thin_LTE_rad_transitions])
+        energy_flux = up_level_particles*A21*Delta_E #W
+        if 'sphere' in geo:
+            expected_LTE_fluxes_thin = energy_flux/(4*np.pi*d**2)
+        elif 'slab' in geo:
+            #not isotropic, so I can't do the same thing as for sphere
+            expected_LTE_fluxes_thin = energy_flux/(4*np.pi*slab_surface)\
+                                        *get_solid_angle(geo)
+        line_profile_nu0 = np.array([trans.line_profile.phi_nu(trans.nu0) for
+                                     trans in thin_LTE_rad_transitions])
+        expected_LTE_fluxes_nu_thin = expected_LTE_fluxes_thin*line_profile_nu0
+        assert np.allclose(neb['thin_LTE'].obs_line_fluxes,expected_LTE_fluxes_thin,
+                           atol=0,rtol=1e-2)
+        line_fluxes_nu_thin = [np.max(fluxes_nu) for fluxes_nu in
+                               neb['thin_LTE'].obs_line_spectra]
+        assert np.allclose(line_fluxes_nu_thin,expected_LTE_fluxes_nu_thin,
                            atol=0,rtol=1e-2)
         #the higher transitions might not be optically thick, so just test the
         #lowest transition:
         lowest_trans = neb['thick_LTE'].emitting_molecule.rad_transitions[0]
-        expected_thick_LTE_flux_lowest_trans = np.pi*helpers.B_nu(nu=lowest_trans.nu0,T=Tkin)\
-                                               * lowest_trans.line_profile.width_nu
-        assert np.isclose(neb['thick_LTE'].line_fluxes[0],
-                           expected_thick_LTE_flux_lowest_trans,atol=0,rtol=1e-2)
-
-def test_determine_observed_fluxes():
-    geo = 'uniform sphere'
-    neb = nebulae[geo]
-    line_fluxes = neb['general'].line_fluxes
-    surface = get_surface(geo)
-    obs_fluxes = neb['general'].observed_fluxes(
-                       source_surface=surface,d_observer=r)
-    assert np.allclose(obs_fluxes,line_fluxes,atol=0)
-
-def test_energy_conservation():
-    distance = 1
-    for geo,neb in nebulae.items():
-        surface = get_surface(geo)
-        line_fluxes = neb['general'].line_fluxes
-        emitted_energy = np.array(line_fluxes)*surface
-        obs_fluxes = neb['general'].observed_fluxes(
-                       source_surface=surface,d_observer=distance)
-        assert np.allclose(emitted_energy,obs_fluxes*4*np.pi*distance**2,atol=0)
+        expected_thick_LTE_flux_nu = helpers.B_nu(nu=lowest_trans.nu0,T=Tkin)\
+                                      *get_solid_angle(geo)
+        expected_thick_LTE_flux = expected_thick_LTE_flux_nu\
+                                       * lowest_trans.line_profile.width_nu
+        assert np.isclose(neb['thick_LTE'].obs_line_fluxes[0],
+                           expected_thick_LTE_flux,atol=0,rtol=1e-2)
 
 def test_print_results():
     for neb in nebulae.values():

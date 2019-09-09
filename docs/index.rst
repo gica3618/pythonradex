@@ -70,7 +70,11 @@ Finally, we need to define the background radiation field. The CMB is already de
 
     >>> ext_background = helpers.CMB_background
 
-But a custom background field is also possible. For example, let's assume we want to add the radiation from a star that is 100 au from the cloud, has an effective temperature of 6000 K and the same radius as the Sun. We would then define::
+For no background, we can also use the helpers module::
+
+    >>> ext_background = helpers.zero_background
+
+A custom background field is also possible. For example, let's assume we want to add the radiation from a star that is 100 au from the cloud, has an effective temperature of 6000 K and the same radius as the Sun. We would then define::
 
     >>> R_Sun = 6.957e8
     >>> T_Sun = 6000
@@ -83,9 +87,7 @@ But a custom background field is also possible. For example, let's assume we wan
 
     >>> ext_background = star_and_CMB_background
 
-where the Planck function defined in the helpers module is used. For no background, a custom function is defined in the helpers module::
-
-    >>> ext_backbround = helpers.zero_background
+where the Planck function defined in the helpers module is used.
 
 Now we can initialise the object that is used to solve the radiative transfer::
 
@@ -103,13 +105,14 @@ This will determine the non-LTE level populations. To print out the results to t
 
     >>> example_nebula.print_results()
         up   low      nu [GHz]    T_ex [K]      poplow         popup          tau_nu0
-        1    0     115.271202      14.89       0.240349       0.497337       0.563936
-        2    1     230.536998       8.15       0.497337       0.213311        1.86095
-        3    2     345.798390       8.15       0.213311       0.038966        0.84055
-        4    3     461.040389      11.53       0.038966     0.00734724       0.143254
-        5    4     576.265992      17.68     0.00734724     0.00187956      0.0242841
-        6    5     691.475202      24.03     0.00187956    0.000558413     0.00576143
+        1    0     115.271202      14.89       0.240349       0.497337       0.563937
+        2    1     230.536998       8.15       0.497337       0.213312        1.86095
+        3    2     345.798390       8.15       0.213312      0.0389656       0.840553
+        4    3     461.040389      11.53      0.0389656     0.00734716       0.143253
+        5    4     576.265992      17.68     0.00734716     0.00187956      0.0242838
+        6    5     691.475202      24.03     0.00187956    0.000558413     0.00576141
         7    6     806.650034      29.21    0.000558413    0.000171229     0.00165335
+
         ...
 
 Here, 'up' and 'low' are the indices of the upper and lower level of the transition respectively (0 for the lowest level), 'nu' is the frequency, 'T_ex' the excitation temperature, 'poplow' and 'popup' the fracitional populations of the lower and upper level respectively, and 'tau_nu0' the optical depth at the line centre.
@@ -117,33 +120,32 @@ Here, 'up' and 'low' are the indices of the upper and lower level of the transit
 The nebula object has now a number of attributes that contain the result of the calculation. For example, to access the excitation temperature of the third transition (as listed in the LAMDA datafile; note that the first index is 0), you can do::
 
     >>> example_nebula.Tex[2]
-        8.1489880206102789
+        8.1489416640449
 
 Similarly, for the fractional population of the 4th level, do::
 
     >>> example_nebula.level_pop[3]
-        0.038965991285387587
+        0.0389655721648867
 
 And for the optical depth of the lowest transition::
 
     >>> example_nebula.tau_nu0[0]
-        0.56393648003569496
+        0.5639365145264359
 
-Now we want to calculate the flux recorded by the telescope. Define the distance of the cloud and its surface::
+Now we want to calculate the flux recorded by the telescope. Define the solid angle of the source::
 
     >>> d_observer = 20*constants.parsec
     >>> source_radius = 3*constants.au
-    >>> source_surface = 4*source_radius**2*np.pi
+    >>> source_solid_angle = source_radius**2*np.pi/d_observer**2
 
 Then calculate the observed fluxes::
 
-    >>> obs_fluxes = example_nebula.observed_fluxes(
-                         source_surface=source_surface,d_observer=d_observer)
+    >>> example_nebula.compute_line_fluxes(solid_angle=source_solid_angle)
 
-This returns a list with the flux for each line in W/m\ :sup:`2`. To get the flux of the second transition::
+Now we can access the flux of each line in W/m\ :sup:`2` (the emission spectrum of each line in W/m\ :sup:`2`/Hz is also available). To get the flux of the second transition::
 
-    >>> obs_fluxes[1]
-        1.0822225387248477e-22
+    >>> example_nebula.obs_line_fluxes[1]
+        1.082223161756852e-22
 
 Reading a file from the LAMDA database
 --------------------------------------------
@@ -367,7 +369,7 @@ Radiative transfer
 The core of ``pyhonradex`` is the Nebula class which is used to solve the radiative transfer.
 
 .. autoclass:: pythonradex.nebula.Nebula
-    :members: __init__, solve_radiative_transfer, observed_fluxes, print_results 
+    :members: __init__, solve_radiative_transfer, compute_line_fluxes, print_results 
 
 .. _read_LAMDA_doc:
 

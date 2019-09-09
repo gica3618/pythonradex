@@ -146,8 +146,8 @@ class Nebula():
     underrelaxation = 0.3
     geometries = {'uniform sphere':escape_probability.UniformSphere,
                   'uniform sphere RADEX':escape_probability.UniformSphereRADEX,
-                  'face-on uniform slab':escape_probability.UniformSlab,
-                  'uniform slab RADEX':escape_probability.UniformSlabRADEX}
+                  'face-on uniform slab':escape_probability.UniformFaceOnSlab,
+                  'uniform shock slab RADEX':escape_probability.UniformShockSlabRADEX}
     line_profiles = {'Gaussian':atomic_transition.GaussianLineProfile,
                      'square':atomic_transition.SquareLineProfile}
 
@@ -161,16 +161,24 @@ class Nebula():
              path to the LAMDA data file that contains the atomic data
 
         geometry: str
-            geometry of the gas cloud. Currently available are "uniform sphere"and "uniform sphere RADEX". The latter uses the forumla for a uniform sphere for the escape probability and the formula for a uniform slab to calculate the flux, as in RADEX.
+            geometry of the gas cloud. Currently available are "uniform sphere", 
+            "uniform sphere RADEX", "face-on uniform slab" and "uniform shock slab RADEX".
+            Here, "uniform sphere RADEX" uses the forumla for a uniform sphere
+            for the escape probability and the formula for a uniform slab to calculate
+            the flux, as in the original RADEX code. The "face-on uniform slab" represents
+            a thin slab (think of a face-on disk). The "uniform shock slab RADEX" is
+            a slab as calculated in the original RADEX code.
 
         ext_background: func
-            The function should take the frequency in Hz as input and return the background radiation field in [W/m2/Hz/sr]
+            The function should take the frequency in Hz as input and return the
+            background radiation field in [W/m2/Hz/sr]
 
         Tkin: float
             kinetic temperature of the colliders
 
         coll_partner_densities: dict
-            number densities of the collision partners in [1/m3]. Following keys are recognised: "H2", "para-H2", "ortho-H2", "e", "H", "He", "H+"
+            number densities of the collision partners in [1/m3]. Following keys
+            are recognised: "H2", "para-H2", "ortho-H2", "e", "H", "He", "H+"
 
         Ntot: float
             total column density in [1/m2]
@@ -246,12 +254,22 @@ class Nebula():
                                    N=self.Ntot,level_population=level_pop)
         self.level_pop = level_pop
         self.Tex = self.emitting_molecule.get_Tex(level_pop)
-        self.compute_line_fluxes()
+        #self.compute_line_fluxes()
 
-    def compute_line_fluxes(self):
-        '''Compute the flux for each line. This requires that the radiative transfer
-        has been solved'''
-        self.line_fluxes = []
+    def compute_line_fluxes(self,solid_angle):
+        '''Compute the observed spectra and total fluxes for each line. This
+        requires that the radiative transfer has been solved. This method
+        computes the attributes obs_line_fluxes (total observed line fluxes in W/m2)
+        and obs_line_spectra (observed line spectra in W/m2/Hz).
+        
+        Parameters:
+        ---------------
+        solid_angle: float
+            the solid angle of the source in [rad2]
+        '''
+
+        self.obs_line_fluxes = []
+        self.obs_line_spectra = []
         for i,line in enumerate(self.emitting_molecule.rad_transitions):
             nu_array = line.line_profile.nu_array
             x1 = self.level_pop[line.low.number]
@@ -260,36 +278,39 @@ class Nebula():
             tau_nu = line.tau_nu_array(N1=x1*self.Ntot,N2=x2*self.Ntot)
             line_flux_nu = self.geometry.compute_flux_nu(
                                               tau_nu=tau_nu,
-                                              source_function=source_function)
+                                              source_function=source_function,
+                                              solid_angle=solid_angle)
+            self.obs_line_spectra.append(line_flux_nu) #W/m2/Hz
             line_flux = np.trapz(line_flux_nu,line.line_profile.nu_array) #[W/m2]
-            self.line_fluxes.append(line_flux)
+            self.obs_line_fluxes.append(line_flux)
 
-    def observed_fluxes(self,source_surface,d_observer):
-        '''Compute the flux recorded at the telescope. Can only be called if
-        the radiative transfer has been solved.
-        
-        Parameters:
-        ---------------
-        source_surface: float
-            the surface of the emitting cloud in [m2]
-        d_observer:
-            the distance between observer and emitting cloud in [m]
-        
-        Returns:
-        -----------
-        numpy.ndarray
-            the flux in W/m2 seen by the observer, for each radiative transition'''
-        obs_fluxes = np.empty(len(self.emitting_molecule.rad_transitions))
-        for i,line in enumerate(self.emitting_molecule.rad_transitions):
-            flux = self.line_fluxes[i]*source_surface/(4*np.pi*d_observer**2)
-            obs_fluxes[i] = flux
-        return obs_fluxes
+#    def observed_fluxes(self,source_surface,d_observer):
+#        '''Compute the flux recorded at the telescope. Can only be called if
+#        the radiative transfer has been solved.
+#        
+#        Parameters:
+#        ---------------
+#        source_surface: float
+#            the surface of the emitting cloud in [m2]
+#        d_observer:
+#            the distance between observer and emitting cloud in [m]
+#        
+#        Returns:
+#        -----------
+#        numpy.ndarray
+#            the flux in W/m2 seen by the observer, for each radiative transition'''
+#        obs_fluxes = np.empty(len(self.emitting_molecule.rad_transitions))
+#        for i,line in enumerate(self.emitting_molecule.rad_transitions):
+#            flux = self.line_fluxes[i]*source_surface/(4*np.pi*d_observer**2)
+#            obs_fluxes[i] = flux
+#        return obs_fluxes
 
     def print_results(self):
         '''print out the results from the radiative transfer computation. Can
         only be called if the radiative transfer has been solved.'''
         print('\n')
-        print('  up   low      nu [GHz]    T_ex [K]      poplow         popup          tau_nu0')
+        print('  up   low      nu [GHz]    T_ex [K]      poplow         popup'\
+              +'tau_nu0')
         for i,line in enumerate(self.emitting_molecule.rad_transitions):
             rad_trans_string = '{:>4d} {:>4d} {:>14.6f} {:>10.2f} {:>14g} {:>14g} {:>14g}'
             rad_trans_format = (line.up.number,line.low.number,

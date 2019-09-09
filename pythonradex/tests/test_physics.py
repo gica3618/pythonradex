@@ -37,10 +37,19 @@ RADEX_slab = {'co':{'Tex':[12.66,61.112,193.726],'tau':[2.333,1.143e-12,3.651e-5
 
 RADEX = {'sphere':RADEX_sphere,'slab':RADEX_slab}
 
-radius = 1
-distance = radius
-surface = 4*np.pi*radius**2
+radius = 1*constants.au
+distance = 1*constants.parsec
+slab_surface = (1*constants.au)**2
 geometries = list(nebula.Nebula.geometries.keys())
+def get_solid_angle(geo):
+    if 'sphere' in geo:
+        Omega = np.pi*radius**2/distance**2
+    elif 'slab' in geo:
+        Omega = slab_surface/distance**2
+    else:
+        raise ValueError('geo: {:s}'.format(geo))
+    return Omega
+
 
 def test_vs_RADEX():
     for filename,coll_ID in zip(filenames,collider_names):
@@ -51,6 +60,7 @@ def test_vs_RADEX():
         for i,(Ntot,width_v,Tkin,collp_dens,trans_num) in enumerate(params):
             coll_partner_densities = {coll_ID:collp_dens}
             for geo in geometries:
+                Omega = get_solid_angle(geo)
                 print('looking at {:s}, {:s} (case {:d})'.format(specie,geo,i))
                 test_nebula = nebula.Nebula(
                             data_filepath=lamda_filepath,geometry=geo,
@@ -58,10 +68,7 @@ def test_vs_RADEX():
                             coll_partner_densities=coll_partner_densities,
                             Ntot=Ntot,line_profile=line_profile,width_v=width_v)
                 test_nebula.solve_radiative_transfer()
-                fluxes = test_nebula.observed_fluxes(
-                                      source_surface=surface,d_observer=distance)
-                #see radex_output_readme.txt or RADEX manual for explanation of the
-                #follwing formula
+                test_nebula.compute_line_fluxes(solid_angle=Omega)
                 trans = test_nebula.emitting_molecule.rad_transitions[trans_num]
                 if 'sphere' in geo:
                     radex = RADEX['sphere']
@@ -69,12 +76,15 @@ def test_vs_RADEX():
                     radex = RADEX['slab']
                 Tex = radex[specie]['Tex'][i]
                 tau_nu = radex[specie]['tau'][i]
+                #see radex_output_readme.txt or RADEX manual for explanation of the
+                #follwing formula
                 RADEX_intensity = (helpers.B_nu(nu=trans.nu0,T=Tex)
                                                    -ext_background(trans.nu0))\
                                   * (1-np.exp(-tau_nu))
-                RADEX_flux = np.pi*RADEX_intensity*trans.line_profile.width_nu
-                pyradex_flux = fluxes[trans_num]
-                print('RADEX flux: {:g}; pyradex flux: {:g}'.format(RADEX_flux,pyradex_flux))
+                RADEX_flux = RADEX_intensity*trans.line_profile.width_nu*Omega
+                pyradex_flux = test_nebula.obs_line_fluxes[trans_num]
+                print('RADEX flux: {:g}; pyradex flux: {:g}'.format(
+                                                   RADEX_flux,pyradex_flux))
                 pyradex_tau = test_nebula.tau_nu0[trans_num]
                 pyradex_Tex = test_nebula.Tex[trans_num]
                 print('RADEX tau: {:g}; pyradex tau: {:g}'.format(tau_nu,pyradex_tau))

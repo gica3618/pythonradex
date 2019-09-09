@@ -11,39 +11,11 @@ class Flux0D():
 
     '''Represents the computation of the flux when considering only a single direction'''
 
-    def compute_flux_nu(self,tau_nu,source_function):
-        '''Computes the emerging flux in [W/m2/Hz], given the optical depth
-        tau_nu and the source function.'''
-        return np.pi*source_function*(1-np.exp(-tau_nu))
-
-
-class FluxUniformFaceOnSlab():
-
-    '''Represents the computation of the flux from a uniform slab that is seen
-    face-on (think of a face-on disk, i.e. x-y-size of much larger than the z-size,
-    where z is along the line of sight)'''
-    theta = np.linspace(0,np.pi/2,200)
-    tau_grid = np.logspace(-3,2,1000)
-
-    def __init__(self):
-        #the expression for the flux contains an integral term;
-        #here I pre-compute this term so it can be interpolated to speed up the code
-        self.integral_term_grid = np.array([self.integral_term(tau) for tau in
-                                            self.tau_grid])
-
-    def integral_term(self,tau):
-        return np.trapz((1-np.exp(-tau/np.cos(self.theta)))*np.cos(self.theta)
-                        *np.sin(self.theta),self.theta)
-
-    def interpolated_integral_term(self,tau):
-        interp = np.interp(x=tau,xp=self.tau_grid,fp=self.integral_term_grid,
-                          left=0,right=0.5)
-        return np.where(tau<np.min(self.tau_grid),tau,interp)
-
-    def compute_flux_nu(self,tau_nu,source_function):
-        '''Computes the emerging flux in [W/m2/Hz], given the optical depth
-        tau_nu and the source function.'''
-        return 2*np.pi*source_function*self.interpolated_integral_term(tau_nu)
+    def compute_flux_nu(self,tau_nu,source_function,solid_angle):
+        '''Computes the observed flux in [W/m2/Hz], given the optical depth
+        tau_nu, the source function and the solid angle of the source seen by
+        the observer.'''
+        return source_function*(1-np.exp(-tau_nu))*solid_angle
 
 
 class FluxUniformSphere():
@@ -52,8 +24,8 @@ class FluxUniformSphere():
 
     min_tau_nu = 1e-2
 
-    def compute_flux_nu(self,tau_nu,source_function):
-        '''Computes the emerging flux in [W/m2/Hz], given the optical depth
+    def compute_flux_nu(self,tau_nu,source_function,solid_angle):
+        '''Computes the observed flux in [W/m2/Hz], given the optical depth
         tau_nu and the source function.'''
         #see old Osterbrock book for this formula, appendix 2
         #this is the flux per surface of the emitting region
@@ -66,9 +38,10 @@ class FluxUniformSphere():
                        *(tau_nu**2/2-1+(tau_nu+1)*np.exp(-tau_nu))
         flux_nu_Taylor = 2*np.pi*source_function*(tau_nu/3-tau_nu**2/8+tau_nu**3/30
                           -tau_nu**4/144) #from Wolfram Alpha
-        flux = np.where(stable_region,flux_nu,flux_nu_Taylor)
-        assert np.all(np.isfinite(flux))
-        return flux
+        flux_nu = np.where(stable_region,flux_nu,flux_nu_Taylor)
+        assert np.all(np.isfinite(flux_nu))
+        #observed flux = (flux at sphere surface)*4*pi*r**2/(4*pi*d**2)=F_surface*Omega*4/(4*pi)
+        return flux_nu*solid_angle/np.pi
 
 
 class TaylorEscapeProbability():
@@ -133,21 +106,42 @@ class UniformSphereRADEX(EscapeProbabilityUniformSphere,Flux0D):
     pass
 
 
-class UniformFaceOnSlab(FluxUniformFaceOnSlab):
-    """The escape probability and emerging flux from a uniform slab"""
+class UniformFaceOnSlab(Flux0D):
+    #Since I assume the source is in the far field, it is ok to calculate the flux
+    #with the 0D formula
+    """Represents the computation of the flux from a uniform slab that is seen
+    face-on (think of a face-on disk, i.e. x-y-size of much larger than the z-size,
+    where z is along the line of sight)"""
 
-    min_tau_nu = np.min(FluxUniformFaceOnSlab.tau_grid)
+    theta = np.linspace(0,np.pi/2,200)
+    tau_grid = np.logspace(-3,2,1000)
+    min_tau_nu = np.min(tau_grid)
+
+    def __init__(self):
+        #the expression for the flux contains an integral term;
+        #here I pre-compute this term so it can be interpolated to speed up the code
+        self.integral_term_grid = np.array([self.integral_term(tau) for tau in
+                                            self.tau_grid])
+
+    def integral_term(self,tau):
+        return np.trapz((1-np.exp(-tau/np.cos(self.theta)))*np.cos(self.theta)
+                        *np.sin(self.theta),self.theta)
+
+    def interpolated_integral_term(self,tau):
+        interp = np.interp(x=tau,xp=self.tau_grid,fp=self.integral_term_grid,
+                          left=0,right=0.5)
+        return np.where(tau<np.min(self.tau_grid),tau,interp)
 
     def beta(self,tau_nu):
         with np.errstate(divide='ignore',invalid='ignore',over='ignore'):
-            prob = FluxUniformFaceOnSlab.interpolated_integral_term(self,tau_nu)/tau_nu
+            prob = self.interpolated_integral_term(tau_nu)/tau_nu
         prob = np.where(tau_nu<self.min_tau_nu,1,prob)
         assert np.all(np.isfinite(prob))
         return prob
 
 
-class UniformSlabRADEX(TaylorEscapeProbability,Flux0D):
-    """The escape probability for a uniform slab as in RADEX"""
+class UniformShockSlabRADEX(TaylorEscapeProbability,Flux0D):
+    """The escape probability for a uniform slab (shock) as in RADEX"""
 
     def beta_analytical(self,tau_nu):
         return (1-np.exp(-3*tau_nu))/(3*tau_nu)

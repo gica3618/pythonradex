@@ -7,39 +7,38 @@ Created on Tue Nov 14 18:22:37 2017
 
 from pythonradex import escape_probability
 import numpy as np
-import itertools
+from scipy import constants
 
 
 flux0D = escape_probability.Flux0D()
-flux_uniform_slab = escape_probability.FluxUniformSlab()
 flux_uniform_sphere = escape_probability.FluxUniformSphere()
-all_fluxes = [flux0D,flux_uniform_slab,flux_uniform_sphere]
+all_fluxes = [flux0D,flux_uniform_sphere]
 large_tau_nu = 1e4
+solid_angle = (100*constants.au)**2/(1*constants.parsec)**2
 
 def test_fluxes():
     for flux in all_fluxes:
         for zero in (0,np.zeros(5)):
-            assert np.all(flux.compute_flux_nu(tau_nu=zero,source_function=1) == 0)
-            assert np.all(flux.compute_flux_nu(tau_nu=1,source_function=zero) == 0)
+            assert np.all(flux.compute_flux_nu(tau_nu=zero,source_function=1,
+                                               solid_angle=solid_angle) == 0)
+            assert np.all(flux.compute_flux_nu(tau_nu=1,source_function=zero,
+                                               solid_angle=solid_angle) == 0)
         for large in (large_tau_nu,np.ones(5)*large_tau_nu):
             source_function = 1
-            f = flux.compute_flux_nu(tau_nu=large,source_function=source_function)
-            assert np.allclose(f,np.pi*source_function,rtol=1e-4,atol=0)
-
-def test_flux_uniform_slab():
-    tau_values = np.logspace(-1,1,10)
-    interp_values = flux_uniform_slab.interpolated_integral_term(tau_values)
-    computed_values = [flux_uniform_slab.integral_term(t) for t in tau_values]
-    assert np.allclose(interp_values,computed_values,rtol=1e-2,atol=0)
+            f = flux.compute_flux_nu(tau_nu=large,source_function=source_function,
+                                     solid_angle=solid_angle)
+            assert np.allclose(f,source_function*solid_angle,rtol=1e-4,atol=0)
 
 def test_flux_uniform_sphere():
     limit_tau_nu = flux_uniform_sphere.min_tau_nu
     epsilon_tau_nu = 0.01*limit_tau_nu
     source_function = 1
     flux_Taylor = flux_uniform_sphere.compute_flux_nu(tau_nu=limit_tau_nu-epsilon_tau_nu,
-                                                      source_function=source_function)
+                                                      source_function=source_function,
+                                                      solid_angle=solid_angle)
     flux_analytical = flux_uniform_sphere.compute_flux_nu(tau_nu=limit_tau_nu+epsilon_tau_nu,
-                                                          source_function=source_function)
+                                                          source_function=source_function,
+                                                          solid_angle=solid_angle)
     print(flux_Taylor)
     print(flux_analytical)
     assert np.isclose(flux_Taylor,flux_analytical,rtol=0.05,atol=0)
@@ -56,11 +55,18 @@ def test_esc_prob_uniform_sphere():
                       esc_prob_uniform_sphere.beta_Taylor(esc_prob_uniform_sphere.tau_epsilon),
                       rtol=1e-2,atol=0)
 
+def test_uniform_slab_interpolation():
+    tau_values = np.logspace(-1,1,10)
+    uniform_slab = escape_probability.UniformFaceOnSlab()
+    interp_values = uniform_slab.interpolated_integral_term(tau_values)
+    computed_values = [uniform_slab.integral_term(t) for t in tau_values]
+    assert np.allclose(interp_values,computed_values,rtol=1e-2,atol=0)
+
 
 uniform_sphere = escape_probability.UniformSphere()
 radex_uniform_sphere = escape_probability.UniformSphereRADEX()
-uniform_slab = escape_probability.UniformSlab()
-radex_uniform_slab = escape_probability.UniformSlabRADEX()
+uniform_slab = escape_probability.UniformFaceOnSlab()
+radex_uniform_slab = escape_probability.UniformShockSlabRADEX()
 
 taylor_gemoetries = [uniform_sphere,radex_uniform_sphere,radex_uniform_slab]
 
