@@ -54,7 +54,7 @@ We need to define the geometry of the nebula. Let's consider a uniform sphere::
 
     >>> geometry = 'uniform sphere'
 
-We need to set the kinetic temperature, total colum density, line profile type (square or Gaussian) and width of the emission lines in velocity space::
+See the detailed documentation of the nebula class below for more details on the available geometries. We need to set the kinetic temperature, total colum density, line profile type (square or Gaussian) and width of the emission lines in velocity space::
 
     >>> Tkin = 150
     >>> Ntot = 1e16/constants.centi**2
