@@ -254,7 +254,6 @@ class Nebula():
                                    N=self.Ntot,level_population=level_pop)
         self.level_pop = level_pop
         self.Tex = self.emitting_molecule.get_Tex(level_pop)
-        #self.compute_line_fluxes()
 
     def compute_line_fluxes(self,solid_angle):
         '''Compute the observed spectra and total fluxes for each line. This
@@ -283,27 +282,6 @@ class Nebula():
             self.obs_line_spectra.append(line_flux_nu) #W/m2/Hz
             line_flux = np.trapz(line_flux_nu,line.line_profile.nu_array) #[W/m2]
             self.obs_line_fluxes.append(line_flux)
-
-#    def observed_fluxes(self,source_surface,d_observer):
-#        '''Compute the flux recorded at the telescope. Can only be called if
-#        the radiative transfer has been solved.
-#        
-#        Parameters:
-#        ---------------
-#        source_surface: float
-#            the surface of the emitting cloud in [m2]
-#        d_observer:
-#            the distance between observer and emitting cloud in [m]
-#        
-#        Returns:
-#        -----------
-#        numpy.ndarray
-#            the flux in W/m2 seen by the observer, for each radiative transition'''
-#        obs_fluxes = np.empty(len(self.emitting_molecule.rad_transitions))
-#        for i,line in enumerate(self.emitting_molecule.rad_transitions):
-#            flux = self.line_fluxes[i]*source_surface/(4*np.pi*d_observer**2)
-#            obs_fluxes[i] = flux
-#        return obs_fluxes
 
     def print_results(self):
         '''print out the results from the radiative transfer computation. Can
