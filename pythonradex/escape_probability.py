@@ -40,7 +40,8 @@ class FluxUniformSphere():
                           -tau_nu**4/144) #from Wolfram Alpha
         flux_nu = np.where(stable_region,flux_nu,flux_nu_Taylor)
         assert np.all(np.isfinite(flux_nu))
-        #observed flux = (flux at sphere surface)*4*pi*r**2/(4*pi*d**2)=F_surface*Omega*4/(4*pi)
+        #observed flux = (flux at sphere surface)*4*pi*r**2/(4*pi*d**2)
+        #=F_surface*Omega*4/(4*pi)
         return flux_nu*solid_angle/np.pi
 
 
