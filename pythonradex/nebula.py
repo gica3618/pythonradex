@@ -142,7 +142,7 @@ class Nebula():
 
     relative_convergence = 1e-2
     min_iter = 30
-    max_iter = 10000
+    max_iter = 1000
     underrelaxation = 0.3
     geometries = {'uniform sphere':escape_probability.UniformSphere,
                   'uniform sphere RADEX':escape_probability.UniformSphereRADEX,
