@@ -127,7 +127,7 @@ Similarly, for the fractional population of the 4th level, do::
     >>> example_nebula.level_pop[3]
         0.0389655721648867
 
-And for the optical depth of the lowest transition::
+And for the optical depth at the rest frequency of the lowest transition::
 
     >>> example_nebula.tau_nu0[0]
         0.5639365145264359
