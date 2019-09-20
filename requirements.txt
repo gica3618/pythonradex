@@ -8,7 +8,7 @@ pluggy==0.13.0
 py==1.8.0
 pyparsing==2.4.2
 pytest==5.1.2
--e git+https://gica3618@github.com/gica3618/pythonradex.git@2df05bed191e1ae5310166c7a1ef3fa85941e746#egg=pythonradex
+-e git+https://gica3618@github.com/gica3618/pythonradex.git@6b2431fb851dc3277779934fc0846b7ffde078dd#egg=pythonradex
 scipy==1.3.1
 six==1.12.0
 wcwidth==0.1.7
