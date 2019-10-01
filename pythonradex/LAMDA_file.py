@@ -60,6 +60,7 @@ def read(datafilepath):
             continue
         if 6 < i <= 6+n_levels:
             leveldata = [float(string) for string in line.split()[:3]]
+            assert int(leveldata[0]) == i-6, 'level numeration not consistent'
             #transforming energy from cm-1 to J; level numbers starting from 0:
             lev = atomic_transition.Level(
                         g=leveldata[2],
