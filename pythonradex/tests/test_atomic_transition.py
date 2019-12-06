@@ -118,6 +118,8 @@ class TestTransition():
     def test_transition(self):
         with pytest.raises(AssertionError):
             atomic_transition.Transition(up=self.low,low=self.up)
+        zero_trans = atomic_transition.Transition(up=self.low,low=self.low)
+        assert zero_trans.Delta_E > 0
 
     def test_emission_line_constructor(self):
         assert self.test_emission_line.nu0 == self.test_emission_line.line_profile.nu0
@@ -157,4 +159,3 @@ class TestTransition():
                                    N1=N1,N2=N2,
                                    nu=self.test_emission_line.line_profile.nu_array)
         assert np.all(tau_nu_array==tau_nu_array_explicit)
-        

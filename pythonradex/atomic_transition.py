@@ -111,15 +111,19 @@ class Transition():
 
     '''Represents the transition between two energy levels'''
 
+    min_Delta_E = constants.h*constants.c/(1000*constants.kilo) #corresponds to a wavelength of 1000 km
+
     def __init__(self,up,low):
         '''up and low are instances of the Level class, representing the upper
         and lower level of the transition'''
         self.up = up
         self.low = low
         self.Delta_E = self.up.E-self.low.E
-        assert self.Delta_E > 0,\
-           'invalid energy difference between upper level {:d} and lower level {:d}'\
-           .format(self.up.number,self.low.number)
+        assert self.Delta_E >= 0,\
+           'invalid energy difference between upper level {:d} and lower level {:d}: {:g} J'\
+           .format(self.up.number,self.low.number,self.Delta_E)
+        if self.Delta_E == 0:
+            self.Delta_E = self.min_Delta_E
         self.name = '{:d}-{:d}'.format(self.up.number,self.low.number)
 
     def Tex(self,x1,x2):
