@@ -118,6 +118,9 @@ class TestTransition():
     def test_transition(self):
         with pytest.raises(AssertionError):
             atomic_transition.Transition(up=self.low,low=self.up)
+
+    @pytest.mark.filterwarnings('ignore::UserWarning')
+    def test_zero_energy_transition(self):
         zero_trans = atomic_transition.Transition(up=self.low,low=self.low)
         assert zero_trans.Delta_E > 0
 

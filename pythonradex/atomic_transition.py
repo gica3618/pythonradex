@@ -8,6 +8,7 @@ Created on Sun Nov 12 17:03:55 2017
 from pythonradex import helpers
 import numpy as np
 from scipy import constants
+import warnings
 
 
 class LineProfile():
@@ -123,6 +124,9 @@ class Transition():
            'invalid energy difference between upper level {:d} and lower level {:d}: {:g} J'\
            .format(self.up.number,self.low.number,self.Delta_E)
         if self.Delta_E == 0:
+            warnings.warn('replacing Delta E = 0 of transition {:d}-{:d} '.format(
+                          self.up.number,self.low.number)\
+                          +'by small positive number')
             self.Delta_E = self.min_Delta_E
         self.name = '{:d}-{:d}'.format(self.up.number,self.low.number)
 
