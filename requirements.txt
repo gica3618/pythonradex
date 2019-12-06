@@ -4,7 +4,6 @@ importlib-metadata==0.23
 more-itertools==7.2.0
 numpy==1.17.2
 packaging==19.2
-pkg-resources==0.0.0
 pluggy==0.13.0
 py==1.8.0
 pyparsing==2.4.2
