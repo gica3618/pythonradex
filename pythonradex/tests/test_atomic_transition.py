@@ -106,10 +106,7 @@ class TestTransition():
     radiative_transition = atomic_transition.RadiativeTransition(
                              up=up,low=low,A21=A21)
     width_v = 1*constants.kilo
-    K21_data=np.array((2,1,4,6,3))
     Tkin_data=np.array((1,2,3,4,5))
-    coll_transition = atomic_transition.CollisionalTransition(
-                            up=up,low=low,K21_data=K21_data,Tkin_data=Tkin_data)
     test_emission_line = atomic_transition.EmissionLine(
                               up=up,low=low,A21=A21,
                               line_profile_cls=line_profile_cls,
@@ -136,14 +133,25 @@ class TestTransition():
         assert emission_line.B12 == self.radiative_transition.B12
 
     def test_coll_coeffs(self):
-        Tkin_interp = np.array((self.Tkin_data[0],self.Tkin_data[-1]))
-        coeff = self.coll_transition.coeffs(Tkin_interp)['K21']
-        expected_coeff = np.array((self.K21_data[0],self.K21_data[-1]))
-        assert np.allclose(coeff,expected_coeff,atol=0)
-        intermediate_temp = np.mean(self.Tkin_data[:2])
-        intermediate_coeff = self.coll_transition.coeffs(intermediate_temp)['K21']
-        boundaries = np.sort(self.K21_data[:2])
-        assert boundaries[0] <= intermediate_coeff <= boundaries[1]
+        K21_data_sets = [np.array((2,1,4,6,3)),np.array((1,0,0,6,3))]
+        for K21_data in K21_data_sets:
+            coll_transition = atomic_transition.CollisionalTransition(
+                                up=self.up,low=self.low,K21_data=K21_data,
+                                Tkin_data=self.Tkin_data)
+            Tkin_interp = np.array((self.Tkin_data[0],self.Tkin_data[-1]))
+            coeff = coll_transition.coeffs(Tkin_interp)['K21']
+            expected_coeff = np.array((K21_data[0],K21_data[-1]))
+            assert np.allclose(coeff,expected_coeff,atol=0)
+            intermediate_temp = np.mean(self.Tkin_data[:2])
+            intermediate_coeff = coll_transition.coeffs(intermediate_temp)['K21']
+            boundaries = np.sort(K21_data[:2])
+            assert boundaries[0] <= intermediate_coeff <= boundaries[1]
+
+    def test_coll_coeffs_negative(self):
+        K21_data = np.array((-1,0,4,6,3))
+        with pytest.raises(AssertionError):
+            atomic_transition.CollisionalTransition(
+                            up=self.up,low=self.low,K21_data=K21_data,Tkin_data=self.Tkin_data)
 
     @pytest.mark.filterwarnings('ignore:invalid value','ignore:divide by zero')
     def test_Tex(self):

@@ -111,8 +111,8 @@ class Level():
 class Transition():
 
     '''Represents the transition between two energy levels'''
-
-    min_Delta_E = constants.h*constants.c/(1000*constants.kilo) #corresponds to a wavelength of 1000 km
+    #corresponds to a wavelength of 1000 km:
+    min_Delta_E = constants.h*constants.c/(1000*constants.kilo)
 
     def __init__(self,up,low):
         '''up and low are instances of the Level class, representing the upper
@@ -170,7 +170,8 @@ class RadiativeTransition(Transition):
         energy difference between upper and lower level
 
     - name: str
-        transition name, for example '3-2' for the transition between the fourth and the third level
+        transition name, for example '3-2' for the transition between the fourth and the
+        third level
 
     - A21: float 
         Einstein A21 coefficient
@@ -255,7 +256,8 @@ class CollisionalTransition(Transition):
         energy difference between upper and lower level
 
     - name: str
-        transition name, for example '3-2' for the transition between the fourth and the third level
+        transition name, for example '3-2' for the transition between the fourth and the
+        third level
 
     - K21_data: numpy.ndarray
         value of the collision rate coefficient K21 at different temperatures
@@ -282,8 +284,13 @@ class CollisionalTransition(Transition):
         over the temperatures defined in the array Tkin_data'''
         Transition.__init__(self,up=up,low=low)
         #set of coeffs for different temperatures
+        assert np.all(K21_data >= 0)
         self.K21_data = K21_data
-        self.log_K21_data = np.log(self.K21_data)
+        if np.all(self.K21_data>0):
+            self.K21_data_all_larger_than_0 = True
+            self.log_K21_data = np.log(self.K21_data)
+        else:
+            self.K21_data_all_larger_than_0 = False
         #array of temperatures for which rate coeffs are available:
         self.Tkin_data = Tkin_data
         self.log_Tkin_data = np.log(self.Tkin_data)
@@ -304,13 +311,18 @@ class CollisionalTransition(Transition):
         Returns
         ---------
         dict
-            The keys "K12" and "K21" of the dict correspond to the collision coefficients at the requested temperature(s)'''
+            The keys "K12" and "K21" of the dict correspond to the collision coefficients at
+            the requested temperature(s)'''
         #interpolate in log space
         assert np.all((self.Tmin <= Tkin) & (Tkin <= self.Tmax)),\
-            'Requested Tkin out of interpolation range. Tkin must be within {:g}-{:g} K'.format(self.Tmin,self.Tmax)
+            'Requested Tkin out of interpolation range. Tkin must be within {:g}-{:g} K'.format(
+                                                                self.Tmin,self.Tmax)
         logTkin = np.log(Tkin)
-        logK21 = np.interp(logTkin,self.log_Tkin_data,self.log_K21_data)
-        K21 = np.exp(logK21)
+        if self.K21_data_all_larger_than_0:
+            logK21 = np.interp(logTkin,self.log_Tkin_data,self.log_K21_data)
+            K21 = np.exp(logK21)
+        else:
+            K21 = np.interp(logTkin,self.log_Tkin_data,self.K21_data)
         #see RADEX manual for following formula
         K12 = (self.up.g/self.low.g*K21
                *np.exp(-self.Delta_E/(constants.k*Tkin)))
