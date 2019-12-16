@@ -112,14 +112,9 @@ class TestTransition():
                               line_profile_cls=line_profile_cls,
                               width_v=width_v)
 
-    def test_transition(self):
+    def test_radiative_transition_negative_DeltaE(self):
         with pytest.raises(AssertionError):
-            atomic_transition.Transition(up=self.low,low=self.up)
-
-    @pytest.mark.filterwarnings('ignore::UserWarning')
-    def test_zero_energy_transition(self):
-        zero_trans = atomic_transition.Transition(up=self.low,low=self.low)
-        assert zero_trans.Delta_E > 0
+            atomic_transition.RadiativeTransition(up=self.low,low=self.up,A21=1)
 
     def test_emission_line_constructor(self):
         assert self.test_emission_line.nu0 == self.test_emission_line.line_profile.nu0
@@ -146,12 +141,6 @@ class TestTransition():
             intermediate_coeff = coll_transition.coeffs(intermediate_temp)['K21']
             boundaries = np.sort(K21_data[:2])
             assert boundaries[0] <= intermediate_coeff <= boundaries[1]
-
-    def test_coll_coeffs_negative(self):
-        K21_data = np.array((-1,0,4,6,3))
-        with pytest.raises(AssertionError):
-            atomic_transition.CollisionalTransition(
-                            up=self.up,low=self.low,K21_data=K21_data,Tkin_data=self.Tkin_data)
 
     @pytest.mark.filterwarnings('ignore:invalid value','ignore:divide by zero')
     def test_Tex(self):

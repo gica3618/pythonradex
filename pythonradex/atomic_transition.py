@@ -111,8 +111,6 @@ class Level():
 class Transition():
 
     '''Represents the transition between two energy levels'''
-    #corresponds to a wavelength of 1000 km:
-    min_Delta_E = constants.h*constants.c/(1000*constants.kilo)
 
     def __init__(self,up,low):
         '''up and low are instances of the Level class, representing the upper
@@ -120,14 +118,6 @@ class Transition():
         self.up = up
         self.low = low
         self.Delta_E = self.up.E-self.low.E
-        assert self.Delta_E >= 0,\
-           'invalid energy difference between upper level {:d} and lower level {:d}: {:g} J'\
-           .format(self.up.number,self.low.number,self.Delta_E)
-        if self.Delta_E == 0:
-            warnings.warn('replacing Delta E = 0 of transition {:d}-{:d} '.format(
-                          self.up.number,self.low.number)\
-                          +'by small positive number')
-            self.Delta_E = self.min_Delta_E
         self.name = '{:d}-{:d}'.format(self.up.number,self.low.number)
 
     def Tex(self,x1,x2):
@@ -190,6 +180,7 @@ class RadiativeTransition(Transition):
         and lower level of the transition. A21 is the Einstein coefficient for
         spontaneous emission'''
         Transition.__init__(self,up=up,low=low)
+        assert self.Delta_E > 0, 'negative Delta_E for radiative transition'
         self.A21 = A21
         self.nu0 = self.Delta_E/constants.h
         self.B21 = helpers.B21(A21=self.A21,nu=self.nu0)
