@@ -8,7 +8,6 @@ Created on Sun Nov 12 17:03:55 2017
 from pythonradex import helpers
 import numpy as np
 from scipy import constants
-import warnings
 
 
 class LineProfile():
@@ -175,14 +174,21 @@ class RadiativeTransition(Transition):
     - B12: float
         Einstein B12 coefficient'''
 
-    def __init__(self,up,low,A21):
+    def __init__(self,up,low,A21,nu0=None):
         '''up and low are instances of the Level class, representing the upper
         and lower level of the transition. A21 is the Einstein coefficient for
-        spontaneous emission'''
+        spontaneous emission. The optinal argument nu0 is the line frequency; if not
+        given, nu0 will be calculated from the level energies.'''
         Transition.__init__(self,up=up,low=low)
         assert self.Delta_E > 0, 'negative Delta_E for radiative transition'
         self.A21 = A21
-        self.nu0 = self.Delta_E/constants.h
+        if nu0 is None:
+            self.nu0 = self.Delta_E/constants.h
+        else:
+            #when reading LAMDA files, it is useful to specify nu0 directly, since
+            #it is sometimes given with more significant digits
+            assert np.isclose(self.Delta_E/constants.h,nu0,atol=0,rtol=1e-3)
+            self.nu0 = nu0
         self.B21 = helpers.B21(A21=self.A21,nu=self.nu0)
         self.B12 = helpers.B12(A21=self.A21,nu=self.nu0,g1=self.low.g,g2=self.up.g)
 
@@ -192,12 +198,13 @@ class EmissionLine(RadiativeTransition):
     '''Represents an emission line arising from the radiative transition between
     two levels'''
 
-    def __init__(self,up,low,A21,line_profile_cls,width_v):
+    def __init__(self,up,low,A21,line_profile_cls,width_v,nu0=None):
         '''up and low are instances of the Level class, representing the upper
         and lower level of the transition. A21 is the Einstein coefficient,
         line_profile_cls is the line profile class to be used,
-        and width_v the witdht of the line'''
-        RadiativeTransition.__init__(self,up=up,low=low,A21=A21)
+        and width_v the witdht of the line. The optinal argument nu0 is the
+        line frequency; if not given, nu0 will be calculated from the level energies.'''
+        RadiativeTransition.__init__(self,up=up,low=low,A21=A21,nu0=nu0)
         self.line_profile = line_profile_cls(nu0=self.nu0,width_v=width_v)
 
     @classmethod
@@ -207,7 +214,7 @@ class EmissionLine(RadiativeTransition):
         a line profile class and the width of the line'''
         return cls(up=radiative_transition.up,low=radiative_transition.low,
                    A21=radiative_transition.A21,line_profile_cls=line_profile_cls,
-                   width_v=width_v)
+                   width_v=width_v,nu0=radiative_transition.nu0)
 
     def tau_nu(self,N1,N2,nu):
         '''Compute the optical depth from the column densities N1 and N2 in the lower

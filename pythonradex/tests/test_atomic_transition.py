@@ -114,7 +114,17 @@ class TestTransition():
 
     def test_radiative_transition_negative_DeltaE(self):
         with pytest.raises(AssertionError):
-            atomic_transition.RadiativeTransition(up=self.low,low=self.up,A21=1)
+            atomic_transition.RadiativeTransition(up=self.low,low=self.up,A21=self.A21)
+
+    def test_radiative_transition_wrong_nu0(self):
+        wrong_nu0 = (self.up.E-self.low.E)/constants.h*1.01
+        with pytest.raises(AssertionError):
+            atomic_transition.RadiativeTransition(up=self.up,low=self.low,A21=self.A21,
+                                                  nu0=wrong_nu0)
+            atomic_transition.EmissionLine(
+                              up=self.up,low=self.low,A21=1,
+                              line_profile_cls=self.line_profile_cls,
+                              width_v=self.width_v,nu0=wrong_nu0)
 
     def test_emission_line_constructor(self):
         assert self.test_emission_line.nu0 == self.test_emission_line.line_profile.nu0
@@ -126,6 +136,15 @@ class TestTransition():
                                width_v=self.width_v)
         assert emission_line.nu0 == self.radiative_transition.nu0
         assert emission_line.B12 == self.radiative_transition.B12
+        with pytest.raises(AssertionError):
+            wrong_nu0_rad_trans = atomic_transition.RadiativeTransition(
+                                                       up=self.up,low=self.low,
+                                                       A21=self.A21)
+            wrong_nu0_rad_trans.nu0 = wrong_nu0_rad_trans.nu0*1.01
+            atomic_transition.EmissionLine.from_radiative_transition(
+                               radiative_transition=wrong_nu0_rad_trans,
+                               line_profile_cls=self.line_profile_cls,
+                               width_v=self.width_v)
 
     def test_coll_coeffs(self):
         K21_data_sets = [np.array((2,1,4,6,3)),np.array((1,0,0,6,3))]

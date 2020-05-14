@@ -15,7 +15,7 @@ def is_comment(line):
         return False
 
 
-def read(datafilepath):
+def read(datafilepath,read_frequencies=False):
     '''
     Read a LAMDA data file.
 
@@ -26,6 +26,12 @@ def read(datafilepath):
     ----------
     datafilepath : str
         path to the file
+
+    read_frequencies : bool
+        Read the radiative transition frequencies from the file rather than computing
+        them from the level energies. This can be useful since frequencies are sometimes
+        given with more significant digits. Howver, the LAMDA standard does not
+        require a file to list the frequencies.
 
     Returns
     -------
@@ -75,8 +81,10 @@ def read(datafilepath):
             radtransdata = [float(string) for string in line.split()]
             up = next(level for level in levels if level.number==radtransdata[1]-1)
             low = next(level for level in levels if level.number==radtransdata[2]-1)
-            rad_trans = atomic_transition.RadiativeTransition(
-                                             up=up,low=low,A21=radtransdata[3])
+            rad_trans_kwargs = {'up':up,'low':low,'A21':radtransdata[3]}
+            if read_frequencies:
+                rad_trans_kwargs['nu0'] = radtransdata[4]*constants.giga
+            rad_trans = atomic_transition.RadiativeTransition(**rad_trans_kwargs) 
             rad_transitions.append(rad_trans)
             continue
         if i == 11+n_levels+n_rad_transitions:
