@@ -96,12 +96,14 @@ def test_Tex_array():
     LTE_level_pop_array = emitting_molecule_lamda.LTE_level_pop(Tex_array)
     assert list(LTE_level_pop_array.shape) == [LTE_level_pop.size,] + list(Tex_array.shape)
     expanded_shape = [LTE_level_pop.size,]+[1 for i in range(len(shape))]
-    assert np.all(LTE_level_pop_array==LTE_level_pop.reshape(expanded_shape))
+    assert np.allclose(LTE_level_pop_array,LTE_level_pop.reshape(expanded_shape),
+                       atol=0,rtol=1e-8)
     assert np.allclose(np.sum(LTE_level_pop_array,axis=0),1)
     alt_Tex_array = Tex_array.copy()
     alt_Tex = 300
     alt_Tex_array[2,3,1] = alt_Tex
     alt_LTE_level_pop_array = emitting_molecule_lamda.LTE_level_pop(alt_Tex_array)
-    assert np.all(alt_LTE_level_pop_array[:,2,3,1]
-                              ==emitting_molecule_lamda.LTE_level_pop(alt_Tex))
-    assert np.all(alt_LTE_level_pop_array[:,3,3,1]==LTE_level_pop)
+    assert np.allclose(alt_LTE_level_pop_array[:,2,3,1],
+                              emitting_molecule_lamda.LTE_level_pop(alt_Tex),
+                              atol=0,rtol=1e-8)
+    assert np.allclose(alt_LTE_level_pop_array[:,3,3,1],LTE_level_pop,atol=0,rtol=1e-8)
