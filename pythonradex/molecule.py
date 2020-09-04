@@ -13,7 +13,7 @@ class Molecule():
 
     "Represents an atom or molecule"
 
-    def __init__(self,levels,rad_transitions,coll_transitions):
+    def __init__(self,levels,rad_transitions,coll_transitions,partition_function=None):
         '''levels is a list of instances of the Level class
         rad_transitions is a list of instances of the RadiativeTransition class
         coll_transitions is a list of instances of the CollisionalTransition class'''
@@ -24,15 +24,23 @@ class Molecule():
         self.coll_transitions = coll_transitions 
         self.n_levels = len(self.levels)
         self.n_rad_transitions = len(self.rad_transitions)
+        self.set_partition_function(partition_function=partition_function)
 
     @classmethod
-    def from_LAMDA_datafile(cls,data_filepath):
+    def from_LAMDA_datafile(cls,data_filepath,partition_function=None):
         """Alternative constructor using a LAMDA data file"""
         data = LAMDA_file.read(data_filepath)
         return cls(levels=data['levels'],rad_transitions=data['radiative transitions'],
-                   coll_transitions=data['collisional transitions'])
+                   coll_transitions=data['collisional transitions'],
+                   partition_function=partition_function)
 
-    def Z(self,T):
+    def set_partition_function(self,partition_function):
+        if partition_function is None:
+            self.Z = self.Z_from_atomic_data
+        else:
+            self.Z = partition_function
+
+    def Z_from_atomic_data(self,T):
         '''Computes the partition function for a given temperature T. T can
         be a float or an array'''
         T = np.array(T)
@@ -71,14 +79,15 @@ class EmittingMolecule(Molecule):
     "Represents an emitting molecule, i.e. a molecule with a specified line profile"
     
     def __init__(self,levels,rad_transitions,coll_transitions,line_profile_cls,
-                 width_v):
+                 width_v,partition_function=None):
         '''levels is a list of instances of the Level class
         rad_transitions is a list of instances of the RadiativeTransition class
         coll_transitions is a list of instances of the CollisionalTransition class
         line_profile_cls is the line profile class used to represent the line profile
         width_v is the width of the line in velocity'''
         Molecule.__init__(self,levels=levels,rad_transitions=rad_transitions,
-                          coll_transitions=coll_transitions)
+                          coll_transitions=coll_transitions,
+                          partition_function=partition_function)
         #convert radiative transitions to emission lines (but keep the same attribute name)
         self.rad_transitions = [atomic_transition.EmissionLine.from_radiative_transition(
                                radiative_transition=rad_trans,
@@ -87,12 +96,13 @@ class EmittingMolecule(Molecule):
 
     @classmethod
     def from_LAMDA_datafile(cls,data_filepath,line_profile_cls,
-                            width_v):
+                            width_v,partition_function=None):
         """Alternative constructor using a LAMDA data file"""
         data = LAMDA_file.read(data_filepath)
         return cls(levels=data['levels'],rad_transitions=data['radiative transitions'],
                    coll_transitions=data['collisional transitions'],
-                   line_profile_cls=line_profile_cls,width_v=width_v)
+                   line_profile_cls=line_profile_cls,width_v=width_v,
+                   partition_function=partition_function)
 
     def get_tau_nu0(self,N,level_population):
         '''For a given total column density N and level population,

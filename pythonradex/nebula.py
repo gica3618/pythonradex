@@ -152,7 +152,8 @@ class Nebula():
                      'square':atomic_transition.SquareLineProfile}
 
     def __init__(self,data_filepath,geometry,ext_background,Tkin,
-                 coll_partner_densities,Ntot,line_profile,width_v,verbose=False):
+                 coll_partner_densities,Ntot,line_profile,width_v,partition_function=None,
+                 verbose=False):
         '''
         Parameters:    
         ---------------        
@@ -189,13 +190,17 @@ class Nebula():
         width_v: float
             width of the line in [m/s]. For Gaussian, this is the FWHM.
 
+        partition_function: func
+            Partition function. If None, partition function will be calculated from the
+            atomic data provided by the datafile
+
         verbose: bool
             if True, additional information is printed out
         '''
         self.emitting_molecule = EmittingMolecule.from_LAMDA_datafile(
                                     data_filepath=data_filepath,
                                     line_profile_cls=self.line_profiles[line_profile],
-                                    width_v=width_v)
+                                    width_v=width_v,partition_function=partition_function)
         self.geometry = self.geometries[geometry]()
         self.ext_background = ext_background
         self.Tkin = Tkin

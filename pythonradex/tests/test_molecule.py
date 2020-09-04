@@ -92,6 +92,24 @@ def test_get_tau_nu0():
 def test_Z_array():
     assert test_molecule.Z(Tex_array).shape == shape
 
+def test_external_Z():
+    def Z(T):
+        return np.ones_like(T)
+    mol_std = molecule.EmittingMolecule(
+                         levels=test_molecule.levels,
+                         rad_transitions=test_molecule.rad_transitions,
+                         coll_transitions=test_molecule.coll_transitions,
+                         line_profile_cls=line_profile_cls,width_v=width_v,
+                         partition_function=Z)
+    mol_LAMDA = molecule.EmittingMolecule.from_LAMDA_datafile(
+                          data_filepath=lamda_filepath,
+                          line_profile_cls=line_profile_cls,width_v=width_v,
+                          partition_function=Z)
+    for mol in (mol_std,mol_LAMDA):
+        assert mol.Z(50) == 1
+        test_T = np.ones((3,3))*20
+        assert np.all(mol.Z(test_T) == 1)
+
 def test_Tex_array():
     LTE_level_pop_array = emitting_molecule_lamda.LTE_level_pop(Tex_array)
     assert list(LTE_level_pop_array.shape) == [LTE_level_pop.size,] + list(Tex_array.shape)
