@@ -41,7 +41,7 @@ def generate_CMB_background(z=0):
     
     Parameters
     -----------
-    z: float (default: 0)
+    z: float
         redshift
 
     Returns
