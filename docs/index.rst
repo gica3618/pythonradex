@@ -395,7 +395,7 @@ helpers module
 The ``helpers`` module provides a number of convenience functions, some of which might be of interest to the user.
 
 .. automodule:: pythonradex.helpers
-    :members: B_nu,CMB_background,zero_background,FWHM2sigma
+    :members: B_nu,generate_CMB_background,zero_background,FWHM2sigma
 
 
 Acknowledgement:
