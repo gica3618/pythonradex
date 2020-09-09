@@ -293,7 +293,7 @@ class Nebula():
         only be called if the radiative transfer has been solved.'''
         print('\n')
         print('  up   low      nu [GHz]    T_ex [K]      poplow         popup'\
-              +'tau_nu0')
+              +'         tau_nu0')
         for i,line in enumerate(self.emitting_molecule.rad_transitions):
             rad_trans_string = '{:>4d} {:>4d} {:>14.6f} {:>10.2f} {:>14g} {:>14g} {:>14g}'
             rad_trans_format = (line.up.number,line.low.number,
