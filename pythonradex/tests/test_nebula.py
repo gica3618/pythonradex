@@ -71,7 +71,7 @@ geometries = list(nebula.Nebula.geometries.keys())
 Ntot = 1e15/constants.centi**2
 line_profile = 'square'
 width_v = 2*constants.kilo
-ext_background = helpers.CMB_background
+ext_background = helpers.generate_CMB_background()
 nebulae = {}
 
 r = 10*constants.au

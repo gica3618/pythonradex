@@ -7,6 +7,7 @@ Created on Sun Nov 12 18:42:40 2017
 
 from pythonradex import helpers
 import numpy as np
+from scipy import constants
 
 def test_relative_difference_scalar():
     for x in (0,1):
@@ -23,3 +24,10 @@ def test_relative_difference_arrays():
 def test_zero_background():
     assert helpers.zero_background(10) == 0
     assert np.all(helpers.zero_background(np.random.rand(10)) == 0)
+
+def test_CMB_background():
+    test_nu = np.logspace(np.log10(1),np.log10(1000),20)*constants.giga
+    test_z = (0,2)
+    for z in test_z:
+        CMB = helpers.generate_CMB_background(z=z)
+        assert np.all(CMB(test_nu) == helpers.B_nu(nu=test_nu,T=2.73*(1+z)))

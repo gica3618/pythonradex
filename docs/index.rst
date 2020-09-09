@@ -54,7 +54,7 @@ We need to define the geometry of the nebula. Let's consider a uniform sphere::
 
     >>> geometry = 'uniform sphere'
 
-See the detailed documentation of the nebula class below for more details on the available geometries. We need to set the kinetic temperature, total colum density, line profile type (square or Gaussian) and width of the emission lines in velocity space::
+See the detailed documentation of the nebula class below for more details on the available geometries. We need to set the kinetic temperature, total colum density of the molecule, line profile type (square or Gaussian) and width of the emission lines in velocity space::
 
     >>> Tkin = 150
     >>> Ntot = 1e16/constants.centi**2
@@ -66,11 +66,11 @@ Next, we need to tell ``pyhonradex`` the density of the collision partner(s). Th
     >>> coll_partner_densities = {'para-H2':100/constants.centi**3,
                                   'ortho-H2':250/constants.centi**3}
 
-Finally, we need to define the background radiation field. The CMB is already defined in the helpers module, so one could simply do::
+Finally, we need to define the background radiation field. A function representing the the CMB can be generated with the helpers module, so one could simply do::
 
-    >>> ext_background = helpers.CMB_background
+    >>> ext_background = helpers.generate_CMB_background(z=0)
 
-For no background, we can also use the helpers module::
+where z is the redshift. For no background, the zero background function is already defined in the helpers module::
 
     >>> ext_background = helpers.zero_background
 
@@ -81,9 +81,10 @@ A custom background field is also possible. For example, let's assume we want to
     >>> cloud_star_distance = 100*constants.au
     >>> star_solid_angle = R_Sun**2*np.pi/cloud_star_distance**2
 
+    >>> CMB_background = helpers.generate_CMB_background(z=0)
     >>> def star_and_CMB_background(nu):
             I_star = helpers.B_nu(nu=nu,T=T_Sun)*star_solid_angle/(4*np.pi)
-            return I_star + helpers.CMB_background(nu)
+            return I_star + CMB_background(nu)
 
     >>> ext_background = star_and_CMB_background
 

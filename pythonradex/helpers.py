@@ -36,22 +36,23 @@ def B_nu(nu,T):
     return (2*constants.h*nu**3/constants.c**2
            *(np.exp(constants.h*nu/(constants.k*T))-1)**-1)
 
-def CMB_background(nu):
-    '''CMB background
-    
-    Computes the CMB background radiation
+def generate_CMB_background(z=0):
+    '''generates a function that gives the CMB background at redshift z
     
     Parameters
     -----------
-    nu: float or numpy.ndarray
-        frequency in Hz
+    z: float (default: 0)
+        redshift
 
     Returns
     --------
-    numpy.ndarray
-        CMB background radiation intensity in [W/m2/Hz/sr]
+    function
+        function giving CMB background in [W/m2/Hz/sr] for an input frequency in [Hz]
         '''
-    return B_nu(nu=nu,T=2.73)
+    T_CMB = 2.73*(1+z)
+    def CMB_background(nu):
+        return B_nu(nu=nu,T=T_CMB)
+    return CMB_background
 
 def zero_background(nu):
     '''Zero intensity radiation field

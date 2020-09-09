@@ -16,7 +16,7 @@ filenames = ['co.dat','hcl.dat','ocs@xpol.dat']
 collider_names = ['ortho-H2','para-H2','H2']
 
 line_profile = 'square'
-ext_background = helpers.CMB_background
+ext_background = helpers.generate_CMB_background()
 
 Ntot_values = np.array((1e16,1e14,1e20))/constants.centi**2
 width_v_values = np.array((0.5,1,3))*constants.kilo
