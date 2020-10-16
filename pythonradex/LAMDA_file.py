@@ -15,7 +15,7 @@ def is_comment(line):
         return False
 
 
-def read(datafilepath,read_frequencies=False):
+def read(datafilepath,read_frequencies=False,read_quantum_numbers=False):
     '''
     Read a LAMDA data file.
 
@@ -30,8 +30,12 @@ def read(datafilepath,read_frequencies=False):
     read_frequencies : bool
         Read the radiative transition frequencies from the file rather than computing
         them from the level energies. This can be useful since frequencies are sometimes
-        given with more significant digits. Howver, the LAMDA standard does not
+        given with more significant digits. However, the LAMDA standard does not
         require a file to list the frequencies.
+
+    read_quantum_numbers : bool
+        Read the quantum numbers from the file. The LAMDA standard does not
+        require a file to list quantum numbers though.
 
     Returns
     -------
@@ -45,6 +49,8 @@ def read(datafilepath,read_frequencies=False):
 
         - 'collisional transitions': dict, containing lists of instances of the CollisionalTransition class for each collision partner appearing in the file
 
+        - 'quantum numbers': list containing quantum number string for all levels. Empty if read_quantum_numbers=False
+
         The elements of these lists are in the order they appear in the file
     '''
     #identifiers used in the LAMDA database files:
@@ -54,6 +60,7 @@ def read(datafilepath,read_frequencies=False):
     levels = []
     rad_transitions = []
     coll_transitions = {}
+    quantum_numbers = []
     for i,line in enumerate(datafile):
         if i<5:
             continue
@@ -65,7 +72,8 @@ def read(datafilepath,read_frequencies=False):
             n_levels = int(line)
             continue
         if 6 < i <= 6+n_levels:
-            leveldata = [float(string) for string in line.split()[:3]]
+            line_entries = line.split()
+            leveldata = [float(string) for string in line_entries[:3]]
             assert int(leveldata[0]) == i-6, 'level numeration not consistent'
             #transforming energy from cm-1 to J; level numbers starting from 0:
             lev = atomic_transition.Level(
@@ -73,6 +81,8 @@ def read(datafilepath,read_frequencies=False):
                         E=constants.c*constants.h*leveldata[1]/constants.centi,
                         number=int(leveldata[0])-1)
             levels.append(lev)
+            if read_quantum_numbers:
+                quantum_numbers.append(line_entries[3])
             continue
         if i == 8+n_levels:
             n_rad_transitions = int(line)
@@ -117,4 +127,4 @@ def read(datafilepath,read_frequencies=False):
                 continue
     datafile.close()
     return {'levels':levels,'radiative transitions':rad_transitions,
-            'collisional transitions':coll_transitions}
+            'collisional transitions':coll_transitions,'quantum numbers':quantum_numbers}

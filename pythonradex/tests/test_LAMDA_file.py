@@ -15,11 +15,13 @@ here = os.path.dirname(os.path.abspath(__file__))
 filepath = os.path.join(here,'co.dat')
 lamda_data = LAMDA_file.read(filepath)
 lamda_data_nu0_read = LAMDA_file.read(filepath,read_frequencies=True)
-all_levels = [lamda_data['levels'],lamda_data_nu0_read['levels']]
-all_rad_transitions = [lamda_data['radiative transitions'],
-                      lamda_data_nu0_read['radiative transitions']]
-all_coll_transitions = [lamda_data['collisional transitions'],
-                        lamda_data_nu0_read['collisional transitions']]
+lamda_data_nu0_qn_read = LAMDA_file.read(filepath,read_frequencies=True,
+                                         read_quantum_numbers=True)
+all_read_data = [lamda_data,lamda_data_nu0_read,lamda_data_nu0_qn_read]
+
+all_levels = [data['levels'] for data in all_read_data]
+all_rad_transitions = [data['radiative transitions'] for data in all_read_data]
+all_coll_transitions = [data['collisional transitions'] for data in all_read_data]
                         
 
 def test_levels():
@@ -80,3 +82,9 @@ def test_coll_transitions():
                              1.465E-11)) * constants.centi**3
         assert np.allclose(coeffs_oH2,test_coll_trans_oH2.coeffs(Tkin_data_oH2)['K21'],
                            atol=0)
+
+def test_quanum_number_reading():
+    for data in (lamda_data,lamda_data_nu0_read):
+        assert data['quantum numbers'] == []
+    for i,level in enumerate(lamda_data_nu0_qn_read['levels']):
+        assert lamda_data_nu0_qn_read['quantum numbers'][i] == str(i)
