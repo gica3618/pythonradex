@@ -5,7 +5,7 @@ more-itertools==7.2.0
 numpy==1.17.2
 packaging==19.2
 pluggy==0.13.0
-py==1.8.0
+py==1.10.0
 pyparsing==2.4.2
 pytest==5.1.2
 -e git+https://gica3618@github.com/gica3618/pythonradex.git@b0b3d3327f9cd2ee0ce95a3190bf27fd25d8f1a8#egg=pythonradex
