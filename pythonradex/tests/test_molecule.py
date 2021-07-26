@@ -13,7 +13,7 @@ import itertools
 here = os.path.dirname(os.path.abspath(__file__))
 lamda_filepath = os.path.join(here,'co.dat')
 
-test_molecule = molecule.Molecule.from_LAMDA_datafile(data_filepath=lamda_filepath)
+test_molecule = molecule.Molecule.from_LAMDA_datafile(datafilepath=lamda_filepath)
 line_profile_cls=atomic_transition.SquareLineProfile
 width_v=1*constants.kilo
 
@@ -22,10 +22,16 @@ emitting_molecule_std = molecule.EmittingMolecule(
                          rad_transitions=test_molecule.rad_transitions,
                          coll_transitions=test_molecule.coll_transitions,
                          line_profile_cls=line_profile_cls,width_v=width_v)
-
 emitting_molecule_lamda = molecule.EmittingMolecule.from_LAMDA_datafile(
-                           data_filepath=lamda_filepath,
+                           datafilepath=lamda_filepath,
                            line_profile_cls=line_profile_cls,width_v=width_v)
+emitting_molecule_lambda_frequencies = molecule.EmittingMolecule.from_LAMDA_datafile(
+                                        datafilepath=lamda_filepath,
+                                        line_profile_cls=line_profile_cls,
+                                        width_v=width_v,read_frequencies=True)
+molecule_lambda_frequencies = molecule.Molecule.from_LAMDA_datafile(
+                                datafilepath=lamda_filepath,read_frequencies=True)
+
 
 Tex = 101
 LTE_level_pop = emitting_molecule_lamda.LTE_level_pop(Tex)
@@ -56,31 +62,37 @@ def test_emitting_molecule_constructor():
             == test_molecule.rad_transitions[-1].low.number
 
 def test_emitting_molecule_constructor_from_LAMDA():
-    assert emitting_molecule_lamda.n_rad_transitions == 40
-    assert len(emitting_molecule_lamda.coll_transitions) == 2
-    assert len(emitting_molecule_lamda.levels) == 41
-    test_level = emitting_molecule_lamda.levels[1]
-    assert test_level.g == 3
-    assert test_level.number == 1
-    assert test_level.E == constants.h*constants.c*3.845033413/constants.centi
-    test_rad_trans = emitting_molecule_lamda.rad_transitions[2]
-    assert test_rad_trans.A21 == 2.497e-06
-    assert test_rad_trans.up.number == 3
-    assert test_rad_trans.low.number == 2
-    assert np.isclose(test_rad_trans.nu0,345.7959899*constants.giga)
-    assert np.isclose(test_rad_trans.Delta_E,test_rad_trans.nu0*constants.h,atol=0)
-    assert len(emitting_molecule_lamda.coll_transitions['para-H2']) == 820
-    test_coll_trans_pH2 = emitting_molecule_lamda.coll_transitions['para-H2'][3]
-    assert test_coll_trans_pH2.up.number == 3
-    assert test_coll_trans_pH2.low.number == 0
-    assert np.isclose(test_coll_trans_pH2.coeffs(5)['K21'],4.820E-12*constants.centi**3,
-                      atol=0)
-    test_coll_trans_oH2 = emitting_molecule_lamda.coll_transitions['ortho-H2'][2]
-    assert test_coll_trans_oH2.up.number == 2
-    assert test_coll_trans_oH2.low.number == 1
-    assert np.isclose(test_coll_trans_oH2.coeffs(10)['K21'],6.276E-11*constants.centi**3,
-                      atol=0)
-    
+    for mol in (emitting_molecule_lamda,emitting_molecule_lambda_frequencies):
+        assert mol.n_rad_transitions == 40
+        assert len(mol.coll_transitions) == 2
+        assert len(mol.levels) == 41
+        test_level = mol.levels[1]
+        assert test_level.g == 3
+        assert test_level.number == 1
+        assert test_level.E == constants.h*constants.c*3.845033413/constants.centi
+        test_rad_trans = mol.rad_transitions[2]
+        assert test_rad_trans.A21 == 2.497e-06
+        assert test_rad_trans.up.number == 3
+        assert test_rad_trans.low.number == 2
+        assert np.isclose(test_rad_trans.nu0,345.7959899*constants.giga)
+        assert np.isclose(test_rad_trans.Delta_E,test_rad_trans.nu0*constants.h,atol=0)
+        assert len(mol.coll_transitions['para-H2']) == 820
+        test_coll_trans_pH2 = mol.coll_transitions['para-H2'][3]
+        assert test_coll_trans_pH2.up.number == 3
+        assert test_coll_trans_pH2.low.number == 0
+        assert np.isclose(test_coll_trans_pH2.coeffs(5)['K21'],4.820E-12*constants.centi**3,
+                          atol=0)
+        test_coll_trans_oH2 = mol.coll_transitions['ortho-H2'][2]
+        assert test_coll_trans_oH2.up.number == 2
+        assert test_coll_trans_oH2.low.number == 1
+        assert np.isclose(test_coll_trans_oH2.coeffs(10)['K21'],6.276E-11*constants.centi**3,
+                          atol=0)
+
+def test_emitting_molecule_constructor_from_LAMDA_read_frequencies():
+    for mol in (molecule_lambda_frequencies,emitting_molecule_lambda_frequencies):
+        test_rad_trans = mol.rad_transitions[5]
+        assert test_rad_trans.nu0 == 691.4730763*constants.giga
+
 def test_Tex():
     assert np.allclose(Tex,emitting_molecule_lamda.get_Tex(LTE_level_pop),atol=0)
 
@@ -102,7 +114,7 @@ def test_external_Z():
                          line_profile_cls=line_profile_cls,width_v=width_v,
                          partition_function=Z)
     mol_LAMDA = molecule.EmittingMolecule.from_LAMDA_datafile(
-                          data_filepath=lamda_filepath,
+                          datafilepath=lamda_filepath,
                           line_profile_cls=line_profile_cls,width_v=width_v,
                           partition_function=Z)
     for mol in (mol_std,mol_LAMDA):

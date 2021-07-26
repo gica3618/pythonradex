@@ -151,14 +151,14 @@ class Nebula():
     line_profiles = {'Gaussian':atomic_transition.GaussianLineProfile,
                      'square':atomic_transition.SquareLineProfile}
 
-    def __init__(self,data_filepath,geometry,ext_background,Tkin,
+    def __init__(self,datafilepath,geometry,ext_background,Tkin,
                  coll_partner_densities,Ntot,line_profile,width_v,partition_function=None,
                  verbose=False):
         '''
         Parameters:    
         ---------------        
         
-        data_filepath: str
+        datafilepath: str
              path to the LAMDA data file that contains the atomic data
 
         geometry: str
@@ -198,7 +198,7 @@ class Nebula():
             if True, additional information is printed out
         '''
         self.emitting_molecule = EmittingMolecule.from_LAMDA_datafile(
-                                    data_filepath=data_filepath,
+                                    datafilepath=datafilepath,
                                     line_profile_cls=self.line_profiles[line_profile],
                                     width_v=width_v,partition_function=partition_function)
         self.geometry = self.geometries[geometry]()

@@ -63,7 +63,7 @@ def test_vs_RADEX():
                 Omega = get_solid_angle(geo)
                 print('looking at {:s}, {:s} (case {:d})'.format(specie,geo,i))
                 test_nebula = nebula.Nebula(
-                            data_filepath=lamda_filepath,geometry=geo,
+                            datafilepath=lamda_filepath,geometry=geo,
                             ext_background=ext_background,Tkin=Tkin,
                             coll_partner_densities=coll_partner_densities,
                             Ntot=Ntot,line_profile=line_profile,width_v=width_v)

@@ -12,7 +12,7 @@ import numpy as np
 here = os.path.dirname(os.path.abspath(__file__))
 lamda_filepath = os.path.join(here,'co.dat')
 
-test_molecule = molecule.Molecule.from_LAMDA_datafile(data_filepath=lamda_filepath)
+test_molecule = molecule.Molecule.from_LAMDA_datafile(datafilepath=lamda_filepath)
 Tkin = 100
 expected_LTE_level_pop = test_molecule.LTE_level_pop(Tkin)
 coll_partner_densities_default = {'para-H2':1e1/constants.centi**3,
@@ -90,22 +90,22 @@ def get_solid_angle(geo):
 for geo in geometries:
     nebulae[geo] = {}
     nebulae[geo]['general'] = nebula.Nebula(
-                             data_filepath=lamda_filepath,geometry=geo,
+                             datafilepath=lamda_filepath,geometry=geo,
                              ext_background=ext_background,Tkin=Tkin,
                              coll_partner_densities=coll_partner_densities_default,
                              Ntot=Ntot,line_profile=line_profile,width_v=width_v)
     nebulae[geo]['LTE'] = nebula.Nebula(
-                             data_filepath=lamda_filepath,geometry=geo,
+                             datafilepath=lamda_filepath,geometry=geo,
                              ext_background=ext_background,Tkin=Tkin,
                              coll_partner_densities=coll_partner_densities_large,
                              Ntot=Ntot,line_profile=line_profile,width_v=width_v)
     nebulae[geo]['thin_LTE'] = nebula.Nebula(
-                             data_filepath=lamda_filepath,geometry=geo,
+                             datafilepath=lamda_filepath,geometry=geo,
                              ext_background=ext_background,Tkin=Tkin,
                              coll_partner_densities=coll_partner_densities_large,
                              Ntot=Ntot/1e6,line_profile=line_profile,width_v=width_v)
     nebulae[geo]['thick_LTE'] = nebula.Nebula(
-                             data_filepath=lamda_filepath,geometry=geo,
+                             datafilepath=lamda_filepath,geometry=geo,
                              ext_background=ext_background,Tkin=Tkin,
                              coll_partner_densities=coll_partner_densities_large,
                              Ntot=Ntot*1e10,line_profile=line_profile,width_v=width_v)

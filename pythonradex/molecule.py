@@ -27,9 +27,11 @@ class Molecule():
         self.set_partition_function(partition_function=partition_function)
 
     @classmethod
-    def from_LAMDA_datafile(cls,data_filepath,partition_function=None):
+    def from_LAMDA_datafile(cls,datafilepath,read_frequencies=False,
+                            partition_function=None):
         """Alternative constructor using a LAMDA data file"""
-        data = LAMDA_file.read(data_filepath)
+        data = LAMDA_file.read(datafilepath=datafilepath,
+                               read_frequencies=read_frequencies)
         return cls(levels=data['levels'],rad_transitions=data['radiative transitions'],
                    coll_transitions=data['collisional transitions'],
                    partition_function=partition_function)
@@ -95,10 +97,11 @@ class EmittingMolecule(Molecule):
                                for rad_trans in self.rad_transitions]
 
     @classmethod
-    def from_LAMDA_datafile(cls,data_filepath,line_profile_cls,
-                            width_v,partition_function=None):
+    def from_LAMDA_datafile(cls,datafilepath,line_profile_cls,width_v,
+                            read_frequencies=False,partition_function=None):
         """Alternative constructor using a LAMDA data file"""
-        data = LAMDA_file.read(data_filepath)
+        data = LAMDA_file.read(datafilepath=datafilepath,
+                               read_frequencies=read_frequencies)
         return cls(levels=data['levels'],rad_transitions=data['radiative transitions'],
                    coll_transitions=data['collisional transitions'],
                    line_profile_cls=line_profile_cls,width_v=width_v,
