@@ -138,8 +138,10 @@ class Transition():
             excitation temperature in K
         '''
         x1,x2 = np.array(x1),np.array(x2)
-        return np.where((x1==0) & (x2==0),0,
+        Tex = np.where((x1==0) & (x2==0),0,
                         -self.Delta_E/(constants.k*np.log(self.low.g*x2/(self.up.g*x1))))
+        assert np.all(np.isfinite(Tex))
+        return Tex
 
 
 class RadiativeTransition(Transition):

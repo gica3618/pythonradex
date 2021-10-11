@@ -96,6 +96,8 @@ class RateEquations():
         b = np.zeros(self.molecule.n_levels)
         b[0] = 1
         fractional_population = np.linalg.solve(matrix,b)
+        assert np.all(fractional_population >= 0),\
+                  'invalid solution, potentially due to very high column density'
         return fractional_population
 
 
