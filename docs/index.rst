@@ -244,7 +244,7 @@ Numpy arrays are also allowed as input::
      'K12': array([6.88961220e-21, 4.64695547e-20, 2.45276671e-19, 9.61109445e-19])}
 
 
-Known issues:
+Known issues
 ==============
 
 - For very high column densities, the code crashes because some of the calculated fractioanl level populations become negative.
