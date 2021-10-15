@@ -61,20 +61,23 @@ def read(datafilepath,read_frequencies=False,read_quantum_numbers=False):
     rad_transitions = []
     coll_transitions = {}
     quantum_numbers = []
+    comment_offset = 0
     for i,line in enumerate(datafile):
-        if i<5:
+        if is_comment(line) or line=='' or line=='\n':
+            comment_offset += 1
             continue
-        if is_comment(line):
+        if i == 0+comment_offset:
             continue
-        if line=='' or line=='\n':
+        if i == 1+comment_offset:
             continue
-        if i == 5:
+        if i == 2+comment_offset:
             n_levels = int(line)
             continue
-        if 6 < i <= 6+n_levels:
+        if 3+comment_offset <= i < 3+comment_offset+n_levels:
             line_entries = line.split()
             leveldata = [float(string) for string in line_entries[:3]]
-            assert int(leveldata[0]) == i-6, 'level numeration not consistent'
+            assert int(leveldata[0]) == i-2-comment_offset,\
+                                     'level numeration not consistent'
             #transforming energy from cm-1 to J; level numbers starting from 0:
             lev = atomic_transition.Level(
                         g=leveldata[2],
@@ -84,10 +87,10 @@ def read(datafilepath,read_frequencies=False,read_quantum_numbers=False):
             if read_quantum_numbers:
                 quantum_numbers.append(line_entries[3])
             continue
-        if i == 8+n_levels:
+        if i == 3+comment_offset+n_levels:
             n_rad_transitions = int(line)
             continue
-        if 9+n_levels < i <= 9+n_levels+n_rad_transitions:
+        if 4+comment_offset+n_levels <= i < 4+comment_offset+n_levels+n_rad_transitions:
             radtransdata = [float(string) for string in line.split()]
             up = next(level for level in levels if level.number==radtransdata[1]-1)
             low = next(level for level in levels if level.number==radtransdata[2]-1)
@@ -97,23 +100,25 @@ def read(datafilepath,read_frequencies=False,read_quantum_numbers=False):
             rad_trans = atomic_transition.RadiativeTransition(**rad_trans_kwargs) 
             rad_transitions.append(rad_trans)
             continue
-        if i == 11+n_levels+n_rad_transitions:
+        if i == 4+comment_offset+n_levels+n_rad_transitions:
             coll_partner_offset = 0
             continue
-        if i == 13+n_levels+n_rad_transitions + coll_partner_offset:
+        if i == 5+comment_offset+n_levels+n_rad_transitions + coll_partner_offset:
             coll_ID = LAMDA_coll_ID[line[0]]
             coll_transitions[coll_ID] = []
             continue
-        if i == 15+n_levels+n_rad_transitions + coll_partner_offset:
+        if i == 6+comment_offset+n_levels+n_rad_transitions + coll_partner_offset:
             n_coll_transitions = int(line)
             continue
-        if i == 17+n_levels+n_rad_transitions + coll_partner_offset:
+        if i == 7+comment_offset+n_levels+n_rad_transitions + coll_partner_offset:
             continue #this lines contains the number of temperature elements
-        if i == 19+n_levels+n_rad_transitions + coll_partner_offset:
+        if i == 8+comment_offset+n_levels+n_rad_transitions + coll_partner_offset:
             coll_temperatures = np.array([float(string) for string in line.split()])
             continue
-        if 20+n_levels+n_rad_transitions+coll_partner_offset < i <=\
-             20+n_levels+n_rad_transitions+coll_partner_offset+n_coll_transitions:
+        last_coll_trans_i = 9+comment_offset+n_levels+n_rad_transitions\
+                               +coll_partner_offset+n_coll_transitions-1
+        if 9+comment_offset+n_levels+n_rad_transitions+coll_partner_offset <= i <=\
+                 last_coll_trans_i:
             coll_trans_data = [float(string) for string in line.split()]
             up = next(level for level in levels if level.number==coll_trans_data[1]-1)
             low = next(level for level in levels if level.number==coll_trans_data[2]-1)
@@ -122,8 +127,8 @@ def read(datafilepath,read_frequencies=False,read_quantum_numbers=False):
                                   up=up,low=low,K21_data=K21_data,
                                   Tkin_data=coll_temperatures)
             coll_transitions[coll_ID].append(coll_trans)
-            if i == 20+n_levels+n_rad_transitions+coll_partner_offset+n_coll_transitions:
-                coll_partner_offset += 9+n_coll_transitions
+            if i == last_coll_trans_i:
+                coll_partner_offset += 4+n_coll_transitions
                 continue
     datafile.close()
     return {'levels':levels,'radiative transitions':rad_transitions,
