@@ -16,7 +16,8 @@ class Molecule():
     def __init__(self,levels,rad_transitions,coll_transitions,partition_function=None):
         '''levels is a list of instances of the Level class
         rad_transitions is a list of instances of the RadiativeTransition class
-        coll_transitions is a list of instances of the CollisionalTransition class'''
+        coll_transitions is a dictionary with an entry for each collision partner, where
+        each entry is a list of instances of the CollisionalTransition class'''
         self.levels = levels
         self.rad_transitions = rad_transitions #list
         #dictionary with list of collisional transitions for each collision
@@ -84,7 +85,8 @@ class EmittingMolecule(Molecule):
                  width_v,partition_function=None):
         '''levels is a list of instances of the Level class
         rad_transitions is a list of instances of the RadiativeTransition class
-        coll_transitions is a list of instances of the CollisionalTransition class
+        coll_transitions is a dictionary with an entry for each collision partner, where
+        each entry is a list of instances of the CollisionalTransition class
         line_profile_cls is the line profile class used to represent the line profile
         width_v is the width of the line in velocity'''
         Molecule.__init__(self,levels=levels,rad_transitions=rad_transitions,
