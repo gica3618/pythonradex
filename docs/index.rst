@@ -247,7 +247,7 @@ Numpy arrays are also allowed as input::
 Known issues
 ==============
 
-- For high column densities and low collider densities, the code can crash, presumably because some of the calculated fractional level populations become negative.
+- For high column densities and/or low collider densities, the code can crash, presumably because some of the calculated fractional level populations become negative.
 
 
 Radiative transfer theory

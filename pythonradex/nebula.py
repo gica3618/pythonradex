@@ -97,7 +97,7 @@ class RateEquations():
         b[0] = 1
         fractional_population = np.linalg.solve(matrix,b)
         assert np.all(fractional_population >= 0),\
-                  'invalid solution, potentially due to high column density and low collider density'
+                  'invalid solution, potentially due to high column density and/or low collider density'
         return fractional_population
 
 
