@@ -4,7 +4,6 @@ Created on Thu Nov 16 12:09:51 2017
 
 @author: gianni
 """
-#test against RADEX
 
 import os
 from pythonradex import nebula,helpers
@@ -104,10 +103,9 @@ def test_vs_RADEX():
                     rtol_tau = 0.5
                     atol_Tex = 1
                     rtol_Tex = 0.5
-                assert np.isclose(RADEX_flux,pyradex_flux,atol=atol_flux,rtol=rtol_flux)
+                assert np.isclose(RADEX_flux,pyradex_flux,atol=atol_flux,
+                                  rtol=rtol_flux)
                 assert np.isclose(pyradex_tau,tau_nu,atol=atol_tau,rtol=rtol_tau)
                 assert np.isclose(Tex,pyradex_Tex,atol=atol_Tex,rtol=rtol_Tex)
-                #assert np.isclose(RADEX_flux,pyradex_flux,atol=0,rtol=0.7)
-                #assert np.isclose(pyradex_tau,tau_nu,atol=atol_tau,rtol=0.1)
             print('\n')
         print('\n')
