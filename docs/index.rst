@@ -247,7 +247,7 @@ Numpy arrays are also allowed as input::
 Negative optical depth
 ==============
 
-As discussed in [vanderTak07]_, for certain conditions (especially low densities and/or strong radiation field [vanderTak07]_), negative optical depth can arise due to a level population inversion. This requires non-local treatement of the radiative transfer, which is not possible with ``pyhonradex``. The results should still be valid, though less accurate, for optical depths close to zero (:math:`\tau_\nu\gtrsim-0.1`). However, the results for more strongly negative optical depths should be ignored [vanderTak07]_. ``pyhonradex`` prints a warning if the solution contains negative optical depths.
+As discussed in [vanderTak07]_, for certain parameters ("especially low density and/or strong radiation field", [vanderTak07]_), negative optical depth can arise due to a level population inversion. This requires non-local treatement of the radiative transfer, which is not possible with ``pyhonradex``. The results should still be valid, though less accurate, for optical depths close to zero (:math:`\tau_\nu\gtrsim-0.1`). However, the results for more strongly negative optical depths should be ignored [vanderTak07]_. ``pyhonradex`` prints a warning if the solution contains negative optical depths.
 
 Radiative transfer theory
 ===========================
