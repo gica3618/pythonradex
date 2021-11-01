@@ -50,7 +50,7 @@ class TaylorEscapeProbability():
     # use Taylor expansion if tau is below epsilon; this is to avoid numerical
     #problems with the anlytical formula to compute the escape probability
     tau_epsilon = 0.00005
-    large_tau = 5
+    min_tau = -1
 
     def beta_analytical(self,tau_nu):
         raise NotImplementedError
@@ -58,26 +58,33 @@ class TaylorEscapeProbability():
     def beta_Taylor(self,tau_nu):
         raise NotImplementedError
 
-    def beta_large_tau(self,tau_nu):
-        raise NotImplementedError
-
     def beta(self,tau_nu):
         '''Computes the escape probability from the optical depth tau_nu.'''
-        with np.errstate(divide='ignore',invalid='ignore',over='ignore'):
-            #Note that I do the same thing as RADEX in that I consider abs(tau) to
-            #decide which function to use, but then use tau in the actual function. For
-            #negative tau, I find this quite strange. For example, for a uniform sphere,
-            #this results in beta -> 0 if tau -> -inf, while in the analytical solution,
-            #beta would go to inf. However, the latter will result in crashing,
-            #so this might just be RADEX's way to stabilize the code. In any case,
-            #the RADEX paper advises that negativ tau (inverted population) cannot be
-            #treated correctly by a non-local code like RADEX, and that results for
-            #lines with tau<~1 should be ignored
-            tau_nu = np.array(tau_nu)
-            prob = np.where(np.abs(tau_nu) < self.tau_epsilon,self.beta_Taylor(tau_nu),
-                            np.where(np.abs(tau_nu) > self.large_tau,
-                                     self.beta_large_tau(tau_nu),
-                                     self.beta_analytical(tau_nu)))
+        #with np.errstate(divide='ignore',invalid='ignore',over='ignore'):
+        #the RADEX paper advises that negativ tau (inverted population) cannot be
+        #treated correctly by a non-local code like RADEX, and that results for
+        #lines with tau<~1 should be ignored
+        #Moreover, negative tau can make the code crash: very negative tau
+        #leads to very large transition rates, which makes the matrix of the
+        #rate equations ill-conditioned.
+        #thus, for tau < -1, I just take abs(tau). Note that this is different
+        #from RADEX: they make something quite strange: the have different
+        #approximations for positive large, normal and small tau. But then they
+        #use abs(tau) to decide which function to use, but then use tau in that
+        #function
+        tau_nu = np.atleast_1d(np.array(tau_nu))
+        prob = np.ones_like(tau_nu)*np.inf
+        normal_tau_region = tau_nu > self.tau_epsilon
+        prob[normal_tau_region] = self.beta_analytical(tau_nu[normal_tau_region])
+        small_tau_region = np.abs(tau_nu) <= self.tau_epsilon
+        #here I use tau even if tau < 0:
+        prob[small_tau_region] = self.beta_Taylor(tau_nu[small_tau_region])
+        negative_tau_region = (tau_nu >= self.min_tau) & (tau_nu<-self.tau_epsilon)
+        prob[negative_tau_region] = self.beta_analytical(tau_nu[negative_tau_region])
+        unreliable_negative_region = tau_nu < self.min_tau
+        #here I just use abs(tau) to stabilize the code
+        prob[unreliable_negative_region] = self.beta_analytical(
+                                  np.abs(tau_nu[unreliable_negative_region]))
         assert np.all(np.isfinite(prob))
         return prob
     
@@ -106,9 +113,6 @@ class EscapeProbabilityUniformSphere(TaylorEscapeProbability):
         #calculate the limit as tau->0, use rule of L'Hopital
         return (1 - 0.375*tau_nu + 0.1*tau_nu**2 - 0.0208333*tau_nu**3
                 + 0.00357143*tau_nu**4)
-
-    def beta_large_tau(self,tau_nu):
-        return 1.5/tau_nu
 
 
 class UniformSphere(EscapeProbabilityUniformSphere,FluxUniformSphere):
@@ -171,6 +175,3 @@ class UniformShockSlabRADEX(TaylorEscapeProbability,Flux0D):
     def beta_Taylor(self,tau_nu):
         return 1 - (3*tau_nu)/2 + (3*tau_nu**2)/2 - (9*tau_nu**3)/8 +\
                (27*tau_nu**4)/40 - (27*tau_nu**5)/80
-
-    def beta_large_tau(self,tau_nu):
-        return 1/(3*tau_nu)

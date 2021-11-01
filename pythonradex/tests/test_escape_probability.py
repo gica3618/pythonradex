@@ -45,16 +45,13 @@ def test_esc_prob_uniform_sphere():
     esc_prob = escape_probability.EscapeProbabilityUniformSphere()
     assert esc_prob.beta(0) == 1
     assert np.all(esc_prob.beta(np.zeros(4)) == np.ones(4))
-    assert large_tau_nu > esc_prob.large_tau
     assert np.isclose(esc_prob.beta(large_tau_nu),0,atol=1e-2,rtol=0)
     assert np.allclose(esc_prob.beta(np.ones(4)*large_tau_nu),np.zeros(4),
                        atol=1e-2,rtol=0)
     assert np.isclose(esc_prob.beta_analytical(esc_prob.tau_epsilon),
                       esc_prob.beta_Taylor(esc_prob.tau_epsilon),rtol=1e-2,atol=0)
-    assert np.isclose(esc_prob.beta_analytical(esc_prob.large_tau),
-                      esc_prob.beta_large_tau(esc_prob.large_tau),rtol=0,atol=0.05)
     assert np.isclose(esc_prob.beta(-1e-2),1,atol=0,rtol=1e-2)
-    assert np.isclose(esc_prob.beta(-large_tau_nu),1.5/-large_tau_nu,atol=0,rtol=1e-6)
+    assert np.isclose(esc_prob.beta(-large_tau_nu),0,atol=1e-2,rtol=0)
 
 uniform_sphere = escape_probability.UniformSphere()
 radex_uniform_sphere = escape_probability.UniformSphereRADEX()
@@ -77,20 +74,34 @@ taylor_gemoetries = [uniform_sphere,radex_uniform_sphere,radex_uniform_slab]
 def test_taylor_geometries():
     limit_tau_nu = escape_probability.TaylorEscapeProbability.tau_epsilon
     epsilon_tau_nu = 0.01*limit_tau_nu
+    special_tau_nu_values = [escape_probability.TaylorEscapeProbability.min_tau,
+                             -escape_probability.TaylorEscapeProbability.tau_epsilon,
+                             escape_probability.TaylorEscapeProbability.tau_epsilon]
+    negative_tau_samples = np.linspace(escape_probability.TaylorEscapeProbability.min_tau,
+                                       -1.01*escape_probability.TaylorEscapeProbability.tau_epsilon,
+                                       10)
     for geo in taylor_gemoetries:
         prob_Taylor = geo.beta_Taylor(limit_tau_nu-epsilon_tau_nu)
         prob_analytical = geo.beta_analytical(limit_tau_nu+epsilon_tau_nu)
         prob = geo.beta(limit_tau_nu)
-        assert np.allclose([prob,prob_Taylor,prob_analytical],prob,rtol=1e-2,atol=0)
-        prob_large_tau = geo.beta_large_tau(geo.large_tau+epsilon_tau_nu)
-        prob_analytical_large_tau = geo.beta_analytical(geo.large_tau-epsilon_tau_nu)
-        output_prob_large_tau = geo.beta(geo.large_tau)
-        assert np.allclose([prob_large_tau,prob_analytical_large_tau,output_prob_large_tau],
-                           output_prob_large_tau,rtol=0,atol=0.05)
+        for p in [prob_Taylor,prob_analytical]:
+            assert np.isclose(p,prob,rtol=1e-2)
         assert geo.beta(-limit_tau_nu+epsilon_tau_nu)\
                      == geo.beta_Taylor(-limit_tau_nu+epsilon_tau_nu)
-        assert geo.beta(-large_tau_nu) == geo.beta_large_tau(-large_tau_nu)
-        assert geo.beta(-1) == geo.beta_analytical(-1)
+        assert np.isclose(geo.beta(-large_tau_nu),0,rtol=0,atol=1e-2)
+        for neg_tau in negative_tau_samples:
+            assert geo.beta(neg_tau) == geo.beta_analytical(neg_tau)
+        assert geo.beta(-escape_probability.TaylorEscapeProbability.tau_epsilon/2)\
+             == geo.beta_Taylor(-escape_probability.TaylorEscapeProbability.tau_epsilon/2)
+        #check that everything works at the points that limit the different regions:
+        for spec_tau_nu_value in special_tau_nu_values:
+            geo.beta(spec_tau_nu_value)
+
+def test_uniform_slab_negative_tau():
+    negative_tau_samples = [-0.01,-1,-5,-10]
+    geo = escape_probability.UniformFaceOnSlab()
+    for neg_tau in negative_tau_samples:
+        assert geo.beta(neg_tau) == 1
 
 all_geometries = [uniform_sphere,radex_uniform_sphere,uniform_slab,radex_uniform_slab]
 
