@@ -14,7 +14,7 @@ here = os.path.dirname(os.path.abspath(__file__))
 
 filepaths = [os.path.join(here,'co.dat'),
              os.path.join(here,'co_with_additional_comments.dat')]
-lamda_data = [LAMDA_file.read(filepath) for filepath in filepaths]
+lamda_data = [LAMDA_file.read(filepath,read_frequencies=False) for filepath in filepaths]
 lamda_data_nu0_read = [LAMDA_file.read(filepath,read_frequencies=True) for filepath
                        in filepaths]
 lamda_data_nu0_qn_read = [LAMDA_file.read(filepath,read_frequencies=True,read_quantum_numbers=True)

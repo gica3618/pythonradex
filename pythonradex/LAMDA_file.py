@@ -15,7 +15,7 @@ def is_comment(line):
         return False
 
 
-def read(datafilepath,read_frequencies=False,read_quantum_numbers=False):
+def read(datafilepath,read_frequencies,read_quantum_numbers=False):
     '''
     Read a LAMDA data file.
 
