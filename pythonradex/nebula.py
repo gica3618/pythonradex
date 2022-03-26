@@ -1,7 +1,8 @@
-from scipy import constants
+from scipy import constants,linalg
 import numpy as np
 from pythonradex import helpers,escape_probability,atomic_transition
 from pythonradex.molecule import EmittingMolecule
+import warnings
 
 
 class RateEquations():
@@ -95,9 +96,10 @@ class RateEquations():
         #steady state; A*x=b, x=fractional population that we search:
         b = np.zeros(self.molecule.n_levels)
         b[0] = 1
-        fractional_population = np.linalg.solve(matrix,b)
+        fractional_population = linalg.solve(matrix,b)
         assert np.all(fractional_population >= 0),\
-                  'invalid solution, potentially due to very high column density'
+                  'negative level population, potentially due to high column'\
+                  +'density and/or low collider density'
         return fractional_population
 
 
@@ -145,7 +147,7 @@ class Nebula():
     relative_convergence = 1e-2
     min_iter = 30
     max_iter = 1000
-    underrelaxation = 0.3
+    underrelaxation = 0.3#RADEX uses 0.3
     geometries = {'uniform sphere':escape_probability.UniformSphere,
                   'uniform sphere RADEX':escape_probability.UniformSphereRADEX,
                   'face-on uniform slab':escape_probability.UniformFaceOnSlab,
@@ -259,6 +261,14 @@ class Nebula():
             print('converged in {:d} iterations'.format(counter))
         self.tau_nu0 = self.emitting_molecule.get_tau_nu0(
                                    N=self.Ntot,level_population=level_pop)
+        if np.any(self.tau_nu0 < 0):
+            negative_tau_transition_indices = np.where(self.tau_nu0 < 0)[0]
+            negative_tau_transitions = [self.emitting_molecule.rad_transitions[i]
+                                        for i in negative_tau_transition_indices]
+            warnings.warn('negative optical depth!')
+            for i,trans in zip(negative_tau_transition_indices,
+                               negative_tau_transitions):
+                print('{:s}: tau_nu0 = {:g}'.format(trans.name,self.tau_nu0[i]))
         self.level_pop = level_pop
         self.Tex = self.emitting_molecule.get_Tex(level_pop)
 

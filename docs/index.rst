@@ -244,11 +244,10 @@ Numpy arrays are also allowed as input::
      'K12': array([6.88961220e-21, 4.64695547e-20, 2.45276671e-19, 9.61109445e-19])}
 
 
-Known issues
+Negative optical depth
 ==============
 
-- For very high column densities, the code crashes because some of the calculated fractional level populations become negative.
-
+As discussed in [vanderTak07]_, for certain parameters ("especially low density and/or strong radiation field", [vanderTak07]_), negative optical depth can arise due to a level population inversion. This requires non-local treatement of the radiative transfer, which is not possible with ``pyhonradex``. The results should still be valid, though less accurate, for optical depths only slightly negative (:math:`\tau_\nu\gtrsim-0.1`). However, the results for more strongly negative optical depths should be ignored [vanderTak07]_. ``pyhonradex`` prints a warning if the solution contains negative optical depths.
 
 Radiative transfer theory
 ===========================

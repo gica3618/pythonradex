@@ -50,6 +50,7 @@ class TaylorEscapeProbability():
     # use Taylor expansion if tau is below epsilon; this is to avoid numerical
     #problems with the anlytical formula to compute the escape probability
     tau_epsilon = 0.00005
+    min_tau = -1
 
     def beta_analytical(self,tau_nu):
         raise NotImplementedError
@@ -58,17 +59,39 @@ class TaylorEscapeProbability():
         raise NotImplementedError
 
     def beta(self,tau_nu):
-        '''Computes the escape probability from the optical depth tau_nu'''
-        with np.errstate(divide='ignore',invalid='ignore',over='ignore'):
-            prob = np.where(tau_nu < self.tau_epsilon,self.beta_Taylor(tau_nu),
-                            self.beta_analytical(tau_nu))
+        '''Computes the escape probability from the optical depth tau_nu.'''
+        #with np.errstate(divide='ignore',invalid='ignore',over='ignore'):
+        #the RADEX paper advises that negativ tau (inverted population) cannot be
+        #treated correctly by a non-local code like RADEX, and that results for
+        #lines with tau<~1 should be ignored
+        #Moreover, negative tau can make the code crash: very negative tau
+        #leads to very large transition rates, which makes the matrix of the
+        #rate equations ill-conditioned.
+        #thus, for tau < -1, I just take abs(tau). Note that this is different
+        #from RADEX: they make something quite strange: the have different
+        #approximations for positive large, normal and small tau. But then they
+        #use abs(tau) to decide which function to use, but then use tau in that
+        #function
+        tau_nu = np.atleast_1d(np.array(tau_nu))
+        prob = np.ones_like(tau_nu)*np.inf
+        normal_tau_region = tau_nu > self.tau_epsilon
+        prob[normal_tau_region] = self.beta_analytical(tau_nu[normal_tau_region])
+        small_tau_region = np.abs(tau_nu) <= self.tau_epsilon
+        #here I use tau even if tau < 0:
+        prob[small_tau_region] = self.beta_Taylor(tau_nu[small_tau_region])
+        negative_tau_region = (tau_nu >= self.min_tau) & (tau_nu<-self.tau_epsilon)
+        prob[negative_tau_region] = self.beta_analytical(tau_nu[negative_tau_region])
+        unreliable_negative_region = tau_nu < self.min_tau
+        #here I just use abs(tau) to stabilize the code
+        prob[unreliable_negative_region] = self.beta_analytical(
+                                  np.abs(tau_nu[unreliable_negative_region]))
         assert np.all(np.isfinite(prob))
         return prob
     
 
 class EscapeProbabilityUniformSphere(TaylorEscapeProbability):
     
-    '''Represents the escape probability from a uniform spherical medium.'''    
+    '''Represents the escape probability from a uniform spherical medium.'''  
 
     def beta_analytical(self,tau_nu):
         '''Computes the escape probability analytically, given the optical
@@ -130,12 +153,14 @@ class UniformFaceOnSlab(Flux0D):
 
     def interpolated_integral_term(self,tau):
         interp = np.interp(x=tau,xp=self.tau_grid,fp=self.integral_term_grid,
-                          left=0,right=0.5)
+                           left=0,right=0.5)
         return np.where(tau<np.min(self.tau_grid),tau,interp)
 
     def beta(self,tau_nu):
         with np.errstate(divide='ignore',invalid='ignore',over='ignore'):
             prob = self.interpolated_integral_term(tau_nu)/tau_nu
+        #for negative tau, prob will be 1, which is fine if tau is close to 0, but
+        #not correct for very negative tau, so results are not valid in that case
         prob = np.where(tau_nu<self.min_tau_nu,1,prob)
         assert np.all(np.isfinite(prob))
         return prob
