@@ -14,7 +14,7 @@ here = os.path.dirname(os.path.abspath(__file__))
 filenames = ['co.dat','hcl.dat','ocs@xpol.dat']
 collider_names = ['ortho-H2','para-H2','H2']
 
-line_profile = 'square'
+line_profile = 'rectangular'
 ext_background = helpers.generate_CMB_background()
 
 Ntot_values = np.array((1e16,1e14,1e20))/constants.centi**2

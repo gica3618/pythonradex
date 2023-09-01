@@ -65,6 +65,8 @@ class RateEquations():
             matrix[line.low.number,line.low.number] += -up
 
     def add_coll_rates(self,matrix):
+        #TODO this function is a major performance hindrance
+        #need to remove the double for loop
         '''add the rates of collisional transitions to the matrix representing
         the equations of SE'''
         for coll_part_name,coll_part_dens in self.coll_partner_densities.items():
@@ -153,7 +155,7 @@ class Nebula():
                   'face-on uniform slab':escape_probability.UniformFaceOnSlab,
                   'uniform shock slab RADEX':escape_probability.UniformShockSlabRADEX}
     line_profiles = {'Gaussian':atomic_transition.GaussianLineProfile,
-                     'square':atomic_transition.SquareLineProfile}
+                     'rectangular':atomic_transition.RectangularLineProfile}
 
     def __init__(self,datafilepath,geometry,ext_background,Tkin,
                  coll_partner_densities,Ntot,line_profile,width_v,partition_function=None,
@@ -189,7 +191,7 @@ class Nebula():
             total column density in [1/m2]
 
         line_profile: str
-            type of line profile. Available are "Gaussian" and "square".
+            type of line profile. Available are "Gaussian" and "rectangular".
 
         width_v: float
             width of the line in [m/s]. For Gaussian, this is the FWHM.

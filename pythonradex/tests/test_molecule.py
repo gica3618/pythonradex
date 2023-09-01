@@ -14,7 +14,7 @@ here = os.path.dirname(os.path.abspath(__file__))
 lamda_filepath = os.path.join(here,'co.dat')
 
 test_molecule = molecule.Molecule.from_LAMDA_datafile(datafilepath=lamda_filepath)
-line_profile_cls=atomic_transition.SquareLineProfile
+line_profile_cls=atomic_transition.RectangularLineProfile
 width_v=1*constants.kilo
 
 emitting_molecule_std = molecule.EmittingMolecule(

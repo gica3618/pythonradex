@@ -48,17 +48,17 @@ Let us consider a typical example of how ``pyhonradex`` is used. Note that all i
 
 ``pyhonradex`` needs a file containing the atomic data. Download the file for CO from the LAMDA_ database. We need to tell ``pyhonradex`` where the file is located::
 
-    >>> data_filepath = 'path/to/file/co.dat'
+    >>> datafilepath = 'path/to/file/co.dat'
 
 We need to define the geometry of the nebula. Let's consider a uniform sphere::
 
     >>> geometry = 'uniform sphere'
 
-See the detailed documentation of the nebula class below for more details on the available geometries. We need to set the kinetic temperature, total colum density of the molecule, line profile type (square or Gaussian) and width of the emission lines in velocity space::
+See the detailed documentation of the nebula class below for more details on the available geometries. We need to set the kinetic temperature, total colum density of the molecule, line profile type (rectangular or Gaussian) and width of the emission lines in velocity space::
 
     >>> Tkin = 150
     >>> Ntot = 1e16/constants.centi**2
-    >>> line_profile = 'square'
+    >>> line_profile = 'rectangular'
     >>> width_v = 2*constants.kilo
 
 Next, we need to tell ``pyhonradex`` the density of the collision partner(s). This is implemented as a dictionary. For example, let's assume that the density of ortho- and para-H\ :sub:`2` is 100 cm\ :sup:`-3` and 250 cm\ :sup:`-3` respecitvely::
@@ -93,7 +93,7 @@ where the Planck function defined in the helpers module is used.
 Now we can initialise the object that is used to solve the radiative transfer::
 
     >>> example_nebula = nebula.Nebula(
-                        data_filepath=data_filepath,geometry=geometry,
+                        datafilepath=datafilepath,geometry=geometry,
                         ext_background=ext_background,Tkin=Tkin,
                         coll_partner_densities=coll_partner_densities,
                         Ntot=Ntot,line_profile=line_profile,width_v=width_v)
@@ -153,8 +153,8 @@ Reading a file from the LAMDA database
 ``pythonradex`` also provides a useful function to read data files from the LAMDA_ database. Let's see how it can be used::
 
     >>> from pythonradex import LAMDA_file
-    >>> data_filepath = 'path/to/datafile/co.dat'
-    >>> data = LAMDA_file.read(data_filepath)
+    >>> datafilepath = 'path/to/datafile/co.dat'
+    >>> data = LAMDA_file.read(datafilepath)
 
 The data is stored in a dictionary containing all levels, radiative transitions and collisional transitions.::
 

@@ -34,8 +34,8 @@ class TestLineProfile():
     nu0 = 400*constants.giga
     width_v = 10*constants.kilo
     gauss_line_profile = atomic_transition.GaussianLineProfile(nu0=nu0,width_v=width_v)
-    square_line_profile = atomic_transition.SquareLineProfile(nu0=nu0,width_v=width_v)
-    profiles = (gauss_line_profile,square_line_profile)
+    rectangular_line_profile = atomic_transition.RectangularLineProfile(nu0=nu0,width_v=width_v)
+    profiles = (gauss_line_profile,rectangular_line_profile)
     test_v = np.linspace(-3*width_v,3*width_v,600)
 
     def test_abstract_line_profile(self):
@@ -57,13 +57,13 @@ class TestLineProfile():
             assert np.isclose(asymmetric_average,np.mean((left_value,right_value)),
                               rtol=1e-2,atol=0)
     
-    def test_square_profile_average_over_nu(self):
+    def test_rectangular_profile_average_over_nu(self):
         np.random.seed(0)
-        nu_array = self.square_line_profile.nu_array
+        nu_array = self.rectangular_line_profile.nu_array
         random_values = np.random.rand(nu_array.size)
-        profile_window = np.where(self.square_line_profile.phi_nu(nu_array)==0,0,1)
+        profile_window = np.where(self.rectangular_line_profile.phi_nu(nu_array)==0,0,1)
         expected_average = np.sum(profile_window*random_values)/np.count_nonzero(profile_window)
-        average = self.square_line_profile.average_over_nu_array(random_values)
+        average = self.rectangular_line_profile.average_over_nu_array(random_values)
         assert np.isclose(expected_average,average,rtol=5e-2,atol=0)
     
     def test_normalisation(self):
@@ -74,21 +74,21 @@ class TestLineProfile():
                  assert np.isclose(intg_prof,1,rtol=1e-2,atol=0)
 
     def test_profile_shape(self):
-        square_phi_nu = self.square_line_profile.phi_nu_array
-        square_phi_v = self.square_line_profile.phi_v(self.test_v)
-        for square_phi,x_axis,width in zip((square_phi_nu,square_phi_v),
-                                     (self.square_line_profile.nu_array,self.test_v),
-                                     (self.square_line_profile.width_nu,self.width_v)):
-            assert square_phi[0] ==  square_phi[-1] == 0
-            assert square_phi[square_phi.size//2] > 0
-            square_indices = np.where(square_phi>0)[0]
-            square_window_size = x_axis[square_indices[-1]] - x_axis[square_indices[0]]
-            assert np.isclose(square_window_size,width,rtol=5e-2,atol=0)
+        rectangular_phi_nu = self.rectangular_line_profile.phi_nu_array
+        rectangular_phi_v = self.rectangular_line_profile.phi_v(self.test_v)
+        for rectangular_phi,x_axis,width in zip((rectangular_phi_nu,rectangular_phi_v),
+                                     (self.rectangular_line_profile.nu_array,self.test_v),
+                                     (self.rectangular_line_profile.width_nu,self.width_v)):
+            assert rectangular_phi[0] ==  rectangular_phi[-1] == 0
+            assert rectangular_phi[rectangular_phi.size//2] > 0
+            rectangular_indices = np.where(rectangular_phi>0)[0]
+            rectangular_window_size = x_axis[rectangular_indices[-1]] - x_axis[rectangular_indices[0]]
+            assert np.isclose(rectangular_window_size,width,rtol=5e-2,atol=0)
         gauss_phi_nu = self.gauss_line_profile.phi_nu_array
         gauss_phi_v = self.gauss_line_profile.phi_v(self.test_v)
         for gauss_phi,x_axis,width in zip((gauss_phi_nu,gauss_phi_v),
-                                          (self.square_line_profile.nu_array,self.test_v),
-                                          (self.square_line_profile.width_nu,self.width_v)):
+                                          (self.rectangular_line_profile.nu_array,self.test_v),
+                                          (self.rectangular_line_profile.width_nu,self.width_v)):
             assert np.all(np.array((gauss_phi[0],gauss_phi[-1]))
                           <gauss_phi[gauss_phi.size//2])
             max_index = np.argmax(gauss_phi)
@@ -101,7 +101,7 @@ class TestTransition():
 
     up = atomic_transition.Level(g=1,E=1,number=1)
     low = atomic_transition.Level(g=1,E=0,number=0)
-    line_profile_cls = atomic_transition.SquareLineProfile
+    line_profile_cls = atomic_transition.RectangularLineProfile
     A21 = 1
     radiative_transition = atomic_transition.RadiativeTransition(
                              up=up,low=low,A21=A21)

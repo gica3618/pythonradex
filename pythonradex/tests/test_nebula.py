@@ -69,7 +69,7 @@ def test_compute_level_populations_LTE_rad_and_coll():
 
 geometries = list(nebula.Nebula.geometries.keys())
 Ntot = 1e15/constants.centi**2
-line_profile = 'square'
+line_profile = 'rectangular'
 width_v = 2*constants.kilo
 ext_background = helpers.generate_CMB_background()
 nebulae = {}

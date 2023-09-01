@@ -66,9 +66,9 @@ class GaussianLineProfile(LineProfile):
         return self.normalisation*np.exp(-(nu-self.nu0)**2/(2*self.sigma_nu**2))
 
 
-class SquareLineProfile(LineProfile):
+class RectangularLineProfile(LineProfile):
 
-    '''Represents a square line profile, i.e. constant over width_v, 0 outside'''
+    '''Represents a rectangular line profile, i.e. constant over width_v, 0 outside'''
 
     def initialise_phi_nu_params(self):
         '''compute the normalisation of the line profile'''

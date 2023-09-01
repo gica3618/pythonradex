@@ -32,5 +32,5 @@ def test_negative_tau():
                             datafilepath=os.path.join(here,'co.dat'),
                             geometry=geo,ext_background=ext_background,Tkin=Tkin,
                             coll_partner_densities=coll_partner_densities,
-                            Ntot=Ntot,line_profile='square',width_v=width_v)
+                            Ntot=Ntot,line_profile='rectangular',width_v=width_v)
             test_nebula.solve_radiative_transfer()
