@@ -121,17 +121,17 @@ Here, 'up' and 'low' are the indices of the upper and lower level of the transit
 The nebula object has now a number of attributes that contain the result of the calculation. For example, to access the excitation temperature of the third transition (as listed in the LAMDA datafile; note that the first index is 0), you can do::
 
     >>> example_nebula.Tex[2]
-        8.1489416640449
+        8.148939306928643
 
 Similarly, for the fractional population of the 4th level, do::
 
     >>> example_nebula.level_pop[3]
-        0.0389655721648867
+        0.03896557884404705
 
 And for the optical depth at the rest frequency of the lowest transition::
 
     >>> example_nebula.tau_nu0[0]
-        0.5639365145264359
+        0.5639363934610193
 
 Now we want to calculate the flux recorded by the telescope. Define the solid angle of the source::
 
@@ -146,7 +146,7 @@ Then calculate the observed fluxes::
 Now we can access the flux of each line in W/m\ :sup:`2` (the emission spectrum of each line in W/m\ :sup:`2`/Hz is also available). To get the flux of the second transition::
 
     >>> example_nebula.obs_line_fluxes[1]
-        1.082223161756852e-22
+        1.0822233026651032e-22
 
 Reading a file from the LAMDA database
 --------------------------------------------
@@ -154,7 +154,7 @@ Reading a file from the LAMDA database
 
     >>> from pythonradex import LAMDA_file
     >>> datafilepath = 'path/to/datafile/co.dat'
-    >>> data = LAMDA_file.read(datafilepath)
+    >>> data = LAMDA_file.read(datafilepath,read_frequencies=True)
 
 The data is stored in a dictionary containing all levels, radiative transitions and collisional transitions.::
 
@@ -167,7 +167,7 @@ Lets first look at the levels. This is a list containing all atomic energy level
     >>> levels[2].g
     5.0
     >>> levels[2].E
-    2.2913493542995655e-22
+    2.2913493923384677e-22
     >>> levels[2].number
     2
 
@@ -185,21 +185,21 @@ We can access the upper and lower level of the transition. These are instance of
     >>> rad_trans.up.g
     23.0
     >>> rad_trans.low.E
-    4.1994278867414716e-21
+    4.199427956456561e-21
 
 Let's look at some of the other attributes of this transition such as frequency, energy difference and Einstein coefficients::
 
     >>> rad_trans.nu0
-    1267014531042.1921
+    1267014486000.0
     >>> rad_trans.Delta_E
-    8.3953270243833185e-22
+    8.395327163754924e-22
     >>> rad_trans.A21
     0.0001339
 
 For a list of all attributes available, see :ref:`read_LAMDA_doc`. We can also compute the excitation temperature of the transition for given fractional populations of the lower and upper level::
 
     >>> rad_trans.Tex(x1=0.3,x2=0.1)
-    array(51.11629261333541)
+    array(51.11627569)
 
 One can also give numpy arrays as input::
 
@@ -207,7 +207,7 @@ One can also give numpy arrays as input::
     >>> x1 = np.array((0.1,0.5,0.15))
     >>> x2 = np.array((0.05,0.1,0.07))
     >>> rad_trans.Tex(x1=x1,x2=x2)
-    array([ 77.54834464,  35.76028035,  71.27685386])
+    array([77.54831896, 35.76026851, 71.27683026])
 
 Finally, let's have a look at the collisional transitions. This is a dictionary containing the transitions for each collision partner. Let's see which collision partners are present::
 
@@ -227,21 +227,22 @@ Similarly to the radiative transition, there are a number of attributes we can a
     >>> coll_trans.low.g
     17.0
     >>> coll_trans.Delta_E
-    5.26548816268121e-21
+    5.2654882500940636e-21
     >>> coll_trans.name
     '14-8'
 
 Again, see :ref:`read_LAMDA_doc` to get all attributes. Like for radiative transitions, one can calculate the excitation temperature. In addition, one can get the collisional transition rates. The LAMDA data file provides these rates at specific temperatures. Here we can request an interpolated rate at any temperature within the limits defined in the file::
 
     >>> coll_trans.coeffs(Tkin=100.5)
-    {'K21': 6.4715447026880032e-18, 'K12': 2.4825283934065823e-19}
+    {'K12': 2.482531512243176e-19, 'K21': 6.471544702688003e-18}
 
 Numpy arrays are also allowed as input::
 
     >>> Tkin = np.array((52.3,70.4,100.2,150.4))
     >>> coll_trans.coeffs(Tkin=Tkin)
-    {'K21': array([5.93161938e-18, 6.13652817e-18, 6.46702134e-18, 7.11359510e-18]),
-     'K12': array([6.88961220e-21, 4.64695547e-20, 2.45276671e-19, 9.61109445e-19])}
+    {'K12': array([6.88962883e-21, 4.64696381e-20, 2.45276980e-19, 9.61110252e-19]), 
+    'K21': array([5.93161938e-18, 6.13652817e-18, 6.46702134e-18, 7.11359510e-18])}
+
 
 
 Negative optical depth
