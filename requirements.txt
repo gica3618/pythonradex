@@ -4,6 +4,6 @@ numpy==1.25.2
 packaging==23.1
 pluggy==1.3.0
 pytest==7.4.0
--e git+ssh://git@github.com/gica3618/pythonradex.git@cb043fea44087f6ef865d07bc21a0a2848542cf1#egg=pythonradex
+pythonradex @ git+https://github.com/gica3618/pythonradex@main
 scipy==1.11.2
 tomli==2.0.1
