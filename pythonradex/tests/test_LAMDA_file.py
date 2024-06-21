@@ -11,19 +11,16 @@ from scipy import constants
 import numpy as np
 
 here = os.path.dirname(os.path.abspath(__file__))
+data_folder = os.path.join(here,'LAMDA_files')
 
-filepaths = [os.path.join(here,'co.dat'),
-             os.path.join(here,'co_with_additional_comments.dat')]
+filepaths = [os.path.join(data_folder,'co.dat'),
+             os.path.join(data_folder,'co_with_additional_comments.dat')]
 lamda_data = [LAMDA_file.read(filepath,read_frequencies=False) for filepath in filepaths]
 lamda_data_nu0_read = [LAMDA_file.read(filepath,read_frequencies=True) for filepath
                        in filepaths]
 lamda_data_nu0_qn_read = [LAMDA_file.read(filepath,read_frequencies=True,read_quantum_numbers=True)
                           for filepath in filepaths]
 all_read_data = [lamda_data,lamda_data_nu0_read,lamda_data_nu0_qn_read]
-
-# all_levels = [data['levels'] for data in all_read_data]
-# all_rad_transitions = [data['radiative transitions'] for data in all_read_data]
-# all_coll_transitions = [data['collisional transitions'] for data in all_read_data]
 
 def test_levels():
     test_level_index = 10
@@ -75,8 +72,8 @@ def test_coll_transitions():
                                    3.224e-11,3.429e-11,3.605e-11,3.758e-11,3.827e-11,
                                    3.893e-11,4.013e-11,4.121e-11,4.756e-11,4.901e-11))\
                         *constants.centi**3
-            assert np.allclose(coeffs_pH2,test_coll_trans_pH2.coeffs(Tkin_data_pH2)['K21'],
-                               atol=0)
+            _,pH2_K21 = test_coll_trans_pH2.coeffs(Tkin_data_pH2)
+            assert np.allclose(coeffs_pH2,pH2_K21,atol=0)
             test_coll_trans_index_oH2 = 200
             test_coll_trans_oH2 = coll_transitions['ortho-H2'][test_coll_trans_index_oH2]
             Tkin_data_oH2 = Tkin_data_pH2
@@ -88,8 +85,8 @@ def test_coll_transitions():
                                  1.807E-12,2.369E-12,3.471E-12,4.461E-12,5.324E-12,6.076E-12,
                                  6.740E-12,7.046E-12,7.337E-12,7.883E-12,8.389E-12,1.229E-11,
                                  1.465E-11)) * constants.centi**3
-            assert np.allclose(coeffs_oH2,test_coll_trans_oH2.coeffs(Tkin_data_oH2)['K21'],
-                               atol=0)
+            _,oH2_K21 = test_coll_trans_oH2.coeffs(Tkin_data_oH2)
+            assert np.allclose(coeffs_oH2,oH2_K21,atol=0)
 
 def test_quanum_number_reading():
     for i in range(len(lamda_data)):

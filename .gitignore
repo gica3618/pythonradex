@@ -104,3 +104,12 @@ virt_env/
 
 # mypy
 .mypy_cache/
+
+# RADEX test models
+/pythonradex/tests/RADEX_test_cases/*.out
+/pythonradex/tests/RADEX_test_cases/radex.in
+TODO.txt
+documents
+pythonradex/tests/benchmarking_vs_RADEX_and_LIME/*.fits
+**/radex.out
+.pytest_cache

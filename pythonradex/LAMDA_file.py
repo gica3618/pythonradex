@@ -14,7 +14,6 @@ def is_comment(line):
     else:
         return False
 
-
 def read(datafilepath,read_frequencies,read_quantum_numbers=False):
     '''
     Read a LAMDA data file.
@@ -30,12 +29,12 @@ def read(datafilepath,read_frequencies,read_quantum_numbers=False):
     read_frequencies : bool
         Read the radiative transition frequencies from the file rather than computing
         them from the level energies. This can be useful since frequencies are sometimes
-        given with more significant digits. However, the LAMDA standard does not
-        require a file to list the frequencies.
+        given with more significant digits. However, the LAMDA format does not
+        force a file to contain the frequencies, so they might not be present.
 
     read_quantum_numbers : bool
-        Read the quantum numbers from the file. The LAMDA standard does not
-        require a file to list quantum numbers though.
+        Read the quantum numbers from the file. The LAMDA format does not
+        force a file to list quantum numbers though, so they might not be present.
 
     Returns
     -------

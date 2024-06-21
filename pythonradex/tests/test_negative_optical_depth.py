@@ -27,10 +27,11 @@ def test_negative_tau():
     for geo in geometries:
         for ncoll,Tkin,width_v,Ntot in itertools.product(ncoll_values,Tkin_values,
                                                          width_v_values,Ntot_values):
-            coll_partner_densities = {'ortho-H2':ncoll}
+            collider_densities = {'ortho-H2':ncoll}
             test_nebula = nebula.Nebula(
-                            datafilepath=os.path.join(here,'co.dat'),
-                            geometry=geo,ext_background=ext_background,Tkin=Tkin,
-                            coll_partner_densities=coll_partner_densities,
-                            Ntot=Ntot,line_profile='rectangular',width_v=width_v)
+                            datafilepath=os.path.join(here,'LAMDA_files/co.dat'),
+                            geometry=geo,line_profile='rectangular',width_v=width_v)
+            test_nebula.set_cloud_parameters(
+                   ext_background=ext_background,Ntot=Ntot,Tkin=Tkin,
+                   collider_densities=collider_densities)
             test_nebula.solve_radiative_transfer()

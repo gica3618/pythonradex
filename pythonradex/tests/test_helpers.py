@@ -9,9 +9,6 @@ from pythonradex import helpers
 import numpy as np
 from scipy import constants
 
-def test_relative_difference_scalar():
-    for x in (0,1):
-        assert helpers.relative_difference(x,x) == 0
 
 def test_relative_difference_arrays():
     x = np.array((0,4,2,10,0,2, -1,-1))

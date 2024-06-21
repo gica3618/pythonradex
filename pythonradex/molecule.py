@@ -7,7 +7,10 @@ Created on Sun Nov 12 16:48:00 2017
 from scipy import constants
 import numpy as np
 from pythonradex import LAMDA_file,atomic_transition
+import numba as nb
 
+#Note: the partition function is just for convenience when using the Molecule class
+#directly; it is not used to solve the non-LTE radiative transfer
 
 class Molecule():
 
@@ -17,11 +20,10 @@ class Molecule():
         '''levels is a list of instances of the Level class
         rad_transitions is a list of instances of the RadiativeTransition class
         coll_transitions is a dictionary with an entry for each collision partner, where
-        each entry is a list of instances of the CollisionalTransition class'''
+        each entry is a list of instances of the CollisionalTransition class
+        partition_function is a user-defined partition function'''
         self.levels = levels
-        self.rad_transitions = rad_transitions #list
-        #dictionary with list of collisional transitions for each collision
-        #partner:
+        self.rad_transitions = rad_transitions
         self.coll_transitions = coll_transitions 
         self.n_levels = len(self.levels)
         self.n_rad_transitions = len(self.rad_transitions)
@@ -88,7 +90,8 @@ class EmittingMolecule(Molecule):
         coll_transitions is a dictionary with an entry for each collision partner, where
         each entry is a list of instances of the CollisionalTransition class
         line_profile_cls is the line profile class used to represent the line profile
-        width_v is the width of the line in velocity'''
+        width_v is the width of the line in velocityy space in [m/s]
+        partition_function is a user-defined partition function'''
         Molecule.__init__(self,levels=levels,rad_transitions=rad_transitions,
                           coll_transitions=coll_transitions,
                           partition_function=partition_function)
@@ -97,6 +100,39 @@ class EmittingMolecule(Molecule):
                                radiative_transition=rad_trans,
                                line_profile_cls=line_profile_cls,width_v=width_v)
                                for rad_trans in self.rad_transitions]
+        #collecting parameters, needed for numba-compiled functions:
+        self.A21_lines = np.array([line.A21 for line in self.rad_transitions])
+        self.nu0_lines = np.array([line.nu0 for line in self.rad_transitions])
+        self.phi_nu0_lines = np.array([line.line_profile.phi_nu(line.nu0) for line
+                                       in self.rad_transitions])
+        self.gup_lines = np.array([line.up.g for line in self.rad_transitions])
+        self.glow_lines = np.array([line.low.g for line in self.rad_transitions])
+        self.low_number_lines = np.array([line.low.number for line in
+                                          self.rad_transitions])
+        self.up_number_lines = np.array([line.up.number for line in
+                                         self.rad_transitions])
+        self.Delta_E_lines = np.array([line.Delta_E for line in self.rad_transitions])
+        self.ordered_colliders = sorted(self.coll_transitions.keys())
+        self.coll_trans_low_up_number = nb.typed.List([])
+        self.coll_Tkin_data = nb.typed.List([])
+        self.coll_K21_data = nb.typed.List([])
+        self.coll_gups = nb.typed.List([])
+        self.coll_glows = nb.typed.List([])
+        self.coll_DeltaEs = nb.typed.List([])
+        for collider in self.ordered_colliders:
+            transitions = self.coll_transitions[collider]
+            n_low_up = [[trans.low.number,trans.up.number] for trans in transitions]
+            self.coll_trans_low_up_number.append(np.array(n_low_up))
+            Tkin = [trans.Tkin_data for trans in transitions]
+            self.coll_Tkin_data.append(np.array(Tkin))
+            K21 = [trans.K21_data for trans in transitions]
+            self.coll_K21_data.append(np.array(K21))
+            gup = [trans.up.g for trans in transitions]
+            glow = [trans.low.g for trans in transitions]
+            self.coll_gups.append(np.array(gup))
+            self.coll_glows.append(np.array(glow))
+            DeltaE = [trans.Delta_E for trans in transitions]
+            self.coll_DeltaEs.append(np.array(DeltaE))
 
     @classmethod
     def from_LAMDA_datafile(cls,datafilepath,line_profile_cls,width_v,
@@ -109,22 +145,48 @@ class EmittingMolecule(Molecule):
                    line_profile_cls=line_profile_cls,width_v=width_v,
                    partition_function=partition_function)
 
+    @staticmethod
+    @nb.jit(nopython=True,cache=True)
+    def fast_tau_nu0(N,level_population,low_number_lines,up_number_lines,
+                     A21_lines,phi_nu0_lines,gup_lines,glow_lines,nu0_lines):
+        n_lines = low_number_lines.size
+        tau_nu0 = np.empty(n_lines)
+        for i in range(n_lines):
+            N1 = level_population[low_number_lines[i]]*N
+            N2 = level_population[up_number_lines[i]]*N
+            tau_nu0[i] = atomic_transition.fast_tau_nu(
+                             A21=A21_lines[i],phi_nu=phi_nu0_lines[i],
+                             g_up=gup_lines[i],g_low=glow_lines[i],N1=N1,N2=N2,
+                             nu=nu0_lines[i])
+        return tau_nu0
+    
     def get_tau_nu0(self,N,level_population):
         '''For a given total column density N and level population,
         compute the optical depth at line center for all radiative transitions'''
-        tau_nu0 = []
-        for line in self.rad_transitions:
-            x1 = level_population[line.low.number]
-            x2 = level_population[line.up.number]
-            tau_nu0.append(line.tau_nu0(N1=x1*N,N2=x2*N))
-        return np.array(tau_nu0)
+        return self.fast_tau_nu0(
+                N=N,level_population=level_population,
+                low_number_lines=self.low_number_lines,
+                up_number_lines=self.up_number_lines,A21_lines=self.A21_lines,
+                phi_nu0_lines=self.phi_nu0_lines,gup_lines=self.gup_lines,
+                glow_lines=self.glow_lines,nu0_lines=self.nu0_lines)
+
+    @staticmethod
+    @nb.jit(nopython=True,cache=True)
+    def fast_Tex(level_population,low_number_lines,up_number_lines,Delta_E_lines,
+                 gup_lines,glow_lines):
+        n_lines = low_number_lines.size
+        Tex = np.empty(n_lines)
+        for i in range(n_lines):
+            Tex[i] = atomic_transition.fast_Tex(
+                       Delta_E=Delta_E_lines[i],g_up=gup_lines[i],
+                       g_low=glow_lines[i],x1=level_population[low_number_lines[i]],
+                       x2=level_population[up_number_lines[i]])
+        return Tex
 
     def get_Tex(self,level_population):
         '''For a given level population, compute the excitation temperature
         for all radiative transitions'''
-        Tex = []
-        for line in self.rad_transitions:
-            x1 = level_population[line.low.number]
-            x2 = level_population[line.up.number]
-            Tex.append(line.Tex(x1=x1,x2=x2))
-        return np.array(Tex)
+        return self.fast_Tex(
+                 level_population=level_population,low_number_lines=self.low_number_lines,
+                 up_number_lines=self.up_number_lines,Delta_E_lines=self.Delta_E_lines,
+                 gup_lines=self.gup_lines,glow_lines=self.glow_lines)
