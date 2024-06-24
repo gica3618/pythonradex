@@ -11,7 +11,7 @@ Welcome to the ``pyhonradex`` documentation!
    :maxdepth: 2
    :caption: Contents:
 
-    notebooks/test_notebook
+   notebooks/test_notebook
 
 Test notebook inclusion
 ============================================
