@@ -10,6 +10,8 @@ Welcome to the ``pyhonradex`` documentation!
 .. toctree::
    :maxdepth: 2
 
+    notebooks/test_notebook
+
 Test notebook inclusion
 ============================================
     notebooks/test_notebook
