@@ -6,16 +6,11 @@
 Welcome to the ``pyhonradex`` documentation!
 ============================================
 
-.. table of contents:
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    notebooks/test_notebook
-
-Test notebook inclusion
-============================================
-    notebooks/test_notebook
 
 Summary
 ==============
