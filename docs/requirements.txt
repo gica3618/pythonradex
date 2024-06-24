@@ -1,3 +1,4 @@
 sphinx>=1.4
 sphinx-rtd-theme
 jupyter
+nbsphinx
