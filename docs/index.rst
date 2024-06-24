@@ -12,7 +12,7 @@ Welcome to the ``pyhonradex`` documentation!
 
 Test notebook inclusion
 ============================================
-notebooks/test_notebook
+    notebooks/test_notebook
 
 Summary
 ==============
