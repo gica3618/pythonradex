@@ -10,6 +10,10 @@ Welcome to the ``pyhonradex`` documentation!
 .. toctree::
    :maxdepth: 2
 
+Test notebook inclusion
+============================================
+notebooks/test_notebook
+
 Summary
 ==============
 ``pythonradex`` is a python re-implementation of the RADEX_ code [vanderTak07]_. It solves the radiative transfer for a uniform medium in non-LTE using the Accelerated Lambda Iteration (ALI) method in combination with an escape probability formalism. The code can be used to quickly estimate the emission from an astrophysical gas given input parameters such as the density and kinetic temperature of the collision partners, the column density of the gas and width of the emission lines.
