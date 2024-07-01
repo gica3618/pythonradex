@@ -9,14 +9,18 @@ Created on Wed Sep  4 19:03:24 2019
 #fluxes mostly agree, except for these cases:
 #- non-LTE, optically thick case, LIME does not agree, maybe because it has difficulties
 #to converge?
-#- non-LTE, general case, LIME does not agree in terms of flux
+#- non-LTE, general case, LIME does not agree in terms of flux, don't know why...
 #- for the sphere, optically thin: RADEX methods do not agree, presumably because
 #the flux formula is not correct, i.e. isotropic flux density is assumed, which is not
 #true
 
+#### IMPORTANT ####
+#remember to re-compile RADEX used by RADEX_wrapper if general geometry (sphere vs slab)
+#is changed
+
 import sys
 sys.path.append('/home/gianni/science/projects/code/pythonradex')
-from pythonradex import nebula, helpers
+from pythonradex import radiative_transfer, helpers
 import os
 from scipy import constants
 sys.path.append('/home/gianni/science/projects/code/RADEX_wrapper')
@@ -33,11 +37,11 @@ Tkin = 100
 coll_partner_density_cases = {'LTE':{'ortho-H2':1e8/constants.centi**3},
                               'non-LTE':{'ortho-H2':1e2/constants.centi**3}}
 #coll_partner_density_cases = {'non-LTE':{'ortho-H2':1e2/constants.centi**3}}
-Ntot_cases = {'thick':5e18/constants.centi**2,'thin':1e15/constants.centi**2,
+N_cases = {'thick':5e18/constants.centi**2,'thin':1e15/constants.centi**2,
               'general':1e17/constants.centi**2}
 ext_background = helpers.generate_CMB_background()
 T_background = 2.73
-line_profiles = ['rectangular','Gaussian']
+line_profile_types = ['rectangular','Gaussian']
 nu0 = 345.7959899*constants.giga
 trans_number = 2
 width_v = 1*constants.kilo
@@ -49,10 +53,6 @@ freq_interval = radex_wrapper.Interval(min=nu0-epsilon_nu,max=nu0+epsilon_nu)
 
 #run with LIME output enable first, to check that it runs fine, then suppress it
 suppress_LIME_stdout_stderr = True
-
-#### IMPORTANT ####
-#remember to re-compile RADEX if general geometry (sphere vs slab) is changed
-
 
 ################################################################
 general_geometry = 'slab'
@@ -70,8 +70,8 @@ emission_region_3D = (np.abs(x3D)<slab_size/2) & (np.abs(y3D)<slab_size/2)\
 def emission_region_2D(X,Y):
     return (np.abs(X)<slab_size/2) & (np.abs(Y)<slab_size/2)
 lime_radius = 2*slab_size
-def density(Ntot):
-    return Ntot/depth
+def density(N):
+    return N/depth
 ################################################################
 
 '''
@@ -90,8 +90,8 @@ def emission_region_2D(X,Y):
     r2D = np.sqrt(X**2+Y**2)
     return r2D <= r
 lime_radius = 4*r
-def density(Ntot):
-    return Ntot/(2*r)
+def density(N):
+    return N/(2*r)
 ################################################################
 '''
 
@@ -113,40 +113,43 @@ n_solve_iters = {'LTE':7,'non-LTE':15}
 
 print('general geometry of this run: {:s}'.format(general_geometry))
 
-for Ntot_case,LTE_case in itertools.product(Ntot_cases,coll_partner_density_cases):
-    Ntot = Ntot_cases[Ntot_case]
+for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
+    N = N_cases[N_case]
     coll_partner_densities = coll_partner_density_cases[LTE_case]
-    print('considering {:s} case ({:s})'.format(Ntot_case,LTE_case))
+    print('considering {:s} case ({:s})'.format(N_case,LTE_case))
     tau = {}
     Tex = {}
     obs_flux = {}
     obs_flux_density = {}
     lineprofile_nu0 = {}
-    for geo,line_profile in itertools.product(geometries,line_profiles):
-        neb = nebula.Nebula(
+    for geo,line_profile_type in itertools.product(geometries,line_profile_types):
+        cloud = radiative_transfer.Cloud(
                     datafilepath=filepath,geometry=geo,
-                    line_profile=line_profile,width_v=width_v)
-        neb.set_cloud_parameters(ext_background=ext_background,Ntot=Ntot,Tkin=Tkin,
-                                 collider_densities=coll_partner_densities)
-        neb.solve_radiative_transfer()
-        neb.compute_line_fluxes(solid_angle=Omega)
+                    line_profile_type=line_profile_type,width_v=width_v)
+        cloud.set_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
+                             collider_densities=coll_partner_densities)
+        cloud.solve_radiative_transfer()
         #differs slightly from the nu0 given in the LAMDA file, because I calculate it
         #if I use the nu0 from LAMDA file, the line profile is 0 at nu0
-        pythonradex_nu0 =  neb.emitting_molecule.rad_transitions[trans_number].\
+        pythonradex_nu0 =  cloud.emitting_molecule.rad_transitions[trans_number].\
                               line_profile.nu0
-        lineprofile_nu0[line_profile] =\
-                           neb.emitting_molecule.rad_transitions[trans_number].\
+        lineprofile_nu0[line_profile_type] =\
+                           cloud.emitting_molecule.rad_transitions[trans_number].\
                             line_profile.phi_nu(pythonradex_nu0)
-        key = '{:s} {:s}'.format(geo,line_profile)
-        tau[key] = neb.tau_nu0[trans_number]
-        Tex[key] = neb.Tex[trans_number]
-        obs_flux[key] = neb.obs_line_fluxes[trans_number]
-        obs_flux_density[key] = np.max(neb.obs_line_spectra[trans_number])
+        key = '{:s} {:s}'.format(geo,line_profile_type)
+        tau[key] = cloud.tau_nu0[trans_number]
+        Tex[key] = cloud.Tex[trans_number] 
+        obs_flux[key] = cloud.fluxes(solid_angle=Omega,transitions=[trans_number,])
+        nu0 = cloud.emitting_molecule.rad_transitions[trans_number].nu0
+        width_nu = width_v/constants.c*nu0
+        nu = np.linspace(nu0-width_nu,nu0+width_nu,100)
+        spec = cloud.spectrum(solid_angle=Omega,nu=nu)
+        obs_flux_density[key] = np.max(spec)
 
     radex_input = radex_wrapper.RadexInput(
                      data_filename=filename,frequency_interval=freq_interval,
                      Tkin=Tkin,coll_partner_densities=coll_partner_densities,
-                     T_background=T_background,column_density=Ntot,Delta_v=width_v)
+                     T_background=T_background,column_density=N,Delta_v=width_v)
     wrapper = radex_wrapper.RadexWrapper()
     results = wrapper.compute(radex_input)
     RADEX_intensity = (helpers.B_nu(nu=nu0,T=results['Tex'])-ext_background(nu0))\
@@ -157,7 +160,7 @@ for Ntot_case,LTE_case in itertools.product(Ntot_cases,coll_partner_density_case
     obs_flux_density['RADEX'] = RADEX_observed_flux_density
     obs_flux['RADEX'] = RADEX_observed_flux_density*width_nu
 
-    const_density = density(Ntot=Ntot)
+    const_density = density(N=N)
     n = np.where(emission_region_3D,const_density,0)
     n_orthoH2 = np.ones_like(n)*coll_partner_densities['ortho-H2']
     colliders = [pyLime.Collider(name='orthoH2',density=n_orthoH2),]
@@ -188,7 +191,7 @@ for Ntot_case,LTE_case in itertools.product(Ntot_cases,coll_partner_density_case
                                  output_flux.x,axis=0)
     obs_flux_density['Lime'] = np.max(lime_flux_density)
     level_pop = pyLime.LimeLevelPopOutput('levelpop.fits').levelpops['CO']
-    transition = neb.emitting_molecule.rad_transitions[trans_number]
+    transition = cloud.emitting_molecule.rad_transitions[trans_number]
     up = transition.up
     low = transition.low
     up_pop = level_pop[:,up.number]
@@ -198,23 +201,23 @@ for Ntot_case,LTE_case in itertools.product(Ntot_cases,coll_partner_density_case
                         0)
     Tex['Lime'] = np.max(lime_Tex)
 
-    if Ntot_case == 'thick':
+    if N_case == 'thick':
         T_bb = results['Tex']
         black_body_flux_density = helpers.B_nu(nu=nu0,T=T_bb)*Omega
         bb_key = 'black body T={:g} K'.format(T_bb)
         obs_flux_density[bb_key] = black_body_flux_density
         obs_flux[bb_key] = black_body_flux_density*width_nu
-    elif Ntot_case == 'thin' and LTE_case=='LTE':
-        up_level_pop = neb.emitting_molecule.LTE_level_pop(Tkin)[up.number]
+    elif N_case == 'thin' and LTE_case=='LTE':
+        up_level_pop = cloud.emitting_molecule.LTE_level_pop(Tkin)[up.number]
         if general_geometry == 'slab':
-            thin_LTE_flux = up_level_pop*Ntot*slab_surface*transition.A21*Delta_E\
+            thin_LTE_flux = up_level_pop*N*slab_surface*transition.A21*Delta_E\
                              /(4*np.pi*slab_surface)*Omega
         elif general_geometry == 'sphere':
             thin_LTE_flux = 4/3*r**3*np.pi*const_density*up_level_pop\
                             *transition.A21*Delta_E/(4*np.pi*distance**2)
         obs_flux['thin LTE'] = thin_LTE_flux
-        for line_profile,lp_n0 in lineprofile_nu0.items():
-            obs_flux_density['thin LTE {:s}'.format(line_profile)] =\
+        for line_profile_type,lp_n0 in lineprofile_nu0.items():
+            obs_flux_density['thin LTE {:s}'.format(line_profile_type)] =\
                                                  thin_LTE_flux*lp_n0
 
     def split_thick_thin(obs,obs_name):
@@ -226,17 +229,17 @@ for Ntot_case,LTE_case in itertools.product(Ntot_cases,coll_partner_density_case
                              {key:value for key,value in obs.items()
                              if 'Gaussian' in key or key in ('Lime',)}
     params = {'Tex':Tex,'tau':tau}
-    if Ntot_case == 'thin':
+    if N_case == 'thin':
         params['obs flux'] = obs_flux
         #for flux density, line profile is important in thin case
         #(thick case: just a black body)
         split_thick_thin(obs=obs_flux_density,obs_name='obs flux density')
-    elif Ntot_case == 'thick':
+    elif N_case == 'thick':
         #in this case, the line profile is important even for the total flux,
         #so I should only compare codes that use the same line profile
         split_thick_thin(obs=obs_flux,obs_name='obs flux')
         params['obs flux density'] = obs_flux_density
-    elif Ntot_case == 'general':
+    elif N_case == 'general':
         split_thick_thin(obs=obs_flux,obs_name='obs flux')
         split_thick_thin(obs=obs_flux_density,obs_name='obs flux density')
     for paramname,param in params.items():

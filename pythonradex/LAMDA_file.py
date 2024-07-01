@@ -16,41 +16,29 @@ def is_comment(line):
 
 def read(datafilepath,read_frequencies,read_quantum_numbers=False):
     '''
-    Read a LAMDA data file.
+    Read a LAMDA data file. LAMDA files can be downloaded from the LAMDA database
+    at http://home.strw.leidenuniv.nl/~moldata
 
-    Reads a LAMDA data file and returns the data in the form of a dictionary.
-    The LAMDA database can be found at http://home.strw.leidenuniv.nl/~moldata/molformat.html
-
-    Parameters
-    ----------
-    datafilepath : str
-        path to the file
-
-    read_frequencies : bool
-        Read the radiative transition frequencies from the file rather than computing
-        them from the level energies. This can be useful since frequencies are sometimes
-        given with more significant digits. However, the LAMDA format does not
-        force a file to contain the frequencies, so they might not be present.
-
-    read_quantum_numbers : bool
-        Read the quantum numbers from the file. The LAMDA format does not
-        force a file to list quantum numbers though, so they might not be present.
-
-    Returns
-    -------
-    dict
-        Dictionary containing the data read from the file. The dictionary has the
-        following keys:
-        
-        - 'levels': list of levels (instances of the Level class)
-
-        - 'radiative transitions': list of radiative transitions (instances of RadiativeTransition class)
-
-        - 'collisional transitions': dict, containing lists of instances of the CollisionalTransition class for each collision partner appearing in the file
-
-        - 'quantum numbers': list containing quantum number string for all levels. Empty if read_quantum_numbers=False
-
-        The elements of these lists are in the order they appear in the file
+    Args:
+        datafilepath (:obj:`str`): The filepath to the LAMDA file.
+        read_frequencies (:obj:`bool`): Whether to read the frequencies of the
+            radiative transitions from the file or not. If False, calculates the
+            frequencies from the level energies given in the file. Setting this to
+            True can be useful since frequencies are sometimes given with more
+            significant digits than level energies. However, the LAMDA format does not
+            force a file to contain the frequencies, so they might not be present.
+        read_quantum_numbers (:obj:`bool`): Whether to read the quantum numbers
+            from the file. Defaults to False. The LAMDA format does not force a
+            file to list quantum numbers, so they might not be present.
+    
+    Returns:
+        dict: A dictionary containing the data read from the file.
+            The following keys give acces to lists containing the data. The elements of these lists are in the order they appear in the file.
+                - 'levels' (a list of pythonradex.atomic_transition.Level objects)
+                - 'radiative transitions' (a list of pythonradex.atomic_transitions.RadiativeTransition objects)
+                - 'collisional transitions' (a list of pythonradex.atomic_transition.CollisionalTransition objects)
+                - 'quantum numbers' (list of str, empty if read_quantum_numbers was set to False)
+            
     '''
     #identifiers used in the LAMDA database files:
     LAMDA_coll_ID = {'1':'H2','2':'para-H2','3':'ortho-H2','4':'e',

@@ -8,19 +8,19 @@ Created on Wed Jun 12 10:04:44 2024
 
 import os
 from scipy import constants
-from pythonradex import nebula,molecule,helpers,atomic_transition
+from pythonradex import radiative_transfer,molecule,helpers
 import numpy as np
 
 here = os.path.dirname(os.path.abspath(__file__))
-dummy_line_profile_cls = atomic_transition.GaussianLineProfile
+dummy_line_profile_type = 'Gaussian'
 dummy_width_v = 1*constants.kilo
 
 ##############  Tests for RateEquations ###################
 
 #take a molecule with many colliders on purpose
-test_molecule = molecule.EmittingMolecule.from_LAMDA_datafile(
+test_molecule = molecule.EmittingMolecule(
                       datafilepath=os.path.join(here,'LAMDA_files/o.dat'),
-                      line_profile_cls=dummy_line_profile_cls,
+                      line_profile_type=dummy_line_profile_type,
                       width_v=dummy_width_v)
 A21_lines = np.array([line.A21 for line in test_molecule.rad_transitions])
 B21_lines = np.array([line.B21 for line in test_molecule.rad_transitions])
@@ -52,7 +52,7 @@ def test_RateEquations_constructor():
         else:
             expected_collider_densities_list.append(np.inf)
     for mode in ('std','ALI'):
-        rate_eq = nebula.RateEquations(
+        rate_eq = radiative_transfer.RateEquations(
                             molecule=test_molecule,
                             collider_densities=collider_densities,
                             Tkin=50,mode=mode)
@@ -76,7 +76,7 @@ def test_coll_rate_matrix():
             expected_coll_rate_matrix[n_low,n_up] += K21*coll_density
             expected_coll_rate_matrix[n_up,n_up] += -K21*coll_density
     for mode in ('std','ALI'):
-        rate_eq = nebula.RateEquations(
+        rate_eq = radiative_transfer.RateEquations(
                             molecule=test_molecule,
                             collider_densities=collider_densities,
                             Tkin=T,mode=mode)
@@ -90,9 +90,9 @@ def solve_for_level_pops(collider_densities,Jbar_lines,beta_lines,I_ext_lines):
               'Tkin':Tkin}
     Einstein_kwargs = {'A21_lines':A21_lines,'B12_lines':B12_lines,
                        'B21_lines':B21_lines}
-    rate_equations_std = nebula.RateEquations(mode='std',**kwargs)
+    rate_equations_std = radiative_transfer.RateEquations(mode='std',**kwargs)
     level_pop_std = rate_equations_std.solve(Jbar_lines=Jbar_lines,**Einstein_kwargs)
-    rate_equations_ALI = nebula.RateEquations(mode='ALI',**kwargs)
+    rate_equations_ALI = radiative_transfer.RateEquations(mode='ALI',**kwargs)
     level_pop_ALI = rate_equations_ALI.solve(
                           beta_lines=beta_lines,I_ext_lines=I_ext_lines,**Einstein_kwargs)
     return level_pop_std,level_pop_ALI

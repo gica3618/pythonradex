@@ -14,30 +14,46 @@ import numba as nb
 
 class Molecule():
 
-    "Represents an atom or molecule"
+    '''Represents an atom or molecule with data read from a LAMDA file
+    
+    Attributes:
+        levels (list of pythonradex.atomic_transition.Level): The energy levels
+            of the molecule, in the same order as in the LAMDA file.
+        rad_transitions (list of pythonradex.atomic_transition.RadiativeTransition):
+            The radiative transitions of the molecule, in the same order as in the
+            LAMDA file.
+        coll_transitions (dict): The collisional transitions of the molecule. The
+            dictionary keys correspond ot the different colliders. Each entry of
+            the dictionary is a list of pythonradex.atomic_transition.CollisionalTransition
+            objects, in the same order as in the LAMDA file.
+        n_levels (:obj:`int`): the total number of levels
+        n_rad_transitions (:obj:`int`): the total number of radiative transitions
+    
+    '''
 
-    def __init__(self,levels,rad_transitions,coll_transitions,partition_function=None):
-        '''levels is a list of instances of the Level class
-        rad_transitions is a list of instances of the RadiativeTransition class
-        coll_transitions is a dictionary with an entry for each collision partner, where
-        each entry is a list of instances of the CollisionalTransition class
-        partition_function is a user-defined partition function'''
-        self.levels = levels
-        self.rad_transitions = rad_transitions
-        self.coll_transitions = coll_transitions 
+    def __init__(self,datafilepath,read_frequencies=False,partition_function=None):
+        """Constructs a new instance of the Molecule class using a LAMDA datafile
+        
+        Args:
+            datafilepath (:obj:`str`): The filepath to the LAMDA file.
+            read_frequencies (:obj:`bool`): Whether to read the frequencies of the
+                radiative transitions from the file or not. If False, calculates the
+                frequencies from the level energies given in the file. Setting this to
+                True can be useful since frequencies are sometimes given with more
+                significant digits than level energies. However, the LAMDA format does not
+                force a file to contain the frequencies, so they might not be present.
+            partition_function (func): A user-supplied partition function of one argument
+                (temperature). Defaults to None. If equal to None, the partition function
+                will be calculated by using the data from the provided LAMDA file.
+        """
+        data = LAMDA_file.read(datafilepath=datafilepath,
+                               read_frequencies=read_frequencies)
+        self.levels = data['levels']
+        self.rad_transitions = data['radiative transitions']
+        self.coll_transitions = data['collisional transitions'] 
         self.n_levels = len(self.levels)
         self.n_rad_transitions = len(self.rad_transitions)
         self.set_partition_function(partition_function=partition_function)
-
-    @classmethod
-    def from_LAMDA_datafile(cls,datafilepath,read_frequencies=False,
-                            partition_function=None):
-        """Alternative constructor using a LAMDA data file"""
-        data = LAMDA_file.read(datafilepath=datafilepath,
-                               read_frequencies=read_frequencies)
-        return cls(levels=data['levels'],rad_transitions=data['radiative transitions'],
-                   coll_transitions=data['collisional transitions'],
-                   partition_function=partition_function)
 
     def set_partition_function(self,partition_function):
         if partition_function is None:
@@ -46,8 +62,6 @@ class Molecule():
             self.Z = partition_function
 
     def Z_from_atomic_data(self,T):
-        '''Computes the partition function for a given temperature T. T can
-        be a float or an array'''
         T = np.array(T)
         weights = np.array([l.g for l in self.levels])
         energies = np.array([l.E for l in self.levels])
@@ -59,9 +73,19 @@ class Molecule():
         return np.sum(weights*np.exp(-energies/(constants.k*T)),axis=0)
 
     def LTE_level_pop(self,T):
-        '''Computes the level populations in LTE for a given temperature T.
-        Axis 0 of the output runs along levels, the other axes (if any)
-        correspond to the shape of T'''
+        '''Computes the level populations in LTE for all levels
+        
+        Args:
+            T (:obj:`float` or numpy.ndarray): The temperature.
+        
+        Returns:
+            numpy.ndarray: The fractional level population. If only one temperature
+            was given as input, the output array is one-dimensional, with the level
+            populations corresponding to the levels in the order of the LAMDA file.
+            If an array of temperatures was given as input, the output array has
+            two dimensions, with the second corresponding to the different temperatures.
+            
+        '''
         T = np.array(T)
         Z = self.Z(T)
         pops = [l.LTE_level_pop(T=T,Z=Z) for l in self.levels]
@@ -80,25 +104,51 @@ class Molecule():
 
 
 class EmittingMolecule(Molecule):
-
-    "Represents an emitting molecule, i.e. a molecule with a specified line profile"
     
-    def __init__(self,levels,rad_transitions,coll_transitions,line_profile_cls,
-                 width_v,partition_function=None):
-        '''levels is a list of instances of the Level class
-        rad_transitions is a list of instances of the RadiativeTransition class
-        coll_transitions is a dictionary with an entry for each collision partner, where
-        each entry is a list of instances of the CollisionalTransition class
-        line_profile_cls is the line profile class used to represent the line profile
-        width_v is the width of the line in velocityy space in [m/s]
-        partition_function is a user-defined partition function'''
-        Molecule.__init__(self,levels=levels,rad_transitions=rad_transitions,
-                          coll_transitions=coll_transitions,
+    '''Represents a an emitting molecule, i.e. a molecule with a specified line profile
+    
+    Attributes:
+        levels (list of pythonradex.atomic_transition.Level): The energy levels
+            of the molecule, in the same order as in the LAMDA file.
+        rad_transitions (list of pythonradex.atomic_transition.EmissionLine):
+            The radiative transitions of the molecule, in the same order as in the
+            LAMDA file.
+        coll_transitions (dict): The collisional transitions of the molecule. The
+            dictionary keys correspond ot the different colliders. Each entry of
+            the dictionary is a list of pythonradex.atomic_transition.CollisionalTransition
+            objects, in the same order as in the LAMDA file.
+        n_levels (:obj:`int`): the total number of levels
+        n_rad_transitions (:obj:`int`): the total number of radiative transitions
+    '''
+    
+    def __init__(self,datafilepath,line_profile_type,width_v,read_frequencies=False,
+                 partition_function=None):
+        """Constructs a new instance of the Molecule class using a LAMDA datafile
+        
+        Args:
+            datafilepath (:obj:`str`): The filepath to the LAMDA file.
+            line_profile_type (:obj:`str`): The type of the line profile. Either
+                'rectangular' or 'Gaussian'
+            width_v (:obj:`float`): The width of the line profile in [m/s]. For a Gaussian
+                line profile, this corresponds to the FWHM.
+            read_frequencies (:obj:`bool`): Whether to read the frequencies of the
+                radiative transitions from the file or not. If False, calculates the
+                frequencies from the level energies given in the file. Setting this to
+                True can be useful since frequencies are sometimes given with more
+                significant digits than level energies. However, the LAMDA format does not
+                force a file to contain the frequencies, so they might not be present.
+            partition_function (func): A user-supplied partition function of one argument
+                (temperature). Defaults to None. If equal to None, the partition function
+                will be calculated by using the data from the provided LAMDA file.
+        """
+        Molecule.__init__(self,datafilepath=datafilepath,
+                          read_frequencies=read_frequencies,
                           partition_function=partition_function)
+        self.width_v = width_v
         #convert radiative transitions to emission lines (but keep the same attribute name)
         self.rad_transitions = [atomic_transition.EmissionLine.from_radiative_transition(
                                radiative_transition=rad_trans,
-                               line_profile_cls=line_profile_cls,width_v=width_v)
+                               line_profile_type=line_profile_type,width_v=width_v)
                                for rad_trans in self.rad_transitions]
         #collecting parameters, needed for numba-compiled functions:
         self.A21_lines = np.array([line.A21 for line in self.rad_transitions])
@@ -134,17 +184,6 @@ class EmittingMolecule(Molecule):
             DeltaE = [trans.Delta_E for trans in transitions]
             self.coll_DeltaEs.append(np.array(DeltaE))
 
-    @classmethod
-    def from_LAMDA_datafile(cls,datafilepath,line_profile_cls,width_v,
-                            read_frequencies=False,partition_function=None):
-        """Alternative constructor using a LAMDA data file"""
-        data = LAMDA_file.read(datafilepath=datafilepath,
-                               read_frequencies=read_frequencies)
-        return cls(levels=data['levels'],rad_transitions=data['radiative transitions'],
-                   coll_transitions=data['collisional transitions'],
-                   line_profile_cls=line_profile_cls,width_v=width_v,
-                   partition_function=partition_function)
-
     @staticmethod
     @nb.jit(nopython=True,cache=True)
     def fast_tau_nu0(N,level_population,low_number_lines,up_number_lines,
@@ -161,8 +200,34 @@ class EmittingMolecule(Molecule):
         return tau_nu0
     
     def get_tau_nu0(self,N,level_population):
-        '''For a given total column density N and level population,
-        compute the optical depth at line center for all radiative transitions'''
+        r'''Compute the optical depth at the rest frequency
+        
+        Args:
+            N (:obj:`float`): the column density in [m\ :sup:`-2`]
+            level_population (numpy.ndarray): the fractional population of each level,
+                where the levels are in the order of the LAMDA file
+        
+        Returns:
+            numpy.ndarray: the optical depth at the rest frequency
+        '''
+        return self.fast_tau_nu0(
+                N=N,level_population=level_population,
+                low_number_lines=self.low_number_lines,
+                up_number_lines=self.up_number_lines,A21_lines=self.A21_lines,
+                phi_nu0_lines=self.phi_nu0_lines,gup_lines=self.gup_lines,
+                glow_lines=self.glow_lines,nu0_lines=self.nu0_lines)
+
+    def get_tau_nu0_LTE(self,N,T):
+        r'''Compute the optical depth at the rest frequency in LTE
+        
+        Args:
+            N (:obj:`float`): the column density in [m\ :sup:`-2`]
+            T (:obj:`float`): the temperature in [K]
+        
+        Returns:
+            numpy.ndarray: the optical depth at the rest frequency assuming LTE
+        '''
+        level_population = self.LTE_level_pop(T=T)
         return self.fast_tau_nu0(
                 N=N,level_population=level_population,
                 low_number_lines=self.low_number_lines,
@@ -184,8 +249,16 @@ class EmittingMolecule(Molecule):
         return Tex
 
     def get_Tex(self,level_population):
-        '''For a given level population, compute the excitation temperature
-        for all radiative transitions'''
+        r'''Compute the excitation temperature for all radiative transitions
+        
+        Args:
+            level_population (numpy.ndarray): the fractional population of each level,
+                where the levels are in the order of the LAMDA file
+        
+        Returns:
+            numpy.ndarray: the excitation temperature for each radiative transition,
+                in the order as in the LAMDA file
+        '''
         return self.fast_Tex(
                  level_population=level_population,low_number_lines=self.low_number_lines,
                  up_number_lines=self.up_number_lines,Delta_E_lines=self.Delta_E_lines,

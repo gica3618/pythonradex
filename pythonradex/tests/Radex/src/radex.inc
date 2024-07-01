@@ -32,9 +32,9 @@ c     names of output file & data file & molecule
 
 c     Escape probability method (uncomment your choice)
       integer method
-      parameter (method = 1)  ! uniform sphere
+c      parameter (method = 1)  ! uniform sphere
 c      parameter (method = 2)  ! expanding sphere (LVG)
-c      parameter (method = 3)  ! plane parallel slab (shock)
+      parameter (method = 3)  ! plane parallel slab (shock)
 
 c     No user editing needed beyond this point
 

@@ -15,12 +15,15 @@ def test_fast_Tex():
     kwargs = {'Delta_E':1,'g_low':1,'g_up':1}
     assert atomic_transition.fast_Tex(x1=np.zeros(1),x2=np.zeros(1),**kwargs)[0] == 0
     assert atomic_transition.fast_Tex(x1=np.zeros(1),x2=np.array((0.3,)),**kwargs)[0] == 0
-    assert atomic_transition.fast_Tex(x1=np.array((0.2,)),x2=np.zeros(1),**kwargs)[0] == 0
+    assert np.all(atomic_transition.fast_Tex(x1=np.array((0.2,0.1)),x2=np.zeros(2),**kwargs)[0]
+                  == 0)
     x1,x2 = np.array((0.2,)),np.array((0.1,))
     test_Tex = atomic_transition.fast_Tex(x1=x1,x2=x2,**kwargs)[0]
     explicit_Tex = -kwargs['Delta_E']/constants.k\
                        * (np.log((x2*kwargs['g_low'])/(x1*kwargs['g_up'])))**-1
     assert np.isclose(test_Tex,explicit_Tex[0],rtol=1e-10,atol=0)
+    #test that floats also work as arguments:
+    atomic_transition.fast_Tex(**kwargs,x1=0.2,x2=0.2)
 
 def test_fast_tau():
     A21 = 1e-4
@@ -34,6 +37,15 @@ def test_fast_tau():
                                              g_up=g_up,N1=N1,N2=N2,nu=nu)
     explicit_tau = constants.c**2/(8*np.pi*nu**2)*A21*phi_nu*(g_up/g_low*N1-N2)
     assert test_tau == explicit_tau
+    #check that numpy arrays also work:
+    nu0 = 100*constants.giga
+    width_v = 4*constants.kilo
+    width_nu = width_v/constants.c*nu0
+    nu_array = np.linspace(nu0-width_nu,nu0+width_nu,100)
+    sigma_nu = width_nu/np.sqrt(8*np.log(2))
+    phi_nu_array = 1/(np.sqrt(2*np.pi)*sigma_nu)*np.exp(-(nu_array-nu0)**2/(2*sigma_nu**2))
+    atomic_transition.fast_tau_nu(A21=A21,phi_nu=phi_nu_array,g_low=g_low,
+                                             g_up=g_up,N1=N1,N2=N2,nu=nu_array)
 
 def test_fast_coll_coeffs():
     Tkin_data = np.array((20,40,100,200,300))
@@ -77,6 +89,8 @@ class TestLineProfile():
     rect_line_profile = atomic_transition.RectangularLineProfile(nu0=nu0,width_v=width_v)
     profiles = {'gauss':gauss_line_profile,'rect':rect_line_profile}
     test_v = np.linspace(-3*width_v,3*width_v,600)
+    width_nu = width_v/constants.c*nu0
+    test_nu = np.linspace(nu0-3*width_nu,nu0+3*width_nu,600)
 
     def test_abstract_line_profile(self):
         with pytest.raises(NotImplementedError):
@@ -84,17 +98,16 @@ class TestLineProfile():
     
     def test_normalisation(self):
         for profile in self.profiles.values():
-            integrated_line_profile = np.trapz(profile.dense_phi_nu_array,
-                                               profile.dense_nu_array)
+            integrated_line_profile = np.trapz(profile.phi_nu(self.test_nu),self.test_nu)
             integrated_line_profile_v = np.trapz(profile.phi_v(self.test_v),self.test_v)
             for intg_prof in (integrated_line_profile,integrated_line_profile_v):
                  assert np.isclose(intg_prof,1,rtol=3e-2,atol=0)
 
     def test_profile_shape_rect(self):
-        phi_nu = self.rect_line_profile.dense_phi_nu_array
+        phi_nu = self.rect_line_profile.phi_nu(self.test_nu)
         phi_v = self.rect_line_profile.phi_v(self.test_v)
         for phi,x_axis,width in zip((phi_nu,phi_v),
-                                     (self.rect_line_profile.dense_nu_array,self.test_v),
+                                     (self.test_nu,self.test_v),
                                      (self.rect_line_profile.width_nu,self.width_v)):
             assert np.all(phi>=0)
             larger_0 = phi > 0
@@ -106,14 +119,14 @@ class TestLineProfile():
             assert np.isclose(window_size,width,rtol=5e-2,atol=0)
 
     def test_profile_shape_gauss(self):
-        phi_nu = self.gauss_line_profile.dense_phi_nu_array
+        phi_nu = self.gauss_line_profile.phi_nu(self.test_nu)
         phi_v = self.gauss_line_profile.phi_v(self.test_v)
         for phi,x_axis,width in zip((phi_nu,phi_v),
-                                    (self.gauss_line_profile.dense_nu_array,self.test_v),
+                                    (self.test_nu,self.test_v),
                                     (self.gauss_line_profile.width_nu,self.width_v)):
             max_index = np.argmax(phi)
             assert np.all(np.diff(phi[:max_index+1]) > 0)
-            #because dense nu array is created with linspace, it can be symmetric
+            #because nu array is created with linspace, it can be symmetric
             #around the peak, so need to take care:
             assert phi[max_index+1]-phi[max_index] <= 0
             assert np.all(np.diff(phi[max_index+1:]) < 0)
@@ -125,27 +138,19 @@ class TestLineProfile():
         for profile in self.profiles.values():
             assert profile.phi_nu0 == profile.phi_nu(nu=profile.nu0)
 
-    def test_nu_arrays(self):
+    def test_coarse_nu_array(self):
         for profile in self.profiles.values():
-            for nu_array in (profile.coarse_nu_array,profile.dense_nu_array):
-                assert np.all(np.diff(nu_array)>0)
-                assert np.min(nu_array) < profile.nu0 - profile.width_nu/2
-                assert np.max(nu_array) > profile.nu0 + profile.width_nu/2
-                #test that the array covers the relevant parts of the line profile:
-                phi = profile.phi_nu(nu=nu_array)
-                assert np.max(phi) > 100*np.min(phi)
-            w_dense = profile.window_width_for_dense_nu_array
-            assert np.isclose(np.min(profile.coarse_nu_array),
-                              profile.nu0 - profile.width_nu*w_dense/2,rtol=1e-2,
-                              atol=0)
-            assert np.isclose(np.max(profile.coarse_nu_array),
-                              profile.nu0 + profile.width_nu*w_dense/2,rtol=1e-2,
-                              atol=0)
+            coarse_nu_array = profile.coarse_nu_array
+            assert np.all(np.diff(coarse_nu_array)>0)
+            assert np.min(coarse_nu_array) < profile.nu0 - profile.width_nu/2
+            assert np.max(coarse_nu_array) > profile.nu0 + profile.width_nu/2
+            #test that the array covers the relevant parts of the line profile:
+            phi = profile.phi_nu(nu=coarse_nu_array)
+            assert np.max(phi) > 100*np.min(phi)
+            assert np.isclose(np.trapz(phi,coarse_nu_array),1,atol=0,rtol=5e-2)
 
     def test_phi_arrays(self):
         for profile in self.profiles.values():
-            assert np.all(profile.dense_phi_nu_array
-                          == profile.phi_nu(profile.dense_nu_array))
             assert np.all(profile.coarse_phi_nu_array
                           == profile.phi_nu(profile.coarse_nu_array))
 
@@ -173,7 +178,7 @@ class TestTransition():
 
     up = atomic_transition.Level(g=1,E=1,number=1)
     low = atomic_transition.Level(g=1,E=0,number=0)
-    line_profile_cls = atomic_transition.RectangularLineProfile
+    line_profile_type = 'rectangular'
     A21 = 1
     general_transition = atomic_transition.Transition(up=up,low=low)
     radiative_transition = atomic_transition.RadiativeTransition(
@@ -181,8 +186,7 @@ class TestTransition():
     width_v = 1*constants.kilo
     Tkin_data = np.array((1,2,3,4,5))
     test_emission_line = atomic_transition.EmissionLine(
-                              up=up,low=low,A21=A21,
-                              line_profile_cls=line_profile_cls,
+                              up=up,low=low,A21=A21,line_profile_type=line_profile_type,
                               width_v=width_v)
 
     @pytest.mark.filterwarnings('ignore:invalid value','ignore:divide by zero')
@@ -203,7 +207,7 @@ class TestTransition():
         with pytest.raises(AssertionError):
             atomic_transition.EmissionLine(
                               up=self.up,low=self.low,A21=1,
-                              line_profile_cls=self.line_profile_cls,
+                              line_profile_type=self.line_profile_type,
                               width_v=self.width_v,nu0=wrong_nu0)
 
     def test_emission_line_constructor(self):
@@ -215,7 +219,7 @@ class TestTransition():
     def test_constructor_from_radiative_transition(self):
         emission_line = atomic_transition.EmissionLine.from_radiative_transition(
                                radiative_transition=self.radiative_transition,
-                               line_profile_cls=self.line_profile_cls,
+                               line_profile_type=self.line_profile_type,
                                width_v=self.width_v)
         assert emission_line.nu0 == self.radiative_transition.nu0
         assert emission_line.A21 == self.radiative_transition.A21
@@ -230,7 +234,7 @@ class TestTransition():
         with pytest.raises(AssertionError):
             atomic_transition.EmissionLine.from_radiative_transition(
                                radiative_transition=wrong_nu0_rad_trans,
-                               line_profile_cls=self.line_profile_cls,
+                               line_profile_type=self.line_profile_type,
                                width_v=self.width_v)
 
     def test_coll_transition_constructor(self):
@@ -240,18 +244,17 @@ class TestTransition():
                       up=self.up,low=self.low,K21_data=negative_21,
                       Tkin_data=self.Tkin_data)
 
-    def tau_nu(self):
+    def test_tau_nu_shape(self):
         nu = np.ones((2,4,7))*50
         N1 = 1
         N2 = 3
         tau_nu = self.test_emission_line.tau_nu(N1=N1,N2=N2,nu=nu)
         assert tau_nu.shape == nu.shape
-        tau_nu_array = self.test_emission_line.dense_tau_nu_array(N1=N1,N2=N2)
-        tau_nu_array_explicit = self.test_emission_line.tau_nu(
-                                   N1=N1,N2=N2,
-                                   nu=self.test_emission_line.line_profile.dense_nu_array)
-        assert np.all(tau_nu_array==tau_nu_array_explicit)
-        tau_nu0 = self.test_emission_line.tau_nu(N1=N1,N2=N2)
+
+    def test_tau_nu0(self):
+        N1 = 1
+        N2 = 3
+        tau_nu0 = self.test_emission_line.tau_nu0(N1=N1,N2=N2)
         assert tau_nu0 == self.test_emission_line.tau_nu(
                                    N1=N1,N2=N2,nu=self.test_emission_line.nu0)
 

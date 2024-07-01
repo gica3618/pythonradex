@@ -16,17 +16,17 @@ test_cases = [{'filename':'co.dat',
                'collider_densities_values':[{'ortho-H2':1e2/constants.centi**3,
                                              'para-H2':1e3/constants.centi**3},
                                             {'ortho-H2':1e4/constants.centi**3}],
-               'Ntot_values':np.array((1e12,1e15,1e18))/constants.centi**2,
+               'N_values':np.array((1e12,1e15,1e18))/constants.centi**2,
                'Tkin_values':np.array((30,100,200))},
               {'filename':'hcl.dat',
                'collider_densities_values':[{'para-H2':1e4/constants.centi**3},
                                             {'para-H2':1e6/constants.centi**3}],
-               'Ntot_values':np.array((1e10,1e12,1e14))/constants.centi**2,
+               'N_values':np.array((1e10,1e12,1e14))/constants.centi**2,
                'Tkin_values':np.array((80,100,200))},
               {'filename':'ocs@xpol.dat',
                'collider_densities_values':[{'H2':1e2/constants.centi**3},
                                             {'H2':1e4/constants.centi**3}],
-               'Ntot_values':np.array((1e10,1e13,1e15))/constants.centi**2,
+               'N_values':np.array((1e10,1e13,1e15))/constants.centi**2,
                'Tkin_values':np.array((30,100,200))},
               {'filename':'c.dat',
                #RADEX adds default values of H2, ortho-H2 and para-H2 if not given
@@ -39,13 +39,13 @@ test_cases = [{'filename':'co.dat',
                                              'e':1e2/constants.centi**3,
                                              'ortho-H2':1/constants.centi**3,
                                              'para-H2':1/constants.centi**3}],
-               'Ntot_values':np.array((1e12,1e15,1e20))/constants.centi**2,
+               'N_values':np.array((1e12,1e15,1e20))/constants.centi**2,
                'Tkin_values':np.array((30,100,140))}]
 
-def RADEX_out_filename(radex_geometry,specie,Tkin,Ntot,collider_densities):
+def RADEX_out_filename(radex_geometry,specie,Tkin,N,collider_densities):
     rg = radex_geometry.replace(' ','').replace('\n','')
     save_filename = f'radex_{rg}_{specie}_Tkin{Tkin}_'\
-                    +f'Ntot{Ntot/constants.centi**-2:.1g}'
+                    +f'N{N/constants.centi**-2:.1g}'
     for coll,dens in collider_densities.items():
         save_filename += f'_{coll}_{dens/constants.centi**-3:.1g}'
     save_filename += '.out'

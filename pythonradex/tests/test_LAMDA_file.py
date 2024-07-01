@@ -88,7 +88,7 @@ def test_coll_transitions():
             _,oH2_K21 = test_coll_trans_oH2.coeffs(Tkin_data_oH2)
             assert np.allclose(coeffs_oH2,oH2_K21,atol=0)
 
-def test_quanum_number_reading():
+def test_quantum_number_reading():
     for i in range(len(lamda_data)):
         for data in (lamda_data[i],lamda_data_nu0_read[i]):
             assert data['quantum numbers'] == []

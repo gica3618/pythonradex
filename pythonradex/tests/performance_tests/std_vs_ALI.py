@@ -14,7 +14,7 @@ Created on Wed May 15 11:06:20 2024
 
 import sys
 sys.path.append('/home/gianni/science/projects/code/pythonradex')
-from pythonradex import nebula,helpers
+from pythonradex import radiative_transfer,helpers
 import os
 from scipy import constants
 import timeit
@@ -31,26 +31,26 @@ datafilepath = os.path.join(data_folder,data_filename)
 geometry = 'uniform sphere'
 ext_background = helpers.generate_CMB_background(z=0)
 
-Ntot_values = (1e13/constants.centi**2,1e18/constants.centi**2,1e20/constants.centi**2,
+N_values = (1e13/constants.centi**2,1e18/constants.centi**2,1e20/constants.centi**2,
                1e22/constants.centi**2)
 Tkin = 20
-line_profile = 'rectangular'
+line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
 timeit_number = 10
 
 for mode in ('ALI','std'):
-    for Ntot in Ntot_values:
-        example_nebula = nebula.Nebula(
+    for N in N_values:
+        cloud = radiative_transfer.Cloud(
                     datafilepath=datafilepath,geometry=geometry,
-                    line_profile=line_profile,width_v=width_v,
+                    line_profile_type=line_profile_type,width_v=width_v,
                     iteration_mode=mode)
-        example_nebula.set_cloud_parameters(
-                     ext_background=ext_background,Tkin=Tkin,Ntot=Ntot,
+        cloud.set_parameters(
+                     ext_background=ext_background,Tkin=Tkin,N=N,
                      collider_densities=collider_densities,)
-        example_nebula.solve_radiative_transfer()
-        solve_time = timeit.timeit(example_nebula.solve_radiative_transfer,
+        cloud.solve_radiative_transfer()
+        solve_time = timeit.timeit(cloud.solve_radiative_transfer,
                                    number=timeit_number)
-        max_tau = np.max(example_nebula.tau_nu0)
-        Tex_10 = example_nebula.Tex[0]
-        print(f'time for {mode}, Ntot={Ntot/constants.centi**-2:.2g}, max tau {max_tau:.6g}, '
+        max_tau = np.max(cloud.tau_nu0)
+        Tex_10 = cloud.Tex[0]
+        print(f'time for {mode}, N={N/constants.centi**-2:.2g}, max tau {max_tau:.6g}, '
               +f'Tex={Tex_10:.6g}: {solve_time:.2g}')

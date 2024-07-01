@@ -7,15 +7,16 @@ Created on Wed Jun 19 11:37:03 2024
 """
 
 import os
-from pythonradex import nebula,helpers
+from pythonradex import radiative_transfer,helpers
 from scipy import constants
 import numpy as np
 import RADEX_test_cases
 import itertools
+import pytest
 
 #RADEX does the calculation with rectangular, but then applies a correction factor
 #to convert to Gaussian
-line_profile = 'Gaussian'
+line_profile_type = 'Gaussian'
 ext_background = lambda nu: helpers.B_nu(nu=nu,T=RADEX_test_cases.T_background)
 iteration_mode = 'ALI'
 #for some unknown reason, LVG sphere RADEX shows much larger differences to pythonradex
@@ -95,6 +96,8 @@ def read_RADEX_output(filepath,molecule):
 LAMDA_folder = '/home/gianni/science/projects/code/pythonradex/pythonradex/tests/LAMDA_files'
 RADEX_output_folder = '/home/gianni/science/projects/code/pythonradex/pythonradex/tests/RADEX_test_cases'
 
+@pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
+@pytest.mark.filterwarnings("ignore:negative optical depth")
 def test_vs_RADEX():
     max_taus = []
     for geo,geo_RADEX in RADEX_geometry.items():
@@ -103,29 +106,29 @@ def test_vs_RADEX():
             datafilepath = os.path.join(LAMDA_folder,filename)
             specie = filename.split('.')[0]
             width_v = RADEX_test_cases.width_v
-            for collider_densities,Ntot,Tkin in\
+            for collider_densities,N,Tkin in\
                              itertools.product(test_case['collider_densities_values'],
-                                               test_case['Ntot_values'],
+                                               test_case['N_values'],
                                                test_case['Tkin_values']):
-                neb = nebula.Nebula(
+                cloud = radiative_transfer.Cloud(
                            datafilepath=datafilepath,geometry=geo,
-                           line_profile=line_profile,width_v=width_v,
+                           line_profile_type=line_profile_type,width_v=width_v,
                            iteration_mode='ALI',use_NG_acceleration=False,
                            average_beta_over_line_profile=False)
-                cloud_params = {'Ntot':Ntot,'Tkin':Tkin,
+                cloud_params = {'N':N,'Tkin':Tkin,
                                 'collider_densities':collider_densities}
-                neb.set_cloud_parameters(
+                cloud.set_parameters(
                        ext_background=ext_background,**cloud_params)
-                neb.solve_radiative_transfer()
-                #print(f'tau: {np.min(neb.tau_nu0)}, {np.max(neb.tau_nu0)}')
+                cloud.solve_radiative_transfer()
+                #print(f'tau: {np.min(cloud.tau_nu0)}, {np.max(cloud.tau_nu0)}')
                 RADEX_output_filename = RADEX_test_cases.RADEX_out_filename(
                                          radex_geometry=geo_RADEX,specie=specie,
-                                         Tkin=Tkin,Ntot=Ntot,
+                                         Tkin=Tkin,N=N,
                                          collider_densities=collider_densities)
                 RADEX_results_filepath = os.path.join(RADEX_output_folder,
                                                       RADEX_output_filename)
                 RADEX_results = read_RADEX_output(filepath=RADEX_results_filepath,
-                                                  molecule=neb.emitting_molecule)
+                                                  molecule=cloud.emitting_molecule)
                 assert RADEX_results['Tkin'] == Tkin
                 #if collider is ortho-H2 or para-H2, RADEX automatically also
                 #adds H2, although it will not use it (as long as H2 is not defined
@@ -136,17 +139,17 @@ def test_vs_RADEX():
                         if 'H2' not in collider_densities and 'H2' in cleaned_RADEX_colliders:
                             del cleaned_RADEX_colliders['H2']
                 assert cleaned_RADEX_colliders == collider_densities
-                assert RADEX_results['column_density'] == Ntot
+                assert RADEX_results['column_density'] == N
                 assert RADEX_results['width_v'] == width_v
                 level_pop_selection =\
-                    neb.level_pop > frac_max_level_pop_to_consider[geo]*np.max(neb.level_pop)
+                    cloud.level_pop > frac_max_level_pop_to_consider[geo]*np.max(cloud.level_pop)
                 taus = []
-                for i,trans in enumerate(neb.emitting_molecule.rad_transitions):
+                for i,trans in enumerate(cloud.emitting_molecule.rad_transitions):
                     if level_pop_selection[trans.up.number]:
-                        taus.append(neb.tau_nu0[i])
+                        taus.append(cloud.tau_nu0[i])
                 if len(taus) > 0:
                     max_taus.append(np.max(taus))
                 assert np.allclose(RADEX_results['level_pop'][level_pop_selection],
-                                   neb.level_pop[level_pop_selection],atol=0,
+                                   cloud.level_pop[level_pop_selection],atol=0,
                                    rtol=rtol[geo])
     print(f'max(taus): {np.max(max_taus)}')

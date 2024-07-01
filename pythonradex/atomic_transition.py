@@ -15,7 +15,7 @@ import numba as nb
 def fast_tau_nu(A21,phi_nu,g_low,g_up,N1,N2,nu):
     return constants.c**2/(8*np.pi*nu**2)*A21*phi_nu*(g_up/g_low*N1-N2)
 
-@nb.jit(nopython=True,cache=True)
+@nb.jit(nopython=True,cache=True,error_model='numpy')
 def fast_Tex(Delta_E,g_low,g_up,x1,x2):
     return np.where((x1==0) & (x2==0),0,
                     -Delta_E/(constants.k*np.log(g_low*x2/(g_up*x1))))
@@ -51,24 +51,15 @@ class LineProfile():
     
     '''Abstract class representing a general, normalised line profile.'''
 
-    n_nu_elements_for_dense_array = 200
-    window_width_for_dense_nu_array = 6 #in units of the line width
     n_nu_elements_for_coarse_array = 10
 
     def __init__(self,nu0,width_v):
-        '''nu0 is the central frequency, width_v is the width of the line in velocity
-        space. The exact meaning of width_v depends on the type of the line profile'''
         self.nu0 = nu0
         self.width_v = width_v
         self.width_nu = helpers.Delta_nu(Delta_v=self.width_v,nu0=self.nu0)
         self.initialise_phi_nu_params()
         self.initialise_coarse_nu_array()
         self.coarse_phi_nu_array = self.phi_nu(nu=self.coarse_nu_array)
-        w = self.window_width_for_dense_nu_array
-        self.dense_nu_array = np.linspace(self.nu0-w*self.width_nu/2,
-                                          self.nu0+w*self.width_nu/2,
-                                          self.n_nu_elements_for_dense_array)
-        self.dense_phi_nu_array = self.phi_nu(nu=self.dense_nu_array)
         self.phi_nu0 = self.phi_nu(nu=self.nu0)
 
     def initialise_phi_nu_params(self):
@@ -78,17 +69,42 @@ class LineProfile():
         raise NotImplementedError
 
     def phi_nu(self,nu):
+        r'''The value of the line profile in frequency space.
+        
+        The line profile is normalised such that its integral over frequency equals 1.
+
+        Args:
+            nu (float or numpy.ndarray): frequency in [Hz]
+        
+        Returns:
+            float or numpy.ndarray: The line profile in [Hz\ :sup:`-1`]
+        '''
         raise NotImplementedError
 
     def phi_v(self,v):
+        r'''The value of the line profile in velocity space.
+        
+        The line profile is normalised such that its integral over velocity equals 1.
+
+        Args:
+            v (float or numpy.ndarray): velocity in [m/s]
+        
+        Returns:
+            float or numpy.ndarra: The line profile in [(m/s)\ :sup:`-1`]
+        '''
         nu = self.nu0*(1-v/constants.c)
         return self.phi_nu(nu)*self.nu0/constants.c
 
 
 class GaussianLineProfile(LineProfile):
 
-    """Represents a Gaussian line profile; the width_v parameter is interpreted
-    as FWHM"""
+    """Represents a Gaussian line profile
+    
+    Attributes:
+        nu0 (:obj:`float`): rest frequency in [Hz]
+        width_nu (:obj:`float`): FWHM in [Hz]
+        width_v (:obj:`float`): FWHM in [m/s]
+    """
 
     def initialise_phi_nu_params(self):
         self.sigma_nu = helpers.FWHM2sigma(self.width_nu)
@@ -121,21 +137,17 @@ class RectangularLineProfile(LineProfile):
         return np.where(inside_line,self.normalisation,0)
 
 
-class Level():
+line_profiles = {'Gaussian':GaussianLineProfile,'rectangular':RectangularLineProfile}
 
-    '''Represents an atomic/molecular energy level
+
+class Level():
+    '''Represents an atomic / molecular level.
 
     Attributes:
-    ------------
-
-    - g: float
-        statistical weight
-
-    - E: float
-        energy in [J]
-
-    - number: int
-        the level number (0 for the lowest level)'''
+        g (:obj:`float`): the statistical weight of the level
+        E (:obj:`float`): the energy of the level in [J]
+        number (:obj:`int`): the number of the level
+    '''
 
     def __init__(self,g,E,number):
         self.g = g
@@ -143,7 +155,15 @@ class Level():
         self.number = number
 
     def LTE_level_pop(self,Z,T):
-        '''LTE level population for partition function Z and temperature T'''
+        '''Calculates the fractional population of the level in LTE.
+
+        Args:
+            Z (:obj:`float`): The partiion function.
+            T (:obj:`float`): The temperature in [K].
+        
+        Returns:
+            float: The fractional population of the level in LTE.
+        '''
         #this is a convenience function that is not used when solving the non-LTE
         #radiative transfer
         return self.g*np.exp(-self.E/(constants.k*T))/Z
@@ -151,31 +171,21 @@ class Level():
 
 class Transition():
 
-    '''Represents a transition between two energy levels'''
-
     def __init__(self,up,low):
-        '''up and low are instances of the Level class, representing the upper
-        and lower level of the transition'''
         self.up = up
         self.low = low
         self.Delta_E = self.up.E-self.low.E
         self.name = f'{self.up.number}-{self.low.number}'
 
     def Tex(self,x1,x2):
-        '''
-        Computes the excitation temperature from the fractional level population
+        '''Computes the excitation temperature.
         
-        Parameters
-        ------------
-        x1: float or numpy.ndarray
-            fractional population of the lower level
-        x2: float or numpy.ndarray
-            fractional population of the upper level
+        Args:
+            x1: (numpy.ndarray): fractional population of the lower level
+            x2: (numpy.ndarray): fractional population of the upper level
 
-        Returns
-        ---------
-        numpy.ndarray
-            excitation temperature in K
+        Returns:
+            numpy.ndarray: excitation temperature in [K]
         '''
         return fast_Tex(Delta_E=self.Delta_E,g_up=self.up.g,g_low=self.low.g,
                         x1=x1,x2=x2)
@@ -183,41 +193,20 @@ class Transition():
 
 class RadiativeTransition(Transition):
 
-    '''Represents the radiative transition between two energy levels
+    r'''Represents the radiative transition between two energy levels.
 
     Attributes:
-    ------------
-    
-    - up: Level
-        upper level
-
-    - low: Level
-        lower level
-        
-    - Delta_E: float
-        energy difference between upper and lower level
-
-    - name: str
-        transition name, for example '3-2' for the transition between the fourth and the
-        third level
-
-    - A21: float 
-        Einstein A21 coefficient
-
-    - nu0: float
-        central frequency of the transition
-
-    - B21: float
-        Einstein B21 coefficient
-
-    - B12: float
-        Einstein B12 coefficient'''
+        up (pythonradex.atomic_transition.Level): the upper level of the transition
+        low (pythonradex.atomic_transition.Level): the lower level of the transition
+        Delta_E (:obj:`float`): the energy difference between the upper and lower level
+        name (:obj:`str`): name of the transition
+        nu0 (:obj:`float`): rest frequency in [Hz]
+        A21 (:obj:`float`): Einstein A21 coefficient in [s\ :sup:`-1`]
+        B21 (:obj:`float`): Einstein B21 coefficient in [sr m\ :sup:`2` Hz / Jy]
+        B12 (:obj:`float`): Einstein B12 coefficient in [sr m\ :sup:`2` Hz / Jy]
+    '''
 
     def __init__(self,up,low,A21,nu0=None):
-        '''up and low are instances of the Level class, representing the upper
-        and lower level of the transition. A21 is the Einstein coefficient for
-        spontaneous emission. The optinal argument nu0 is the line frequency; if not
-        given, nu0 will be calculated from the level energies.'''
         Transition.__init__(self,up=up,low=low)
         assert self.Delta_E > 0, 'negative Delta_E for radiative transition'
         self.A21 = A21
@@ -235,101 +224,102 @@ class RadiativeTransition(Transition):
 
 class EmissionLine(RadiativeTransition):
 
-    '''Represents an emission line arising from the radiative transition between
-    two levels'''
-
-    def __init__(self,up,low,A21,line_profile_cls,width_v,nu0=None):
-        '''up and low are instances of the Level class, representing the upper
-        and lower level of the transition. A21 is the Einstein coefficient,
-        line_profile_cls is the line profile class to be used,
-        and width_v the width of the line in [m/s]. The optinal argument nu0 is the
-        line frequency in [Hz]; if not given, nu0 will be calculated from
-        the level energies.'''
+    r'''Represents an emission line arising from the radiative transition between
+    two levels
+    
+    Attributes:
+        up (pythonradex.atomic_transition.Level): the upper level of the transition
+        low (pythonradex.atomic_transition.Level): the lower level of the transition
+        Delta_E (:obj:`float`): the energy difference between the upper and lower level
+            in [J]
+        name (:obj:`str`): name of the transition
+        nu0 (:obj:`float`): rest frequency in [Hz]
+        A21 (:obj:`float`): Einstein A21 coefficient in [s\ :sup:`-1`]
+        B21 (:obj:`float`): Einstein B21 coefficient in [sr m\ :sup:`2` Hz / Jy]
+        B12 (:obj:`float`): Einstein B12 coefficient in [sr m\ :sup:`2` Hz / Jy]
+        line_profile (pythonradex.atomic_transition.LineProfile): object representing
+            the shape of the line profile
+    '''
+    def __init__(self,up,low,A21,line_profile_type,width_v,nu0=None):
         RadiativeTransition.__init__(self,up=up,low=low,A21=A21,nu0=nu0)
-        self.line_profile = line_profile_cls(nu0=self.nu0,width_v=width_v)
+        self.line_profile = line_profiles[line_profile_type](nu0=self.nu0,width_v=width_v)
         self.tau_kwargs = {'A21':self.A21,'g_up':self.up.g,'g_low':self.low.g}
 
     @classmethod
-    def from_radiative_transition(cls,radiative_transition,line_profile_cls,
+    def from_radiative_transition(cls,radiative_transition,line_profile_type,
                                   width_v):
         '''Alternative constructor, taking an instance of RadiativeTransition,
         a line profile class and the width of the line'''
         return cls(up=radiative_transition.up,low=radiative_transition.low,
-                   A21=radiative_transition.A21,line_profile_cls=line_profile_cls,
+                   A21=radiative_transition.A21,line_profile_type=line_profile_type,
                    width_v=width_v,nu0=radiative_transition.nu0)
 
     def tau_nu(self,N1,N2,nu):
-        '''Compute the optical depth from the column densities N1 and N2 (in m-2)
-        in the lower and upper level respectively, and the frequency nu (in Hz).'''
+        r'''Computes the optical depth
+        
+        Args:
+            N1: (:obj:`float`): column density of molecules in the lower level
+                in [m\ :sup:`-2`]
+            N2: (:obj:`float`): column density of molecules in the upper level
+                in [m\ :sup:`-2`]
+            nu: (numpy.ndarray): frequencies in [Hz]
+
+        Returns:
+            numpy.ndarray: the optical depth at the requested frequencies
+        
+        '''
         return fast_tau_nu(phi_nu=self.line_profile.phi_nu(nu),N1=N1,N2=N2,nu=nu,
                            **self.tau_kwargs)
 
-    def dense_tau_nu_array(self,N1,N2):
-        '''Compute the optical depth from the column densities N1 and N2 (in m-2)
-        in the lower and upper level respectively. Returns an array corresponding to the
-        dense frequencies grid defined in the line profile'''
-        return fast_tau_nu(phi_nu=self.line_profile.dense_phi_nu_array,N1=N1,N2=N2,
-                           nu=self.line_profile.dense_nu_array,**self.tau_kwargs)
-
     def tau_nu0(self,N1,N2):
-        '''Computes the optical depth at the line center from the column densities
-        N1 and N2 (in m-2) in the lower and upper level respectively.'''
+        r'''Computes the optical depth at the rest frequency
+        
+        Args:
+            N1: (:obj:`float` or numpy.ndarray): column density of molecules
+                in the lower level in [m\ :sup:`-2`]
+            N2: (:obj:`float` or numpy.ndarray): column density of molecules
+                in the upper level in [m\ :sup:`-2`]
+
+        Returns:
+            float or numpy.ndarray: the optical depth at the rest frequency
+        
+        '''
         return fast_tau_nu(phi_nu=self.line_profile.phi_nu0,N1=N1,N2=N2,nu=self.nu0,
                            **self.tau_kwargs)
 
             
 class CollisionalTransition(Transition):
 
-    '''Represent the collisional transtion between two energy levels
+    '''Represent the collisional transition between two energy levels
     
     Attributes:
-    -------------    
-
-    - up: Level
-        upper level
-
-    - low: Level
-        lower level
-
-    - Delta_E: float
-        energy difference [Jy] between upper and lower level
-
-    - name: str
-        transition name, for example '3-2' for the transition between the fourth and the
-        third level
-
-    - K21_data: numpy.ndarray
-        value of the collision rate coefficient K21 [m3/s] at different temperatures
-
-    - Tkin_data: numpy.ndarray
-        the temperature values corresponding to the K21 values
+        up (pythonradex.atomic_transition.Level): the upper level of the transition
+        low (pythonradex.atomic_transition.Level): the lower level of the transition
+        Delta_E (:obj:`float`): the energy difference between the upper and lower level
+            in [J]
+        name (:obj:`str`): name of the transition
     ''' 
 
     def __init__(self,up,low,K21_data,Tkin_data):
-        '''up and low are instances of the Level class, representing the upper
-        and lower level of the transition. K21_data is an array of rate coefficients
-        in [m3/s] over the temperatures defined in the array Tkin_data'''
         Transition.__init__(self,up=up,low=low)
         assert np.all(K21_data >= 0)
         self.K21_data = K21_data
         self.Tkin_data = Tkin_data
 
     def coeffs(self,Tkin):
-        '''
-        collisional transition rates
-        
-        computes the collisional transition rate coefficients by interpolation.
+        r'''
+        Computes the collisional coefficients
 
-        Parameters
-        -----------
-        Tkin: array_like
-            kinetic temperature in K. Must be within the interpolation range.
+        Args:
+            Tkin (float or numpy.ndarray): kinetic temperature in [K]
         
-        Returns
-        ---------
-        tuple
-            The collision coefficients K12 and K21 in [m3/s] at the requested
-            temperature(s)'''
+        Returns:
+            tuple: The collision coefficients K12 and K21 in [m\ :sup:`3`/s]
+            at the requested temperature(s)
+        
+        Raises:
+            AssertionError: If Tkin is outside the available temperature range.
+        '''
         Tkin = np.atleast_1d(Tkin)
         K12,K21 = fast_coll_coeffs(
                          Tkin=Tkin,Tkin_data=self.Tkin_data,K21_data=self.K21_data,

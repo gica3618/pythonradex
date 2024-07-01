@@ -3,21 +3,12 @@ import numpy as np
 from pythonradex import helpers,escape_probability,atomic_transition
 from pythonradex.molecule import EmittingMolecule
 import warnings
-import time
 import numba as nb
 
 
 class RateEquations():
 
-    '''Represents the equations of statistical equilibrium for the level populations
-    of a molecule'''
-
     def __init__(self,molecule,collider_densities,Tkin,mode='std'):
-        '''molecule is an instance of the Molecule class
-        collider_densities is a dict with the densities of the collision partners
-        Tkin is the kinetic temperature
-        mode is the method to solve the radiative transfer: either std (i.e.
-        lambda iteration) or ALI (i.e. accelerated lambda iteration)'''
         self.molecule = molecule
         self.collider_densities = collider_densities
         self.Tkin = Tkin
@@ -172,45 +163,22 @@ class RateEquations():
         return fractional_population
 
 
-class Nebula():
+class Cloud():
 
-    '''Represents an emitting gas cloud
+    '''
+    Solving the non-LTE radiative transfer using escape probabilities.
 
-    Important attributes:
-    ---------------
+    Attributes:
 
-    - emitting_molecule: EmittingMolecule
-        An object containing atomic data and line profile information
-    
-    - geometry: str
-        geometry of the gas cloud
+        emitting_molecule (pythonradex.molecule.EmittingMolecule): object
+            containing all the information about the emitting atom or molecule
+        tau_nu0 (numpy.ndarray): optical depth of each transition at the central frequency
+        level_pop (numpy.ndarray): fractional population of each level
+        Tex (numpy.ndarray): excitation temperature of each transition
 
-    - ext_background: func
-        function returning the external background radiation field for given frequency
-
-    - Tkin: float
-        kinetic temperature of colliders
-
-    - collider_densities: dict
-        densities of the collision partners
-
-    - Ntot: float
-        total column density
-
-    - rate_equations: RateEquations
-        object used to set up and solve the equations of statistical equilibrium
-
-    - warn_negative_tau: bool
-        if True, print a warning if the calculation results in negative optical depth
+    Note:
+        The attributes tau_nu0, level_pop and Tex are available only after solving the radiative transfer by calling solve_radiative_transfer
         
-    The following attributes are available after the radiative transfer has been solved:
-    
-    - tau_nu0: numpy.ndarray
-        optical depth of each transition at the central frequency.
-    - level_pop: numpy.ndarray
-        fractional population of levels.
-    - Tex: numpy.ndarray
-        excitation temperature of each transition.
     '''
     relative_convergence = 1e-6
     min_iter = 10
@@ -228,59 +196,50 @@ class Nebula():
     line_profiles = {'Gaussian':atomic_transition.GaussianLineProfile,
                      'rectangular':atomic_transition.RectangularLineProfile}
 
-    def __init__(self,datafilepath,geometry,line_profile,width_v,iteration_mode='ALI',
+    def __init__(self,datafilepath,geometry,line_profile_type,width_v,iteration_mode='ALI',
                  use_NG_acceleration=True,average_beta_over_line_profile=False,
                  warn_negative_tau=True,debug=False):
-        '''
-        Parameters:    
-        ---------------        
+        '''Initialises a new instance of the Cloud class.
+
+        Args:
+            datafilepath (:obj:`str`): filepath to the LAMDA file that contains
+                the atomic / molecular data
+            geometry (:obj:`str`): determines how the escape probability
+                and flux are calculated. Available options: "uniform sphere", 
+                "uniform sphere RADEX", "uniform slab", "LVG slab", "LVG sphere" and
+                "LVG sphere RADEX". The options containing "RADEX" are meant to
+                mimic the behaviour of the original RADEX code by using the same
+                equations as RADEX.
+            line_profile_type (:obj:`str`): The type of the line profile. Available options:
+                "rectangular" or "Gaussian".
+            width_v (:obj:`float`): The width of the line profile in [m/s]. For a Gaussian
+                profile, this is interpreted as the FWHM.
+            iteration_mode (:obj:`str`): Method used to solve the radiative transfer:
+                "std" for standard Lambda iteration, or "ALI" for Accelerated Lambda
+                Iteration. ALI is recommended. Defaults to "ALI".
+            use_NG_acceleration (:obj:`bool`): Whether to use Ng acceleration. Defaults
+                to True.
+            average_beta_over_line_profile (:obj:`bool`): Whether to average the escape
+                probability beta over the line profile, or just take the value at the
+                rest frequency (like RADEX). Defaults to False. Setting this to true makes the
+                calculation slower.
+            warn_negative_tau (:obj:`bool`): Whether the raise a warning when negative
+                optical depth is encountered. Defaults to True. Setting this to False
+                is useful when calculating a grid of models.
+            debug (:obj:`bool`): Whether to print additional information. Defaults to False.
         
-        datafilepath: str
-             path to the LAMDA data file that contains the atomic data
-
-        geometry: str
-            geometry of the gas cloud that determines how the escape probability
-            and flux are calculated. Currently available are "uniform sphere", 
-            "uniform sphere RADEX", "uniform slab", "LVG slab" and "LVG shere".
-            Here, "uniform sphere RADEX" uses the forumla for a uniform sphere
-            for the escape probability and the formula for a uniform slab to calculate
-            the flux, as in the original RADEX code. LVG (large velocity gradient) slab
-            and sphere are the same as in RADEX.
-
-        line_profile: str
-            type of line profile. Available are "Gaussian" and "rectangular".
-
-        width_v: float
-            width of the line in [m/s]. For Gaussian, this is the FWHM.
-
-        iteration_mode: str
-            Which method to use to solve the radiative transfer: "std" for standard
-            Lambda iteration, or "ALI" for Accelerated Lambda Iteration. ALI is
-            recommended, and is the default.
-    
-        use_NG_acceleration: bool
-            Whether or not to use Ng-acceleration to speed up convergence. Default
-            is to use it.
-
-        partition_function: func
-            Partition function. If None, partition function will be calculated from the
-            atomic data provided by the datafile
-
-        average_beta_over_line_profile: bool
-            Whether or not to average the escape probability over the line profile,
-            or just take its value at the frequency of the line center (as in RADEX).
-            Averaging gives more accurate results, but slows down the calculation
-
-        warn_negative_tau: bool
-            if True, print a warning if the calculation results in negative optical depth
-
-        debug: bool
-            if True, additional information is printed out
         '''
-        self.emitting_molecule = EmittingMolecule.from_LAMDA_datafile(
+        self.line_profile_type = line_profile_type
+        assert width_v < 10000*constants.kilo,\
+                      'assumption of small nu0/Delta_nu for flux calculation not satisfied'
+        self.emitting_molecule = EmittingMolecule(
                                     datafilepath=datafilepath,
-                                    line_profile_cls=self.line_profiles[line_profile],
+                                    line_profile_type=self.line_profile_type,
                                     width_v=width_v)
+        if self.lines_are_overlapping(lines=self.emitting_molecule.rad_transitions):
+            warnings.warn('lines of input molecule are overlapping, '
+                          +'but pythonradex does not treat overlapping lines; results '
+                          +'might not be correct')
         self.geometry = self.geometries[geometry]()
         self.iteration_mode = iteration_mode
         self.use_NG_acceleration = use_NG_acceleration
@@ -295,7 +254,7 @@ class Nebula():
         self.A21_lines = np.array([line.A21 for line in rad_trans])
         self.B12_lines = np.array([line.B12 for line in rad_trans])
         self.B21_lines = np.array([line.B21 for line in rad_trans])
-        self.nu_lines = np.array([line.line_profile.coarse_nu_array for line in
+        self.coarse_nu_lines = np.array([line.line_profile.coarse_nu_array for line in
                                   rad_trans])
         self.nu0_lines = np.array([line.nu0 for line in rad_trans])
         self.phi_nu_lines = np.array([line.line_profile.coarse_phi_nu_array for
@@ -306,39 +265,32 @@ class Nebula():
         self.glow_lines = np.array([line.low.g for line in rad_trans])
         self.low_number_lines = np.array([line.low.number for line in rad_trans])
         self.up_number_lines = np.array([line.up.number for line in rad_trans])
-        self.dense_nu_lines = np.array([line.line_profile.dense_nu_array for line in
-                                        rad_trans])
-        self.dense_phi_nu_lines = np.array([line.line_profile.dense_phi_nu_array for
-                                            line in rad_trans])
 
-    def set_cloud_parameters(self,ext_background,Ntot,Tkin,collider_densities):
-        '''
-        ext_background: func
-            The function should take the frequency in Hz as input and return the
-            background radiation field in [W/m2/Hz/sr]
+    def set_parameters(self,ext_background,N,Tkin,collider_densities):
+        r'''Set the parameters for a new radiative transfer calculation.
 
-        Ntot: float
-            total column density in [1/m2]
-
-        Tkin: float
-            kinetic temperature of the colliders
-
-        collider_densities: dict
-            number densities of the collision partners in [1/m3]. Following keys
-            are recognised: "H2", "para-H2", "ortho-H2", "e", "H", "He", "H+"
+        Args:
+            ext_background (func): A function taking the frequency in Hz as input
+                and returning the background radiation field in [W/m\ :sup:`2`/Hz/sr]
+            N (:obj:`float`): The column density in [m\ :sup:`-2`].
+            Tkin (:obj:`float`): The kinetic temperature of the gas in [K].
+            collider_densities (dict): A dictionary of the number densities of
+               each collider that should be considered, in units of [m\ :sup:`-3`]. The
+               following keys are recognised: "H2", "para-H2", "ortho-H2", "e",
+               "H", "He", "H+"
         '''
         #why do I put this into a seperate method rather than __init__? The reason
         #is that the stuff in __init__ is expensive (in particular reading the
-        #LAMDA file). So if I explore e.g. a grid of Ntot, that stuff in __init__
+        #LAMDA file). So if I explore e.g. a grid of N, that stuff in __init__
         #should only be done once to save computation time. Then this method
-        #can be called inside the loop over e.g. the Ntot values
+        #can be called inside the loop over e.g. the N values
         #note that setting up the rate equations is expensive, so I only do it if
         #necessary
         self.ext_background = ext_background
         #needed for the compiled functions:
         self.I_ext_lines = np.array([self.ext_background(line.nu0) for line in
                                      self.emitting_molecule.rad_transitions])
-        self.Ntot = Ntot
+        self.N = N
         if (not hasattr(self,'Tkin')) or (not hasattr(self,'collider_densities')):
             Tkin_or_collider_density_changed = True
         else:
@@ -354,14 +306,14 @@ class Nebula():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def fast_averaged_beta_lines(level_populations,low_number_lines,up_number_lines,Ntot,
+    def fast_averaged_beta_lines(level_populations,low_number_lines,up_number_lines,N,
                                  A21_lines,phi_nu_lines,gup_lines,glow_lines,nu_lines,
                                  beta_function):
         n_lines = low_number_lines.size
         averaged_beta = np.empty(n_lines)
         for i in range(n_lines):
-            N1 = Ntot * level_populations[low_number_lines[i]]
-            N2 = Ntot * level_populations[up_number_lines[i]]
+            N1 = N * level_populations[low_number_lines[i]]
+            N2 = N * level_populations[up_number_lines[i]]
             tau_nu = atomic_transition.fast_tau_nu(
                           A21=A21_lines[i],phi_nu=phi_nu_lines[i,:],
                           g_up=gup_lines[i],g_low=glow_lines[i],N1=N1,N2=N2,
@@ -377,14 +329,14 @@ class Nebula():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def fast_beta_nu0_lines(level_populations,low_number_lines,up_number_lines,Ntot,
+    def fast_beta_nu0_lines(level_populations,low_number_lines,up_number_lines,N,
                             A21_lines,phi_nu0_lines,gup_lines,glow_lines,nu0_lines,
                             beta_function):
         n_lines = low_number_lines.size
         tau_nu0_lines = np.empty(n_lines)
         for i in range(n_lines):
-            N1 = Ntot * level_populations[low_number_lines[i]]
-            N2 = Ntot * level_populations[up_number_lines[i]]
+            N1 = N * level_populations[low_number_lines[i]]
+            N2 = N * level_populations[up_number_lines[i]]
             tau_nu0_lines[i] = atomic_transition.fast_tau_nu(
                                  A21=A21_lines[i],phi_nu=phi_nu0_lines[i],
                                  g_up=gup_lines[i],g_low=glow_lines[i],N1=N1,N2=N2,
@@ -395,16 +347,16 @@ class Nebula():
         return self.fast_averaged_beta_lines(
                         level_populations=level_populations,
                         low_number_lines=self.low_number_lines,
-                        up_number_lines=self.up_number_lines,Ntot=self.Ntot,
+                        up_number_lines=self.up_number_lines,N=self.N,
                         A21_lines=self.A21_lines,phi_nu_lines=self.phi_nu_lines,
                         gup_lines=self.gup_lines,glow_lines=self.glow_lines,
-                        nu_lines=self.nu_lines,beta_function=self.geometry.beta)
+                        nu_lines=self.coarse_nu_lines,beta_function=self.geometry.beta)
 
     def beta_alllines_nu0(self,level_populations):
         return self.fast_beta_nu0_lines(
                        level_populations=level_populations,
                        low_number_lines=self.low_number_lines,
-                       up_number_lines=self.up_number_lines,Ntot=self.Ntot,
+                       up_number_lines=self.up_number_lines,N=self.N,
                        A21_lines=self.A21_lines,phi_nu0_lines=self.phi_nu0_lines,
                        gup_lines=self.gup_lines,glow_lines=self.glow_lines,
                        nu0_lines=self.nu0_lines,beta_function=self.geometry.beta)
@@ -509,9 +461,7 @@ class Nebula():
             return 0
 
     def solve_radiative_transfer(self):
-        """Solves the radiative transfer by iterating and initialises
-        new attributes that contain the solution.
-        """
+        """Solves the radiative transfer."""
         level_pop = self.get_new_level_pop(old_level_pop=None)
         old_level_pops = nb.typed.List([])
         Tex_residual = np.ones(self.emitting_molecule.n_rad_transitions) * np.inf
@@ -530,7 +480,7 @@ class Nebula():
             if self.debug:
                 print(f'max relative Tex residual: {np.max(Tex_residual):.3g}')
             tau_nu0_lines = self.emitting_molecule.get_tau_nu0(
-                                       N=self.Ntot,level_population=new_level_pop)
+                                       N=self.N,level_population=new_level_pop)
             residual = self.compute_residual(
                  Tex_residual=Tex_residual,tau_lines=tau_nu0_lines,
                  min_tau_considered_for_convergence=self.min_tau_considered_for_convergence)
@@ -547,7 +497,7 @@ class Nebula():
         if self.debug:
             print(f'converged in {counter} iterations')
         self.tau_nu0 = self.emitting_molecule.get_tau_nu0(
-                                   N=self.Ntot,level_population=level_pop)
+                                   N=self.N,level_population=level_pop)
         if self.warn_negative_tau:
             if np.any(self.tau_nu0 < 0):
                 negative_tau_transition_indices = np.where(self.tau_nu0 < 0)[0]
@@ -562,54 +512,164 @@ class Nebula():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def fast_compute_line_fluxes(solid_angle,Tex,nu_lines,phi_nu_lines,level_pop,
-                                  low_number_lines,up_number_lines,gup_lines,glow_lines,
-                                  Ntot,A21_lines,compute_flux_nu):
-        n_lines = Tex.size
-        n_nu = nu_lines[0,:].size
-        tau_nu_lines = np.empty((n_lines,n_nu))
-        obs_line_spectra = tau_nu_lines.copy()
-        obs_line_fluxes = np.empty_like(Tex)
-        for i in range(n_lines):
-            source_function = helpers.B_nu(T=Tex[i],nu=nu_lines[i,:])
-            x1 = level_pop[low_number_lines[i]]
-            x2 = level_pop[up_number_lines[i]]
-            A21 = A21_lines[i]
-            N1 = Ntot*x1
-            N2 = Ntot*x2
-            tau_nu_lines[i,:] = atomic_transition.fast_tau_nu(
-                                A21=A21,phi_nu=phi_nu_lines[i],g_low=glow_lines[i],
-                                g_up=gup_lines[i],N1=N1,N2=N2,nu=nu_lines[i,:])
-            obs_line_spectra[i,:] = compute_flux_nu(
-                                          tau_nu=tau_nu_lines[i,:],
-                                          source_function=source_function,
-                                          solid_angle=solid_angle)
-            obs_line_fluxes[i] = helpers.fast_trapz(obs_line_spectra[i,:],nu_lines[i,:])
-        return tau_nu_lines,obs_line_spectra,obs_line_fluxes
+    def fast_fluxes_rectangular(solid_angle,transitions,tau_nu0_lines,Tex,nu0_lines,
+                                compute_flux_nu,width_v):
+        obs_line_fluxes = []
+        for i in transitions:
+            nu0 = nu0_lines[i]
+            tau_nu0 = tau_nu0_lines[i]
+            source_function_nu0 = helpers.B_nu(T=Tex[i],nu=nu0)
+            flux_nu0 = compute_flux_nu(tau_nu=np.array((tau_nu0,)),
+                                       source_function=source_function_nu0,
+                                       solid_angle=solid_angle)
+            #I am neglecting the dependence of tau on 1/nu**2:
+            width_nu = width_v/constants.c*nu0
+            flux = flux_nu0*width_nu
+            obs_line_fluxes.append(flux[0])
+        return np.array(obs_line_fluxes)
 
-    def compute_line_fluxes(self,solid_angle):
-        '''Compute the observed spectra and total fluxes for each line. This
-        requires that the radiative transfer has been solved. This method
-        computes the attributes obs_line_fluxes (total observed line fluxes in W/m2)
-        and obs_line_spectra (observed line spectra in W/m2/Hz).
+    @staticmethod
+    @nb.jit(nopython=True,cache=True)
+    def fast_fluxes_Gaussian(solid_angle,transitions,tau_nu0_lines,Tex,nu0_lines,
+                             compute_flux_nu,width_v):
+        obs_line_fluxes = []
+        tau_peak_fraction = 1e-2
+        nu_per_FHWM = 20
+        for i in transitions:
+            nu0 = nu0_lines[i]
+            tau_nu0 = tau_nu0_lines[i]
+            FWHM_nu = width_v/constants.c*nu0
+            sigma_nu = helpers.FWHM2sigma(FWHM_nu)
+            #for thin emission, I just want to include out to a certain fraction of the peak
+            #but for thick emission, the spectrum is saturated, so a fraction of the
+            #peak is not useful; in those cases, I need to set an absolute value
+            #for the minimum tau to include
+            min_tau = np.min(np.array([0.01,tau_peak_fraction*tau_nu0]))
+            Delta_nu = sigma_nu*np.sqrt(-2*np.log(min_tau/tau_nu0))
+            n_nu = int(2*Delta_nu/FWHM_nu * nu_per_FHWM)
+            nu = np.linspace(nu0-Delta_nu,nu0+Delta_nu,n_nu)
+            #doing an approximation: in principle, tau has an additional 1/nu**2 dependence,
+            #but if Delta_nu is small compared to nu0, that dependence is negligible
+            tau_nu = tau_nu0*np.exp(-(nu-nu0)**2/(2*sigma_nu**2))
+            source_function = helpers.B_nu(T=Tex[i],nu=nu)
+            spectrum = compute_flux_nu(tau_nu=tau_nu,source_function=source_function,
+                                       solid_angle=solid_angle)
+            flux = helpers.fast_trapz(spectrum,nu)
+            obs_line_fluxes.append(flux)
+        return np.array(obs_line_fluxes)
+            
+    def fluxes(self,solid_angle,transitions=None):
+        r'''Calculate the observed fluxes.
+
+        Args:
+            solid_angle (:obj:`float`): The solid angle of the source in [sr].
+            transitions (:obj:`list` of :obj:`str` or None): The indices of the
+                transitions for which to calculate the fluxes. If None, then the
+                fluxes of all transitions are calculated. Defaults to None. The
+                indices are relative to the list of transitions in the LAMDA file,
+                starting with 0.
         
-        Parameters:
-        ---------------
-        solid_angle: float
-            the solid angle of the source in [rad2]
+        Returns:
+            list: The list of fluxes in [W/m\ :sup:`2`] corresponding to the input list of requested
+            transitions. If not specific transitions where requested (transitions=None),
+            then the list of fluxes corresponds to the transitions as listed in the LAMDA
+            file.
         '''
-        self.tau_nu_lines,self.obs_line_spectra,self.obs_line_fluxes\
-              = self.fast_compute_line_fluxes(
-                      solid_angle=solid_angle,Tex=self.Tex,nu_lines=self.dense_nu_lines,
-                      phi_nu_lines=self.dense_phi_nu_lines,level_pop=self.level_pop,
-                      low_number_lines=self.low_number_lines,
-                      up_number_lines=self.up_number_lines,gup_lines=self.gup_lines,
-                      glow_lines=self.glow_lines,Ntot=self.Ntot,
-                      A21_lines=self.A21_lines,compute_flux_nu=self.geometry.compute_flux_nu)
+        if transitions is None:
+            transitions = list(range(self.emitting_molecule.n_rad_transitions))
+        transitions = nb.typed.List(transitions)
+        kwargs = {'solid_angle':solid_angle,'transitions':transitions,
+                  'tau_nu0_lines':self.tau_nu0,'Tex':self.Tex,'nu0_lines':self.nu0_lines,
+                  'compute_flux_nu':self.geometry.compute_flux_nu,
+                  'width_v':self.emitting_molecule.width_v}
+        if self.line_profile_type == 'Gaussian':
+            return np.squeeze(self.fast_fluxes_Gaussian(**kwargs))
+        elif self.line_profile_type == 'rectangular':
+            return np.squeeze(self.fast_fluxes_rectangular(**kwargs))
+        else:
+            raise RuntimeError
+
+    def identify_lines(self,nu):
+        nu_min,nu_max = np.min(nu),np.max(nu)
+        selected_lines = []
+        selected_line_indices = []
+        for i,line in enumerate(self.emitting_molecule.rad_transitions):
+            if nu_min <= line.nu0 and line.nu0 <= nu_max:
+                selected_line_indices.append(i)
+                selected_lines.append(line)
+        return selected_lines,selected_line_indices
+
+    def get_tau_nu_lines(self,nu):
+        selected_lines,selected_line_indices = self.identify_lines(nu=nu)
+        tau_nu_lines = []
+        for line_index,line in zip(selected_line_indices,selected_lines):
+            x1 = self.level_pop[line.low.number]
+            x2 = self.level_pop[line.up.number]
+            N1 = self.N*x1
+            N2 = self.N*x2
+            tau_nu_lines.append(line.tau_nu(N1=N1,N2=N2,nu=nu))
+        return tau_nu_lines
+
+    def tau_nu(self,nu):
+        '''Calculate the optical depth profile at the requested frequencies.
+
+        Args:
+            nu (numpy.ndarray): The frequencies in [Hz].
+        
+        Returns:
+            np.ndarray: The optical depth at the requested frequencies.
+        '''
+        tau_nu_lines = self.get_tau_nu_lines(nu=nu)
+        return np.sum(tau_nu_lines,axis=0)
+
+    def lines_are_overlapping(self,lines):
+        n_lines = len(lines)
+        if n_lines <= 1:
+            return False
+        lines = sorted(lines,key=lambda l: l.nu0)
+        for i in range(n_lines-1):
+            nu01 = lines[i].nu0
+            nu02 = lines[i+1].nu0
+            width_nu1 = self.emitting_molecule.width_v/constants.c*nu01
+            width_nu2 = self.emitting_molecule.width_v/constants.c*nu02
+            if self.line_profile_type == 'rectangular':
+                if nu01+width_nu1/2 >= nu02-width_nu2/2:
+                    return True
+            elif self.line_profile_type == 'Gaussian':
+                if nu01+width_nu1 >= nu02-width_nu2:
+                    return True
+            else:
+                raise RuntimeError
+        return False
+
+    def spectrum(self,solid_angle,nu):
+        r'''Calculate the flux at the requested frequencies.
+
+        Args:
+            solid_angle (:obj:`float`): The solid angle of the source in [sr].
+            nu (numpy.ndarray): The frequencies in [Hz].
+        
+        Returns:
+            np.ndarray: The flux at the requested frequencies in [W/m\ :sup:`2`/Hz].
+        '''
+        #assumption: lines do not overlap, so I can just sum them up
+        #this also works for overlapping lines in the optically thin regime
+        #but this is invalid for overlapping thick lines
+        selected_lines,selected_line_indices = self.identify_lines(nu=nu)
+        if self.lines_are_overlapping(selected_lines):
+            warnings.warn('lines are overlapping, spectrum might not be correct!')
+        tau_nu_lines = self.get_tau_nu_lines(nu=nu)
+        spectrum = np.zeros_like(nu)
+        for line_index,line,tau_nu_line in zip(selected_line_indices,selected_lines,
+                                               tau_nu_lines):
+            source_function = helpers.B_nu(T=self.Tex[line_index],nu=nu)
+            spectrum += self.geometry.compute_flux_nu(
+                               tau_nu=tau_nu_line,source_function=source_function,
+                               solid_angle=solid_angle)
+        return spectrum
 
     def print_results(self):
-        '''print out the results from the radiative transfer computation. Can
-        only be called if the radiative transfer has been solved.'''
+        '''Prints the results from the radiative transfer computation.'''
         print('\n')
         print('  up   low      nu [GHz]    T_ex [K]      poplow         popup'\
               +'         tau_nu0')

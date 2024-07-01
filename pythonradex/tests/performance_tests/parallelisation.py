@@ -15,7 +15,7 @@ Created on Sat Jun  1 20:41:03 2024
 
 import sys
 sys.path.append('/home/gianni/science/projects/code/pythonradex')
-from pythonradex import nebula,helpers
+from pythonradex import radiative_transfer,helpers
 from multiprocessing import Pool
 from concurrent.futures import ProcessPoolExecutor
 from scipy import constants
@@ -33,11 +33,11 @@ import os
 #chunk_sizes = [1,5,10,50,100,300,800]
 chunk_sizes = [100,]
 
-def generate_new_nebula():
-    return nebula.Nebula(
+def generate_new_cloud():
+    return radiative_transfer.Cloud(
                     datafilepath='/home/gianni/science/LAMDA_database_files/co.dat',
-                    geometry='uniform sphere',line_profile='Gaussian',
-                    width_v=1*constants.kilo,verbose=False,iteration_mode='ALI',
+                    geometry='uniform sphere',line_profile_type='Gaussian',
+                    width_v=1*constants.kilo,iteration_mode='ALI',
                     use_NG_acceleration=True,average_beta_over_line_profile=False)
 
 ext_background = helpers.generate_CMB_background(z=0)
@@ -45,7 +45,7 @@ collider = 'para-H2'
 
 n_processes = [1,2,4,8]
 n = 15
-Ntot_values = np.logspace(12,15,n)/constants.centi**2
+N_values = np.logspace(12,15,n)/constants.centi**2
 coll_density_values = np.logspace(3,5,n)/constants.centi**3
 Tkin_values = np.linspace(20,100,n)
 print(f'number of calculations: {n**3}')
@@ -53,22 +53,22 @@ print(f'chunk sizes: {chunk_sizes}')
 print(f'n_processes: {n_processes}')
 
 #need to do a first calculation to compile everything
-neb = generate_new_nebula()
-neb.set_cloud_parameters(
+cloud = generate_new_cloud()
+cloud.set_parameters(
       ext_background=ext_background,Tkin=20,
-      collider_densities={collider:1e4/constants.centi**3},Ntot=1e13/constants.centi**2)
-neb.solve_radiative_transfer()
+      collider_densities={collider:1e4/constants.centi**3},N=1e13/constants.centi**2)
+cloud.solve_radiative_transfer()
 
 print('running without multiprocessing')
 start = time.time()
-neb = generate_new_nebula()
-for Ntot,coll_dens,Tkin in itertools.product(Ntot_values,coll_density_values,
+cloud = generate_new_cloud()
+for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                              Tkin_values):
     collider_densities = {collider:coll_dens}
-    neb.set_cloud_parameters(
+    cloud.set_parameters(
          ext_background=ext_background,Tkin=Tkin,
-         collider_densities=collider_densities,Ntot=Ntot)
-    neb.solve_radiative_transfer()
+         collider_densities=collider_densities,N=N)
+    cloud.solve_radiative_transfer()
 end = time.time()
 time_without_multiprocessing = end-start
 print(f'without multiprocessing: {time_without_multiprocessing:.3g}')
@@ -78,16 +78,16 @@ for chunksize in chunk_sizes:
     multiprocessing_times = []
     for n_proc in n_processes:
         print(f'doing n_proc = {n_proc}')
-        param_iterator = itertools.product(Ntot_values,coll_density_values,Tkin_values)
+        param_iterator = itertools.product(N_values,coll_density_values,Tkin_values)
         start = time.time()
-        neb = generate_new_nebula()
+        cloud = generate_new_cloud()
         def wrapper(params):
-            Ntot,coll_dens,Tkin = params
+            N,coll_dens,Tkin = params
             collider_densities = {collider:coll_dens}
-            neb.set_cloud_parameters(
+            cloud.set_parameters(
                   ext_background=ext_background,Tkin=Tkin,
-                  collider_densities=collider_densities,Ntot=Ntot)
-            neb.solve_radiative_transfer()
+                  collider_densities=collider_densities,N=N)
+            cloud.solve_radiative_transfer()
         if __name__ == '__main__':
             p = Pool(n_proc)
             p.map(wrapper,param_iterator,chunksize=chunksize)

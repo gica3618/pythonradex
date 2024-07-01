@@ -11,6 +11,7 @@ Welcome to the ``pyhonradex`` documentation!
    :caption: Contents:
 
    notebooks/test_notebook
+   API
 
 Summary
 ==============
@@ -248,7 +249,7 @@ Numpy arrays are also allowed as input::
 
 
 Negative optical depth
-==============
+=========================
 
 As discussed in [vanderTak07]_, for certain parameters ("especially low density and/or strong radiation field", [vanderTak07]_), negative optical depth can arise due to a level population inversion. This requires non-local treatement of the radiative transfer, which is not possible with ``pyhonradex``. The results should still be valid, though less accurate, for optical depths only slightly negative (:math:`\tau_\nu\gtrsim-0.1`). However, the results for more strongly negative optical depths should be ignored [vanderTak07]_. ``pyhonradex`` prints a warning if the solution contains negative optical depths.
 
@@ -367,44 +368,6 @@ These are the equations that ``pythonradex`` iteratively solves.
 Difference between ``pythonradex`` and ``RADEX``
 ------------------------------------------------------
 There is a difference between the outputs of ``RADEX`` and ``pythonradex``. The ``RADEX`` output :math:`T_R` (or the corresponding flux outputs) is intended to be directly compared to telescope data. To be more specifc, from the computed optical depth and excitation temperature, ``RADEX`` first computes :math:`I_\mathrm{tot} = B_\nu(T_\mathrm{ex})(1-e^{-\tau}) + I_\mathrm{bg}e^{-\tau}`, i.e. the total intensity at the line centre that is recorded at the telescope, where :math:`I_\mathrm{bg}` is the background radiation. This is the sum of the radiation from the gas (first term) and the background radiation attenuated by the gas (second term). From this, the observer will subtract the background (or, in other words, the continuum), giving :math:`I_\mathrm{measured} = I_\mathrm{tot} - I_\mathrm{bg} = (B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau})`. The ``RADEX`` output :math:`T_R` is the Rayleigh-Jeans temperature corresponding to :math:`I_\mathrm{measured}`. On the other hand, ``pythonradex`` computes the line flux directly, i.e. the output corresponds simply to the photons coming from the gas alone. In general, one can directly compare the amount of observed 'gas photons' to :math:`I_\mathrm{measured}` as long as :math:`B_\nu(T_\mathrm{ex}) \gg I_\mathrm{bg}`.
-
-
-Detailed documentation of ``pyhonradex``
-========================================================
-
-.. _rad_trans_doc:
-
-Radiative transfer
---------------------------
-The core of ``pyhonradex`` is the Nebula class which is used to solve the radiative transfer.
-
-.. autoclass:: pythonradex.nebula.Nebula
-    :members: __init__, solve_radiative_transfer, compute_line_fluxes, print_results 
-
-.. _read_LAMDA_doc:
-
-Reading LAMDA files
--------------------------
-``pyhonradex`` provides a convenient function in the ``LAMDA_file`` module to read files from the LAMDA database:
-
-.. autofunction:: pythonradex.LAMDA_file.read
-
-The data is returned using the following classes:
-
-.. autoclass:: pythonradex.atomic_transition.Level
-
-.. autoclass:: pythonradex.atomic_transition.RadiativeTransition
-    :members: Tex
-
-.. autoclass:: pythonradex.atomic_transition.CollisionalTransition
-    :members: Tex,coeffs
-
-helpers module
------------------
-The ``helpers`` module provides a number of convenience functions, some of which might be of interest to the user.
-
-.. automodule:: pythonradex.helpers
-    :members: B_nu,generate_CMB_background,zero_background,FWHM2sigma
 
 
 Acknowledgement:

@@ -8,7 +8,7 @@ Created on Fri Sep  1 10:04:47 2023
 
 import sys
 sys.path.append('/home/gianni/science/projects/code/pythonradex')
-from pythonradex import nebula,helpers
+from pythonradex import radiative_transfer,helpers
 from scipy import constants
 import os
 import numpy as np
@@ -21,28 +21,28 @@ import itertools
 radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
                        'He':'He'}
 ext_background = helpers.generate_CMB_background(z=0)
-n_elements = [5,7,10,15] #for Tkin, collider and Ntot
-#most optimistic case is if only Ntot is varied because then rate equations don't
+n_elements = [5,7,10,15] #for Tkin, collider and N
+#most optimistic case is if only N is varied because then rate equations don't
 #need to be re-calculated every time
-vary_only_Ntot = False
+vary_only_N = False
 
 data_filename = 'co.dat'
 collider = 'para-H2'
-log_Ntot_limits = 14+4,18+4
+log_N_limits = 14+4,18+4
 Tmin,Tmax = 20,250
 # data_filename = 'hco+.dat'
 # collider = 'H2'
-# log_Ntot_limits = 10+4,14+4
+# log_N_limits = 10+4,14+4
 # data_filename = 'so@lique.dat'
 # collider = 'H2'
-# log_Ntot_limits = 10+4,12+4
+# log_N_limits = 10+4,12+4
 # Tmin,Tmax = 60,250
 
 
 # 
 # Tkin = 50
 # collider_densities = {'H2':1e5/constants.centi**3}
-# Ntot_values = np.array((1e11,1e12,1e14,1e16,1e18))/constants.centi**2
+# N_values = np.array((1e11,1e12,1e14,1e16,1e18))/constants.centi**2
 
 # data_filename = 'c.dat'
 # Tkin = 100
@@ -50,18 +50,18 @@ Tmin,Tmax = 20,250
 #RADEX does other strange things with the H2 density:
 #see line 112 in io.f, line 168 in io.f, and line 225 in readdata.f
 # collider_densities = {'e':1e3/constants.centi**3}
-# #Ntot_values = np.array((1e11,1e12,1e14,1e16,1e18))/constants.centi**2
-# Ntot_values = np.array((1e18,))/constants.centi**2
+# #N_values = np.array((1e11,1e12,1e14,1e16,1e18))/constants.centi**2
+# N_values = np.array((1e18,))/constants.centi**2
 
 
 # data_filename = 'so@lique.dat'
 # Tkin = 100
 # collider_densities = {'H2':1e3/constants.centi**3}
-# Ntot_values = np.array((1e11,1e12,1e14,1e16,1e18))/constants.centi**2
+# N_values = np.array((1e11,1e12,1e14,1e16,1e18))/constants.centi**2
 
 
 geometry = 'uniform sphere' #verify that the RADEX you are using was compiled with this geometry
-line_profile = 'rectangular' #actually, RADEX assumed rectangular, but than converts it Gaussian for the line flux
+line_profile_type = 'rectangular' #actually, RADEX assumed rectangular, but than converts it Gaussian for the line flux
 width_v = 1*constants.kilo
 iteration_mode = 'ALI'
 use_NG_acceleration = True
@@ -84,39 +84,38 @@ for i,n in enumerate(n_elements):
             print('removing python cache')
             shutil.rmtree(cache_folder)
     print(f'n elements: {n}')
-    if vary_only_Ntot:
-        Ntot_values = np.logspace(log_Ntot_limits[0],log_Ntot_limits[1],n**3)
+    if vary_only_N:
+        N_values = np.logspace(log_N_limits[0],log_N_limits[1],n**3)
         coll_density_values = [1e4/constants.centi**3,]
         Tkin_values = [(Tmin+Tmax)/2,]
     else:
-        Ntot_values = np.logspace(log_Ntot_limits[0],log_Ntot_limits[1],n)
+        N_values = np.logspace(log_N_limits[0],log_N_limits[1],n)
         coll_density_values = np.logspace(3,5,n)/constants.centi**3
         Tkin_values = np.linspace(Tmin,Tmax,n)
 
     print('running pythonradex')
     start = time.time()
-    example_nebula = nebula.Nebula(
+    cloud = radiative_transfer.Cloud(
                         datafilepath=datafilepath,geometry=geometry,
-                        line_profile=line_profile,width_v=width_v,
-                        verbose=False,iteration_mode=iteration_mode,
+                        line_profile_type=line_profile_type,width_v=width_v,
+                        iteration_mode=iteration_mode,
                         use_NG_acceleration=use_NG_acceleration,
                         average_beta_over_line_profile=average_beta_over_line_profile)
-    #IMPORTANT: here I put Ntot in the outer loop on purpose to have the worst case
-    #if I put Ntot in the innermost loop, performance will be better because
+    #IMPORTANT: here I put N in the outer loop on purpose to have the worst case
+    #if I put N in the innermost loop, performance will be better because
     #rate equations don't need to be re-computed for every iteration
-    for Ntot,coll_dens,Tkin in itertools.product(Ntot_values,coll_density_values,
+    for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                                  Tkin_values):
         collider_densities = {collider:coll_dens}
-        example_nebula.set_cloud_parameters(
-                             ext_background=ext_background,Tkin=Tkin,
-                                collider_densities=collider_densities,Ntot=Ntot)
-        example_nebula.solve_radiative_transfer()
+        cloud.set_parameters(ext_background=ext_background,Tkin=Tkin,
+                             collider_densities=collider_densities,N=N)
+        cloud.solve_radiative_transfer()
     end = time.time()
     pythonradex_times[i] = end-start
     
     print('Running RADEX')
     start = time.time()
-    for Ntot,coll_dens,Tkin in itertools.product(Ntot_values,coll_density_values,
+    for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                                  Tkin_values):
         collider_densities = {collider:coll_dens}
         with open(radex_input_file,mode='w') as f:
@@ -129,7 +128,7 @@ for i,n in enumerate(n_elements):
                 f.write(radex_collider_keys[collider]+'\n')
                 f.write(f'{density/constants.centi**-3}\n')
             f.write('2.73\n')
-            f.write(f'{Ntot/constants.centi**-2}\n')
+            f.write(f'{N/constants.centi**-2}\n')
             f.write(f'{width_v/constants.kilo}\n')
             f.write('0\n')
         os.system(f'{radex_executable} < {radex_input_file} > /dev/null')
