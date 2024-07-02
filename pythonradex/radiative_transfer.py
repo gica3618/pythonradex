@@ -8,7 +8,7 @@ import numba as nb
 
 class RateEquations():
 
-    def __init__(self,molecule,collider_densities,Tkin,mode='std'):
+    def __init__(self,molecule,collider_densities,Tkin,mode):
         self.molecule = molecule
         self.collider_densities = collider_densities
         self.Tkin = Tkin
@@ -34,10 +34,10 @@ class RateEquations():
                     Tkin_data = self.molecule.coll_Tkin_data,
                     K21_data=self.molecule.coll_K21_data,gups=self.molecule.coll_gups,
                     glows=self.molecule.coll_glows,DeltaEs=self.molecule.coll_DeltaEs)
-        assert mode in ('std','ALI')
+        assert mode in ('LI','ALI')
         self.mode = mode
-        if self.mode == 'std':
-            self.rad_rates = self.rad_rates_std
+        if self.mode == 'LI':
+            self.rad_rates = self.rad_rates_LI
         elif self.mode == 'ALI':
             self.rad_rates = self.rad_rates_ALI
         self.up_number_lines = np.array([line.up.number for line in
@@ -80,7 +80,7 @@ class RateEquations():
 
     @staticmethod
     #@nb.jit(nopython=True,cache=True) #doesn't help
-    def rad_rates_std(Jbar_lines,A21_lines,B12_lines,B21_lines):
+    def rad_rates_LI(Jbar_lines,A21_lines,B12_lines,B21_lines):
         '''compute the rates for the Lambda iteration method for radiative transitions,
         from the average radiation field for all lines given by Jbar_lines.'''
         uprate = B12_lines*Jbar_lines
@@ -147,7 +147,7 @@ class RateEquations():
 
     def solve(self,**kwargs):
         '''Solve the SE equations
-           for std mode, kwargs includes Jbar_lines
+           for LI mode, kwargs includes Jbar_lines
            for ALI mode, kwargs includes beta_lines and I_ext_lines'''
         matrix = np.zeros((self.molecule.n_levels,self.molecule.n_levels))
         rad_rates = self.rad_rates(**kwargs)
@@ -215,7 +215,7 @@ class Cloud():
             width_v (:obj:`float`): The width of the line profile in [m/s]. For a Gaussian
                 profile, this is interpreted as the FWHM.
             iteration_mode (:obj:`str`): Method used to solve the radiative transfer:
-                "std" for standard Lambda iteration, or "ALI" for Accelerated Lambda
+                "LI" for standard Lambda iteration, or "ALI" for Accelerated Lambda
                 Iteration. ALI is recommended. Defaults to "ALI".
             use_NG_acceleration (:obj:`bool`): Whether to use Ng acceleration. Defaults
                 to True.
@@ -396,7 +396,7 @@ class Cloud():
                     source_func=source_func)
 
     def get_new_level_pop(self,old_level_pop):
-        assert self.rate_equations.mode in ('ALI','std')
+        assert self.rate_equations.mode in ('ALI','LI')
         Einstein_kwargs = {'A21_lines':self.A21_lines,
                           'B12_lines':self.B12_lines,'B21_lines':self.B21_lines}
         ALI_kwargs = {'I_ext_lines':self.I_ext_lines} | Einstein_kwargs
@@ -405,7 +405,7 @@ class Cloud():
             if self.rate_equations.mode == 'ALI':
                 beta_lines = np.ones(self.emitting_molecule.n_rad_transitions)
                 return self.rate_equations.solve(beta_lines=beta_lines,**ALI_kwargs)
-            elif self.rate_equations.mode == 'std':
+            elif self.rate_equations.mode == 'LI':
                 Jbar_lines = self.I_ext_lines
                 return self.rate_equations.solve(Jbar_lines=Jbar_lines,
                                                  **Einstein_kwargs)
@@ -413,7 +413,7 @@ class Cloud():
             beta_lines = self.beta_alllines(level_populations=old_level_pop)
             if self.rate_equations.mode == 'ALI':
                 return self.rate_equations.solve(beta_lines=beta_lines,**ALI_kwargs)
-            elif self.rate_equations.mode == 'std':
+            elif self.rate_equations.mode == 'LI':
                 Jbar_lines = self.Jbar_alllines(level_populations=old_level_pop,
                                                 beta_lines=beta_lines)
                 return self.rate_equations.solve(Jbar_lines=Jbar_lines,

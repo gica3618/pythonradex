@@ -21,7 +21,7 @@ ext_background = helpers.generate_CMB_background()
 
 line_profile_types = ('rectangular','Gaussian')
 geometries = tuple(radiative_transfer.Cloud.geometries.keys())
-iteration_modes = ('ALI','std')
+iteration_modes = ('ALI','LI')
 use_ng_options = (True,False)
 average_beta_options = (True,False)
 

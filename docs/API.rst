@@ -3,9 +3,9 @@ API
 
 .. _rad_trans_API:
 
-Solving the radiative transfer.
+The ``Cloud`` class
 ------------------------------------
-The core of ``pyhonradex`` is the Cloud class which is used to solve the radiative transfer.
+The core of ``pyhonradex`` is the ``Cloud`` class which is used to solve the radiative transfer.
 
 .. autoclass:: pythonradex.radiative_transfer.Cloud
     :members: __init__, set_parameters, solve_radiative_transfer, fluxes, tau_nu, spectrum, print_results 

@@ -9,7 +9,7 @@ Created on Wed May 15 11:06:20 2024
 #test if the ALI scheme indeed leads to faster convergence compared to standard LAMDA iteration
 #in particular, ALI should be faster in the optically thick case
 #turns out that if the iteration stop critertion is not strict (e.g. 1e-2), then
-#ALI and std have similar performance. But if we adopt the same criterion as RADEX
+#ALI and LI have similar performance. But if we adopt the same criterion as RADEX
 #(which seems indeed necessary), then ALI is indeed faster
 
 import sys
@@ -38,7 +38,7 @@ line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
 timeit_number = 10
 
-for mode in ('ALI','std'):
+for mode in ('ALI','LI'):
     for N in N_values:
         cloud = radiative_transfer.Cloud(
                     datafilepath=datafilepath,geometry=geometry,

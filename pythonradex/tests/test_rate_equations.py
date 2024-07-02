@@ -51,7 +51,7 @@ def test_RateEquations_constructor():
             expected_collider_densities_list.append(collider_densities[coll])
         else:
             expected_collider_densities_list.append(np.inf)
-    for mode in ('std','ALI'):
+    for mode in ('LI','ALI'):
         rate_eq = radiative_transfer.RateEquations(
                             molecule=test_molecule,
                             collider_densities=collider_densities,
@@ -75,7 +75,7 @@ def test_coll_rate_matrix():
             expected_coll_rate_matrix[n_low,n_low] += -K12*coll_density
             expected_coll_rate_matrix[n_low,n_up] += K21*coll_density
             expected_coll_rate_matrix[n_up,n_up] += -K21*coll_density
-    for mode in ('std','ALI'):
+    for mode in ('LI','ALI'):
         rate_eq = radiative_transfer.RateEquations(
                             molecule=test_molecule,
                             collider_densities=collider_densities,
@@ -90,12 +90,12 @@ def solve_for_level_pops(collider_densities,Jbar_lines,beta_lines,I_ext_lines):
               'Tkin':Tkin}
     Einstein_kwargs = {'A21_lines':A21_lines,'B12_lines':B12_lines,
                        'B21_lines':B21_lines}
-    rate_equations_std = radiative_transfer.RateEquations(mode='std',**kwargs)
-    level_pop_std = rate_equations_std.solve(Jbar_lines=Jbar_lines,**Einstein_kwargs)
+    rate_equations_LI = radiative_transfer.RateEquations(mode='LI',**kwargs)
+    level_pop_LI = rate_equations_LI.solve(Jbar_lines=Jbar_lines,**Einstein_kwargs)
     rate_equations_ALI = radiative_transfer.RateEquations(mode='ALI',**kwargs)
     level_pop_ALI = rate_equations_ALI.solve(
                           beta_lines=beta_lines,I_ext_lines=I_ext_lines,**Einstein_kwargs)
-    return level_pop_std,level_pop_ALI
+    return level_pop_LI,level_pop_ALI
 
 def test_compute_level_populations_no_excitation():
     level_pops = solve_for_level_pops(collider_densities=collider_densities_0,
