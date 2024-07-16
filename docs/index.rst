@@ -18,6 +18,7 @@ Welcome to the ``pyhonradex`` documentation!
    installation
    examples
    theory
+   geometry
    difference_pythonradex_RADEX
    faq
    API

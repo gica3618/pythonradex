@@ -61,6 +61,29 @@ def beta_analytical_LVG_slab(tau_nu):
 def beta_Taylor_LVG_slab(tau_nu):
     return 1 - (3*tau_nu)/2 + (3*tau_nu**2)/2 - (9*tau_nu**3)/8
 
+#about the LVG sphere
+#the question is how to calculate the flux for this geometry. on the one hand,
+#Elitzur says "In the correspondence with the homogeneous slab calculation,
+#the large-velocity-gradient escape probability corresponds to the local escape
+#probability at slab center. Every point in the expanding wind is truly at the center of
+#a velocity coherent region, and there is no averaging over the whole source, which is
+#infinite." However, an easy way to calculate the flux in a spherically symmetric situation
+#is to calculate the total emitted flux and divide by 4*pi*d**2. And the total emitted flux
+#is simply (total photons produced) * escape probability. For a uniform sphere, this is
+#easy to compute, because the total number of molecules is simply n*V. But is an LVG sphere
+#also uniform? In the derivation in Elitzur92, this is not assumed. However, consider the
+#following points:
+#1. even for spherical symmetry, knowing the column density is not enough to know the total
+#number of molecules. For example, consider two thin shells that both give the same column
+#density. Obviously, the outer shell will have much large mass than the inner shell
+#2. From formula 2.6.36 in Elitzur92, it becomes clear that the optical depth in a velocity-
+#coherent element depends on the local number density. But since pythonradex assumes
+#uniform excitation temperature and a single optical depth characerising the source,
+#the local number density must be the same everywhere
+#Thus, we need to assume that the LVG sphere is uniform, otherwise we cannot handle it
+#in pythonradex
+#in fact, same argument also implies that LVG slab needs to be uniform...
+
 @nb.jit(nopython=True,cache=True)
 def beta_analytical_LVG_sphere(tau_nu):
     #e.g Elitzur p. 44, or Ramos & Elitzur 2018, eq. 14
@@ -146,11 +169,13 @@ def beta_uniform_slab(tau_nu):
 
 @nb.jit(nopython=True,cache=True)
 def beta_LVG_sphere_RADEX_gtr7(tau_nu):
-    return 2/(tau_nu*4*(np.sqrt(np.log(tau_nu/np.sqrt(np.pi)))))
+    tau_nu_r = tau_nu/2
+    return 2/(tau_nu_r*4*(np.sqrt(np.log(tau_nu_r/np.sqrt(np.pi)))))
 
 @nb.jit(nopython=True,cache=True)
 def beta_LVG_sphere_RADEX_less7(tau_nu):
-    return 2*(1-np.exp(-2.34*tau_nu))/(4.68*tau_nu)
+    tau_nu_r = tau_nu/2
+    return 2*(1-np.exp(-2.34*tau_nu_r))/(4.68*tau_nu_r)
 
 @nb.jit(nopython=True,cache=True)
 def beta_LVG_sphere_RADEX(tau_nu):

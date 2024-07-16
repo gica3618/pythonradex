@@ -16,8 +16,7 @@ import numpy as np
 from scipy import constants
 import sys
 sys.path.append('/home/gianni/science/projects/code/pythonradex')
-from pythonradex import molecule,atomic_transition,escape_probability,\
-             escape_probability_functions,helpers
+from pythonradex import molecule,atomic_transition,escape_probability,helpers
 sys.path.append('/home/gianni/science/projects/code/RADEX_wrapper')
 import radex_wrapper
 
@@ -33,9 +32,9 @@ coll_partner_densities = {'para-H2':1e9/constants.centi**3}
 frequency_interval = radex_wrapper.Interval(min=200*constants.giga,
                                             max=240*constants.giga)
 
-datafilepath = '/home/gianni/science/LAMDA_database_files/co.dat'
+datafilepath = '../LAMDA_files/co.dat'
 
-mol = molecule.EmittingMolecule.from_LAMDA_datafile(
+mol = molecule.EmittingMolecule(
             datafilepath=datafilepath, line_profile_type=line_profile_type,
             width_v=width_v)
 level_pop = mol.LTE_level_pop(T=Tex)
@@ -50,7 +49,6 @@ tau_nu = atomic_transition.fast_tau_nu(
            g_low=trans.low.g,g_up=trans.up.g,N1=N1,N2=N2,nu=nu)
 print(f'max tau nu: {np.max(tau_nu):.3g}')
 
-beta_nu = escape_probability_functions.beta_analytical_uniform_sphere(tau_nu=tau_nu)
 volume = 4/3*r**3*np.pi
 solid_angle = r**2*np.pi/d**2
 #W/m2

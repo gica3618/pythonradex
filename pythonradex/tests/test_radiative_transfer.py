@@ -25,17 +25,28 @@ iteration_modes = ('ALI','LI')
 use_ng_options = (True,False)
 average_beta_options = (True,False)
 
+def allowed_param_combination(geometry,line_profile_type):
+    if geometry in ('LVG sphere','LVG slab') and line_profile_type=='Gaussian':
+        return False
+    else:
+        return True
+
 def cloud_params_iterator():
     return itertools.product(geometries,line_profile_types,iteration_modes,
                              use_ng_options,average_beta_options)
 
 def generate_new_clouds():
-    return [radiative_transfer.Cloud(
-                          datafilepath=datafilepath,geometry=geo,
-                          line_profile_type=lp,width_v=width_v,iteration_mode=mode,
-                          use_NG_acceleration=use_ng,
-                          average_beta_over_line_profile=average_beta)
-            for geo,lp,mode,use_ng,average_beta in cloud_params_iterator()]
+    clouds = []
+    for geo,lp,mode,use_ng,average_beta in cloud_params_iterator():
+        if not allowed_param_combination(geometry=geo,line_profile_type=lp):
+            continue
+        cld = radiative_transfer.Cloud(
+                              datafilepath=datafilepath,geometry=geo,
+                              line_profile_type=lp,width_v=width_v,iteration_mode=mode,
+                              use_NG_acceleration=use_ng,
+                              average_beta_over_line_profile=average_beta)
+        clouds.append(cld)
+    return clouds
 
 def test_warning_overlapping_lines():
     with pytest.warns(UserWarning):
@@ -56,6 +67,15 @@ def test_too_large_width_v():
                                   line_profile_type=lp,width_v=width_v,iteration_mode=mode,
                                   use_NG_acceleration=use_ng,
                                   average_beta_over_line_profile=average_beta)
+
+def test_LVG_rectangular():
+    for geo in ('LVG sphere','LVG slab'):
+        with pytest.raises(ValueError):
+            radiative_transfer.Cloud(
+                              datafilepath=datafilepath,geometry=geo,
+                              line_profile_type='Gaussian',width_v=width_v,
+                              iteration_mode='ALI',use_NG_acceleration=True,
+                              average_beta_over_line_profile=True)
 
 def test_set_parameters():
     clouds = generate_new_clouds()
@@ -129,7 +149,10 @@ def test_set_parameters_with_physics():
 def test_beta_alllines():
     T = 45
     N = 1e14/constants.centi**2
-    for geo,avg_beta,lp in itertools.product(geometries,average_beta_options,line_profile_types):
+    for geo,avg_beta,lp in itertools.product(geometries,average_beta_options,
+                                             line_profile_types):
+        if not allowed_param_combination(geometry=geo,line_profile_type=lp):
+            continue
         cloud = radiative_transfer.Cloud(
                             datafilepath=datafilepath,geometry=geo,
                             line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
@@ -217,6 +240,8 @@ def test_radiative_transfer():
     LTE_background = lambda nu: helpers.B_nu(nu=nu,T=Tkin)
     for geo,lp,use_ng,average_beta in itertools.product(geometries,line_profile_types,
                                                         use_ng_options,average_beta_options):
+        if not allowed_param_combination(geometry=geo,line_profile_type=lp):
+            continue
         cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geo,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
@@ -234,67 +259,172 @@ def test_radiative_transfer():
                                       collider_densities=collider_density_small)
             check_LTE(cloud)
 
-@pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
-def test_fast_flux():
+class TestFastFlux():
+
     test_widths_v = np.array((0.1,1,10,100,1000,9000))*constants.kilo
     solid_angle = 1
     Tex0 = 50
-    tau_nu0_values = np.logspace(-3,3,10)
     test_transitions = nb.typed.List([2,4,5])
-    for line_profile_type in ('rectangular','Gaussian'):
-        for geometry,width_v in itertools.product(radiative_transfer.Cloud.geometries.keys(),
-                                                  test_widths_v):
-            cloud = radiative_transfer.Cloud(
-                      datafilepath=datafilepath,geometry=geometry,
-                      line_profile_type=line_profile_type,width_v=width_v,iteration_mode='ALI',
-                      use_NG_acceleration=True,average_beta_over_line_profile=False)
-            all_transitions = nb.typed.List(range(cloud.emitting_molecule.n_rad_transitions))
-            nu0_lines = np.array([line.nu0 for line in cloud.emitting_molecule.rad_transitions])
-            Tex = Tex0*np.ones(cloud.emitting_molecule.n_rad_transitions)
-            for tau_nu0 in tau_nu0_values:
-                tau_nu0_lines = np.ones_like(Tex)*tau_nu0
-                kwargs = {'solid_angle':solid_angle,'tau_nu0_lines':tau_nu0_lines,
-                          'Tex':Tex,'nu0_lines':nu0_lines,
-                          'compute_flux_nu':cloud.geometry.compute_flux_nu,'width_v':width_v}
-                if line_profile_type == 'rectangular':
-                    all_fluxes = cloud.fast_fluxes_rectangular(
-                                        **kwargs,transitions=all_transitions)
-                    selected_fluxes = cloud.fast_fluxes_rectangular(
-                                        **kwargs,transitions=test_transitions)
-                elif line_profile_type == 'Gaussian':
-                    all_fluxes = cloud.fast_fluxes_Gaussian(
-                                          **kwargs,transitions=all_transitions)
-                    selected_fluxes = cloud.fast_fluxes_Gaussian(
-                                        **kwargs,transitions=test_transitions)
-                else:
-                    raise RuntimeError
-                expected_fluxes = []
-                for i,line in enumerate(cloud.emitting_molecule.rad_transitions):
-                    nu0 = line.nu0
-                    width_nu = cloud.emitting_molecule.width_v/constants.c*nu0
-                    if line_profile_type == 'rectangular':
-                        dense_nu = np.linspace(nu0-0.7*width_nu,nu0+0.7*width_nu,1000)
-                    elif line_profile_type == 'Gaussian':
-                        dense_nu = np.linspace(nu0-6*width_nu,nu0+6*width_nu,10000)
+
+    @pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
+    def test_fast_flux(self):
+        tau_nu0_values = np.logspace(-3,3,10)
+        for line_profile_type in ('rectangular','Gaussian'):
+            for geometry,width_v in itertools.product(radiative_transfer.Cloud.geometries.keys(),
+                                                      self.test_widths_v):
+                V_LVG_sphere = width_v/2
+                if not allowed_param_combination(geometry=geometry,
+                                                 line_profile_type=line_profile_type):
+                    continue
+                cloud = radiative_transfer.Cloud(
+                          datafilepath=datafilepath,geometry=geometry,
+                          line_profile_type=line_profile_type,width_v=width_v,iteration_mode='ALI',
+                          use_NG_acceleration=True,average_beta_over_line_profile=False)
+                all_transitions = nb.typed.List(range(cloud.emitting_molecule.n_rad_transitions))
+                nu0_lines = np.array([line.nu0 for line in cloud.emitting_molecule.rad_transitions])
+                Tex = self.Tex0*np.ones(cloud.emitting_molecule.n_rad_transitions)
+                for tau_nu0 in tau_nu0_values:
+                    tau_nu0_lines = np.ones_like(Tex)*tau_nu0
+                    general_kwargs = {'solid_angle':self.solid_angle,
+                                      'tau_nu0_lines':tau_nu0_lines,
+                                      'Tex':Tex,'nu0_lines':nu0_lines}
+                    non_LVG_sphere_kwargs = {'compute_flux_nu':cloud.geometry.compute_flux_nu,
+                                             'width_v':width_v}
+                    gauss_kwargs = {'tau_peak_fraction':radiative_transfer.Cloud.tau_peak_fraction,
+                                    'nu_per_FHWM':radiative_transfer.Cloud.nu_per_FHWM}
+                    if geometry == 'LVG sphere':
+                        all_fluxes = cloud.fast_fluxes_LVG_sphere(
+                                         **general_kwargs,transitions=all_transitions,
+                                         V_LVG_sphere=V_LVG_sphere)
+                        selected_fluxes = cloud.fast_fluxes_LVG_sphere(
+                                            **general_kwargs,transitions=self.test_transitions,
+                                            V_LVG_sphere=V_LVG_sphere)
                     else:
-                        raise RuntimeError
-                    dense_phi_nu = line.line_profile.phi_nu(dense_nu)
-                    expected_tau_nu = dense_phi_nu/dense_nu**2
-                    nu0_index = np.argmin(np.abs(dense_nu-nu0))
-                    norm = tau_nu0/expected_tau_nu[nu0_index]
-                    expected_tau_nu *= norm
-                    source_function = helpers.B_nu(T=Tex[i],nu=dense_nu)
-                    expected_spec = cloud.geometry.compute_flux_nu(
-                                      tau_nu=expected_tau_nu,source_function=source_function,
-                                      solid_angle=solid_angle)
-                    expected_flux = np.trapz(expected_spec,dense_nu)
-                    expected_fluxes.append(expected_flux)
-                atol = 0
-                rtol = 1e-2
-                assert np.allclose(all_fluxes, expected_fluxes,atol=atol,rtol=rtol)
-                expected_selected_fluxes = [expected_fluxes[i] for i in test_transitions]
-                assert np.allclose(selected_fluxes,expected_selected_fluxes,
-                                    atol=atol,rtol=rtol)
+                        if line_profile_type == 'rectangular':
+                            all_fluxes = cloud.fast_fluxes_rectangular(
+                                                **general_kwargs,**non_LVG_sphere_kwargs,
+                                                transitions=all_transitions)
+                            selected_fluxes = cloud.fast_fluxes_rectangular(
+                                                **general_kwargs,**non_LVG_sphere_kwargs,
+                                                transitions=self.test_transitions)
+                        elif line_profile_type == 'Gaussian':
+                            all_fluxes = cloud.fast_fluxes_Gaussian(
+                                            **general_kwargs,**non_LVG_sphere_kwargs,
+                                            **gauss_kwargs,transitions=all_transitions)
+                            selected_fluxes = cloud.fast_fluxes_Gaussian(
+                                                **general_kwargs,**non_LVG_sphere_kwargs,
+                                                **gauss_kwargs,
+                                                transitions=self.test_transitions)
+                        else:
+                            raise RuntimeError
+                    expected_fluxes = []
+                    for i,line in enumerate(cloud.emitting_molecule.rad_transitions):
+                        nu0 = line.nu0
+                        width_nu = cloud.emitting_molecule.width_v/constants.c*nu0
+                        if line_profile_type == 'rectangular':
+                            dense_nu = np.linspace(nu0-0.7*width_nu,nu0+0.7*width_nu,1000)
+                        elif line_profile_type == 'Gaussian':
+                            dense_nu = np.linspace(nu0-6*width_nu,nu0+6*width_nu,10000)
+                        else:
+                            raise RuntimeError
+                        dense_phi_nu = line.line_profile.phi_nu(dense_nu)
+                        expected_tau_nu = dense_phi_nu/dense_nu**2
+                        nu0_index = np.argmin(np.abs(dense_nu-nu0))
+                        norm = tau_nu0/expected_tau_nu[nu0_index]
+                        expected_tau_nu *= norm
+                        source_function = helpers.B_nu(T=Tex[i],nu=dense_nu)
+                        if geometry == 'LVG sphere':
+                            LVG_kwargs = {'nu':dense_nu,'nu0':nu0,'V':V_LVG_sphere}
+                        else:
+                            LVG_kwargs = {}
+                        expected_spec = cloud.geometry.compute_flux_nu(
+                                          tau_nu=expected_tau_nu,source_function=source_function,
+                                          solid_angle=self.solid_angle,**LVG_kwargs)
+                        expected_flux = np.trapz(expected_spec,dense_nu)
+                        expected_fluxes.append(expected_flux)
+                    atol = 0
+                    rtol = 1e-2
+                    assert np.allclose(all_fluxes, expected_fluxes,atol=atol,rtol=rtol)
+                    expected_selected_fluxes = [expected_fluxes[i] for i in
+                                                self.test_transitions]
+                    assert np.allclose(selected_fluxes,expected_selected_fluxes,
+                                        atol=atol,rtol=rtol)
+    
+    # @pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
+    # def test_fast_flux_LVG_sphere(self):
+    #     # test_fast_flux works on tau values and does not solve the radiative transfer,
+    #     # so no access to N2 which is needed for LVG sphere flux; thus need a separate test
+    #     Tkin = 30
+    #     collider_densities = {'ortho-H2':1e4/constants.centi**3}
+    #     N_values = np.logspace(10,18,10)/constants.centi**2
+    #     for line_profile_type in ('rectangular','Gaussian'):
+    #         for width_v in self.test_widths_v:
+    #             cloud = radiative_transfer.Cloud(
+    #                       datafilepath=datafilepath,geometry='LVG sphere',
+    #                       line_profile_type=line_profile_type,width_v=width_v,iteration_mode='ALI',
+    #                       use_NG_acceleration=True,average_beta_over_line_profile=False)
+    #             all_transitions = nb.typed.List(range(cloud.emitting_molecule.n_rad_transitions))
+    #             for N in N_values:
+    #                 cloud.set_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
+    #                                      collider_densities=collider_densities)
+    #                 cloud.solve_radiative_transfer()
+    #                 N2_lines = np.array([cloud.N*cloud.level_pop[trans.up.number]
+    #                                      for trans in
+    #                                      cloud.emitting_molecule.rad_transitions])
+    #                 general_kwargs = {'solid_angle':self.solid_angle,
+    #                                   'tau_nu0_lines':cloud.tau_nu0,
+    #                                   'nu0_lines':cloud.nu0_lines,
+    #                                   'compute_flux_nu':cloud.geometry.compute_flux_nu,
+    #                                   'width_v':cloud.emitting_molecule.width_v,
+    #                                   'beta_function':cloud.geometry.beta,
+    #                                   'N2_lines':N2_lines,'A21_lines':cloud.A21_lines,
+    #                                   'DeltaE_lines':cloud.DeltaE_lines}
+    #                 gauss_kwargs = {'tau_peak_fraction':radiative_transfer.Cloud.tau_peak_fraction,
+    #                                 'nu_per_FHWM':radiative_transfer.Cloud.nu_per_FHWM}
+    #                 if line_profile_type == 'rectangular':
+    #                     all_fluxes = cloud.fast_fluxes_rectangular_LVG_sphere(
+    #                                         **general_kwargs,transitions=all_transitions)
+    #                     selected_fluxes = cloud.fast_fluxes_rectangular_LVG_sphere(
+    #                                         **general_kwargs,transitions=self.test_transitions)
+    #                 elif line_profile_type == 'Gaussian':
+    #                     all_fluxes = cloud.fast_fluxes_Gaussian_LVG_sphere(
+    #                                     **general_kwargs,**gauss_kwargs,transitions=all_transitions)
+    #                     selected_fluxes = cloud.fast_fluxes_Gaussian_LVG_sphere(
+    #                                         **general_kwargs,**gauss_kwargs,
+    #                                         transitions=self.test_transitions)
+    #                 else:
+    #                     raise RuntimeError
+    #                 expected_fluxes = []
+    #                 for i,line in enumerate(cloud.emitting_molecule.rad_transitions):
+    #                     nu0 = line.nu0
+    #                     width_nu = cloud.emitting_molecule.width_v/constants.c*nu0
+    #                     if line_profile_type == 'rectangular':
+    #                         dense_nu = np.linspace(nu0-0.7*width_nu,nu0+0.7*width_nu,1000)
+    #                     elif line_profile_type == 'Gaussian':
+    #                         dense_nu = np.linspace(nu0-6*width_nu,nu0+6*width_nu,10000)
+    #                     else:
+    #                         raise RuntimeError
+    #                     dense_phi_nu = line.line_profile.phi_nu(dense_nu)
+    #                     expected_tau_nu = dense_phi_nu/dense_nu**2
+    #                     nu0_index = np.argmin(np.abs(dense_nu-nu0))
+    #                     norm = cloud.tau_nu0[i]/expected_tau_nu[nu0_index]
+    #                     expected_tau_nu *= norm
+    #                     N2 = cloud.level_pop[line.up.number]*cloud.N
+    #                     expected_spec = cloud.geometry.compute_flux_nu(
+    #                                       beta_nu=cloud.geometry.beta(expected_tau_nu),
+    #                                       solid_angle=self.solid_angle,
+    #                                       N2=N2,A21=line.A21,DeltaE=line.Delta_E,
+    #                                       phi_nu=dense_phi_nu)
+    #                     expected_flux = np.trapz(expected_spec,dense_nu)
+    #                     expected_fluxes.append(expected_flux)
+    #                 atol = 0
+    #                 rtol = 1e-2
+    #                 assert np.allclose(all_fluxes, expected_fluxes,atol=atol,rtol=rtol)
+    #                 expected_selected_fluxes = [expected_fluxes[i] for i in
+    #                                             self.test_transitions]
+    #                 assert np.allclose(selected_fluxes,expected_selected_fluxes,
+    #                                     atol=atol,rtol=rtol)
+
 
 def test_flux_thin():
     Tkin = 45
@@ -307,6 +437,8 @@ def test_flux_thin():
     Omega = sphere_Omega #use the same Omega for all geometries
     for lp,avg_beta in itertools.product(line_profile_types,average_beta_options):
         for geometry in radiative_transfer.Cloud.geometries.keys():
+            if not allowed_param_combination(geometry=geometry,line_profile_type=lp):
+                continue
             cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geometry,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
@@ -316,12 +448,11 @@ def test_flux_thin():
             cloud.solve_radiative_transfer()
             fluxes = cloud.fluxes(solid_angle=Omega,transitions=None)
             expected_fluxes = []
-            # expected_spectra = []
             for i,line in enumerate(cloud.emitting_molecule.rad_transitions):
                 n_up = line.up.number
                 up_level_pop = cloud.level_pop[n_up]
-                if geometry == 'uniform sphere':
-                    #in the case of the uniform sphere, we can do an elegant test
+                if geometry in ('uniform sphere','LVG sphere'):
+                    #in the case of spheres, we can do an elegant test
                     #using physics
                     number_density = N/(2*sphere_radius)
                     total_mol = number_density*sphere_volume
@@ -347,6 +478,8 @@ def test_thick_LTE_flux():
     Omega = 1*constants.au**2/distance**2
     for lp,avg_beta in itertools.product(line_profile_types,average_beta_options):
         for geometry in radiative_transfer.Cloud.geometries.keys():
+            if not allowed_param_combination(geometry=geometry,line_profile_type=lp):
+                continue
             cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geometry,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
@@ -361,14 +494,12 @@ def test_thick_LTE_flux():
                 if not thick_lines[i]:
                     continue
                 bb_flux_nu0 = helpers.B_nu(nu=line.nu0,T=Tkin)*Omega
-                # peak_flux = np.max(cloud.obs_line_spectra[i])
-                # assert np.isclose(a=peak_flux,b=bb_flux_nu0,atol=0,rtol=3e-2)
-                if lp == 'rectangular':
+                if lp == 'rectangular' and geometry != 'LVG sphere':
                     expected_total_flux = bb_flux_nu0*line.line_profile.width_nu
                     assert np.isclose(a=expected_total_flux,b=fluxes[i],
                                       atol=0,rtol=3e-2)
                 else:
-                    assert lp == 'Gaussian'    
+                    assert lp == 'Gaussian' or geometry == 'LVG sphere'  
 
 def test_tau_and_spectrum_single_lines():
     Tkin = 57
@@ -379,6 +510,8 @@ def test_tau_and_spectrum_single_lines():
     trans_indices = (1,6)
     for lp,avg_beta in itertools.product(line_profile_types,average_beta_options):
         for geometry in radiative_transfer.Cloud.geometries.keys():
+            if not allowed_param_combination(geometry=geometry,line_profile_type=lp):
+                continue
             cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geometry,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
@@ -411,9 +544,13 @@ def test_tau_and_spectrum_single_lines():
                     assert np.isclose(np.max(tau_nu[nu_selection]),expected_tau_nu0,
                                       atol=0,rtol=1e-2)
                     source_func = helpers.B_nu(T=cloud.Tex[line_index],nu=nu_line)
+                    if geometry == 'LVG sphere':
+                        LVG_kwargs = {'nu':nu_line,'nu0':line.nu0,'V':width_v/2}
+                    else:
+                        LVG_kwargs = {}
                     expected_spec = cloud.geometry.compute_flux_nu(
                                         tau_nu=expected_tau_nu,source_function=source_func,
-                                        solid_angle=solid_angle)
+                                        solid_angle=solid_angle,**LVG_kwargs)
                     assert np.allclose(spectrum[nu_selection],expected_spec,atol=0,
                                         rtol=1e-3)
                     if ID == 'thick':
@@ -436,6 +573,8 @@ def test_tau_and_spectrum_overlapping_lines():
     width_v = 20*constants.kilo
     for lp,avg_beta in itertools.product(line_profile_types,average_beta_options):
         for geometry in radiative_transfer.Cloud.geometries.keys():
+            if not allowed_param_combination(geometry=geometry,line_profile_type=lp):
+                continue
             cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geometry,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
@@ -467,9 +606,13 @@ def test_tau_and_spectrum_overlapping_lines():
                     N2 = N*x2
                     tau_nu_line = line.tau_nu(N1=N1,N2=N2,nu=nu)
                     source_func = helpers.B_nu(T=cloud.Tex[line_index],nu=nu)
+                    if geometry == 'LVG sphere':
+                        LVG_kwargs = {'nu':nu,'nu0':line.nu0,'V':width_v/2}
+                    else:
+                        LVG_kwargs = {}
                     spec_line = cloud.geometry.compute_flux_nu(
                                           tau_nu=tau_nu_line,source_function=source_func,
-                                          solid_angle=solid_angle)
+                                          solid_angle=solid_angle,**LVG_kwargs)
                     expected_tau_nu += tau_nu_line
                     expected_spec += spec_line
                 assert np.allclose(tau_nu,expected_tau_nu,atol=1e-20,rtol=1e-3)

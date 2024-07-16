@@ -7,28 +7,22 @@ Created on Sun Nov 12 17:31:02 2017
 import numpy as np
 import numba as nb
 from pythonradex import helpers,escape_probability_functions
+from scipy import constants
 
 
-class Flux1D():
+class EscapeProbabilityUniformSphere():
+    
+    '''Represents the escape probability from a uniform spherical medium.'''
 
-    '''Represents the computation of the flux when considering only a single direction'''
-
-    @staticmethod
-    @nb.jit(nopython=True,cache=True)
-    def compute_flux_nu(tau_nu,source_function,solid_angle):
-        '''Computes the observed flux in [W/m2/Hz], given the optical depth
-        tau_nu, the source function in [W/m2/Hz/sr] and the solid angle of
-        the source (in [sr]) seen by the observer.'''
-        #for very small tau, the exp can introduce numerical errors, so we
-        #take care of that:
-        tau_factor = np.where(tau_nu<1e-5,tau_nu,1-np.exp(-tau_nu))
-        return source_function*tau_factor*solid_angle
+    def __init__(self):
+        self.beta = escape_probability_functions.beta_uniform_sphere
 
 
-class FluxUniformSphere():
+class UniformSphere(EscapeProbabilityUniformSphere):
 
-    '''Represents the computation of the flux from a uniform sphere'''
-
+    '''Represents the escape probability and emerging flux from a uniform
+    spherical medium'''    
+    
     @staticmethod
     @nb.jit(nopython=True,cache=True)
     def compute_flux_nu(tau_nu,source_function,solid_angle):
@@ -49,22 +43,27 @@ class FluxUniformSphere():
         #the observed flux is (flux at sphere surface)*4*pi*r**2/(4*pi*d**2)
         #=F_surface*Omega*4/(4*pi)
         return flux_nu*solid_angle/np.pi
-    
-
-class EscapeProbabilityUniformSphere():
-    
-    '''Represents the escape probability from a uniform spherical medium.'''
-
-    def __init__(self):
-        self.beta = escape_probability_functions.beta_uniform_sphere
 
 
-class UniformSphere(EscapeProbabilityUniformSphere,FluxUniformSphere):
+@nb.jit(nopython=True,cache=True)
+def exp_tau_factor(tau_nu):
+    #for very small tau, the exp can introduce numerical errors, so we
+    #take care of that when computing (1-exp(-tau))
+    return np.where(tau_nu<1e-5,tau_nu,1-np.exp(-tau_nu))
 
-    '''Represents the escape probability and emerging flux from a uniform
-    spherical medium'''    
-    
-    pass
+
+class Flux1D():
+
+    '''Represents the computation of the flux when considering only a single direction'''
+
+    @staticmethod
+    @nb.jit(nopython=True,cache=True)
+    def compute_flux_nu(tau_nu,source_function,solid_angle):
+        '''Computes the observed flux in [W/m2/Hz], given the optical depth
+        tau_nu, the source function in [W/m2/Hz/sr] and the solid angle of
+        the source (in [sr]) seen by the observer.'''
+        tau_factor = exp_tau_factor(tau_nu=tau_nu)
+        return source_function*tau_factor*solid_angle
 
 
 class UniformSphereRADEX(EscapeProbabilityUniformSphere,Flux1D):
@@ -92,7 +91,7 @@ class UniformLVGSlab(Flux1D):
 
     def __init__(self):
         self.beta = escape_probability_functions.beta_LVG_slab
-
+        
 
 class UniformLVGSphere(Flux1D):
     """The escape probability and flux for a uniform large velocity gradient (LVG)
@@ -100,6 +99,16 @@ class UniformLVGSphere(Flux1D):
 
     def __init__(self):
         self.beta = escape_probability_functions.beta_LVG_sphere
+
+    @staticmethod
+    @nb.jit(nopython=True,cache=True)
+    def compute_flux_nu(tau_nu,source_function,solid_angle,nu,nu0,V):
+        #V is the velocity at the surface of the sphere
+        #this formula can be derived by using an approach similar to
+        #de Jong et al. (1975, Fig. 3)
+        tau_factor = exp_tau_factor(tau_nu=tau_nu)
+        v = constants.c*(1-nu/nu0)
+        return source_function*tau_factor*solid_angle*(1-(v/V)**2)
 
 
 class LVGSphereRADEX(Flux1D):

@@ -36,6 +36,12 @@ iteration_modes = ('ALI','LI')
 use_ng_options = (True,False)
 average_beta_options = (True,False)
 
+def allowed_param_combination(geometry,line_profile_type):
+    if geometry in ('LVG sphere','LVG slab') and line_profile_type=='Gaussian':
+        return False
+    else:
+        return True
+
 #HCl has overlapping lines, let's filter the warning
 @pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
 def test_LTE():
@@ -43,6 +49,8 @@ def test_LTE():
     for filename,geo,lp,iter_mode,ng,avg_beta in itertools.product(
                         filenames,geometries,line_profile_types,iteration_modes,
                         use_ng_options,average_beta_options):
+        if not allowed_param_combination(geometry=geo,line_profile_type=lp):
+            continue
         specie = filename.split('.')[0]
         datafilepath = os.path.join(datafolder,filename)
         cloud = radiative_transfer.Cloud(
