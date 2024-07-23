@@ -7,10 +7,16 @@ There is a difference between the outputs of ``RADEX`` and ``pythonradex``. The 
 
 .. _sphere_flux_difference:
 
-Different flux for uniform sphere geometry
+Different flux for spherical geometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 For a given excitation temperature :math:`T_{ex}` and optical depth :math:`\tau_\nu`, ``RADEX`` calculates the flux as
 
 .. math::
     I_\nu = B_\nu(T_{ex})(1-e^{-\tau_\nu})
 
+for all geometries. However, this expression is only valid for slab geometries, but not for spherical geometries ("uniform sphere" and "LVG sphere"). On the other hand, ``pythonradex`` uses the correct formulae for spherical geometries. This can for example be demonstrated by considering the optically thin limit. In this limit, each photon escapes from the cloud. The total flux (in [W/m\ :sup:`2`]) is then simply given by
+
+.. math::
+    F_\mathrm{thin} = V_\mathrm{sphere}nx_2A_{21}\Delta E \frac{1}{4\pi d^2}
+
+where :math:`V_\mathrm{sphere}=\frac{4}{3}R^3\pi` is the volume of the sphere, :math:`n` the constant number density, :math:`x_2` the fractional level population of the upper level, :math:`A_{21}` the Einstein coefficient, :math:`\Delta E` the energy difference between the upper and lower level, and :math:`d` the distance of the source. ``pythonradex`` correctly reproduces this limiting case. On the other hand, ``RADEX`` overestimates the optically thin flux by a factor 1.5.

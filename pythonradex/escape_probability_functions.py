@@ -62,26 +62,14 @@ def beta_Taylor_LVG_slab(tau_nu):
     return 1 - (3*tau_nu)/2 + (3*tau_nu**2)/2 - (9*tau_nu**3)/8
 
 #about the LVG sphere
-#the question is how to calculate the flux for this geometry. on the one hand,
-#Elitzur says "In the correspondence with the homogeneous slab calculation,
-#the large-velocity-gradient escape probability corresponds to the local escape
-#probability at slab center. Every point in the expanding wind is truly at the center of
-#a velocity coherent region, and there is no averaging over the whole source, which is
-#infinite." However, an easy way to calculate the flux in a spherically symmetric situation
-#is to calculate the total emitted flux and divide by 4*pi*d**2. And the total emitted flux
-#is simply (total photons produced) * escape probability. For a uniform sphere, this is
-#easy to compute, because the total number of molecules is simply n*V. But is an LVG sphere
-#also uniform? In the derivation in Elitzur92, this is not assumed. However, consider the
-#following points:
-#1. even for spherical symmetry, knowing the column density is not enough to know the total
-#number of molecules. For example, consider two thin shells that both give the same column
-#density. Obviously, the outer shell will have much large mass than the inner shell
-#2. From formula 2.6.36 in Elitzur92, it becomes clear that the optical depth in a velocity-
+#we need to assume that the LVG sphere is homogeneous, because from formula 2.6.36
+#in Elitzur92, it becomes clear that the optical depth in a velocity-
 #coherent element depends on the local number density. But since pythonradex assumes
 #uniform excitation temperature and a single optical depth characerising the source,
 #the local number density must be the same everywhere
 #Thus, we need to assume that the LVG sphere is uniform, otherwise we cannot handle it
-#in pythonradex
+#in pythonradex.
+#We are indeed considering the model by Goldreich & Kwan (1974) which has uniform density
 #in fact, same argument also implies that LVG slab needs to be uniform...
 
 @nb.jit(nopython=True,cache=True)

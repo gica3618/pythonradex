@@ -4,6 +4,7 @@ from pythonradex import helpers,escape_probability,atomic_transition
 from pythonradex.molecule import EmittingMolecule
 import warnings
 import numba as nb
+import itertools
 
 
 class RateEquations():
@@ -217,12 +218,16 @@ class Cloud():
                 "rectangular" or "Gaussian". Note that for geometries "LVG sphere"
                 and "LVG slab", only "rectangular" is allowed.
             width_v (:obj:`float`): The width of the line profile in [m/s]. For a Gaussian
-                profile, this is interpreted as the FWHM. For geometries "LVG sphere"
-                and "LVG slab", this parameter corresponds to the total velocity witdh
-                of the cloud (i.e. width_v/2 is the velocity at the surface of
-                the LVG sphere; for the LVG slab, width_v is the velocity difference
-                between the two surfaces of the slab). For the other (static)
+                profile, this is interpreted as the FWHM. Note that the intepretation
+                of this parameter depends on the adopted geometry. For the static
                 geometries, width_v is the width of the intrinsic emission profile.
+                On the other hand, for geometries "LVG sphere" and "LVG slab",
+                width_v corresponds to the total velocity witdh of the cloud.
+                So, for "LVG sphere", width_v=2*V, where V is the velocity at the surface
+                of the sphere. In terms of the constant velocity gradient dv/dr=V/R (with
+                R the radius of the sphere), we can also say width_v=dv/dr*2*R. For
+                "LVG slab", width_v=dv/dz*Z where Z is the depth of the slab and dv/dz
+                the constant velocity gradient of the slab.
             iteration_mode (:obj:`str`): Method used to solve the radiative transfer:
                 "LI" for standard Lambda iteration, or "ALI" for Accelerated Lambda
                 Iteration. ALI is recommended. Defaults to "ALI".
@@ -254,6 +259,8 @@ class Cloud():
         self.geometry_name = geometry
         if self.geometry_name in ('LVG sphere','LVG slab') and not test_mode:
             if not self.line_profile_type == 'rectangular':
+                #this is to get the right optical depth which is independent of
+                #velocity in this model (e.g. Eq. 13 in de Jong et al. 1975)
                 raise ValueError(f'{self.geometry_name} requires a rectangular profile')
         if self.geometry_name == 'LVG sphere':
             #velocity at the surface of the LVG sphere
@@ -551,7 +558,6 @@ class Cloud():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    #TODO write a test
     def fast_fluxes_LVG_sphere(
                  solid_angle,transitions,tau_nu0_lines,Tex,nu0_lines,
                  V_LVG_sphere):
@@ -569,49 +575,6 @@ class Cloud():
             obs_line_fluxes.append(flux)
         return np.array(obs_line_fluxes)
 
-
-    # @staticmethod
-    # @nb.jit(nopython=True,cache=True)
-    # def fast_fluxes_rectangular_LVG_sphere(
-    #            solid_angle,transitions,tau_nu0_lines,nu0_lines,compute_flux_nu,
-    #            width_v,beta_function,N2_lines,A21_lines,DeltaE_lines):
-    #     #I am neglecting the dependence of tau on 1/nu**2 (and corresponding dependence
-    #     #of beta)
-    #     obs_line_fluxes = []
-    #     for i in transitions:
-    #         nu0 = nu0_lines[i]
-    #         tau_nu0 = tau_nu0_lines[i]
-    #         width_nu = width_v/constants.c*nu0
-    #         beta_nu0 = beta_function(np.array((tau_nu0,)))
-    #         N2 = N2_lines[i]
-    #         A21 = A21_lines[i]
-    #         DeltaE = DeltaE_lines[i]
-    #         phi_nu0 = 1/width_nu
-    #         flux_nu0 = compute_flux_nu(
-    #                      beta_nu=beta_nu0,solid_angle=solid_angle,N2=N2,A21=A21,
-    #                      DeltaE=DeltaE,phi_nu=phi_nu0)
-    #         flux = flux_nu0*width_nu
-    #         obs_line_fluxes.append(flux[0])
-    #     return np.array(obs_line_fluxes)
-
-    # @nb.jit(nopython=True,cache=True)   
-    # def prepare_Gaussian_flux(nu0,tau_nu0,width_v,tau_peak_fraction,nu_per_FHWM):
-    #     FWHM_nu = width_v/constants.c*nu0
-    #     sigma_nu = helpers.FWHM2sigma(FWHM_nu)
-    #     #for thin emission, I just want to include out to a certain fraction of the peak
-    #     #but for thick emission, the spectrum is saturated, so a fraction of the
-    #     #peak is not useful; in those cases, I need to set an absolute value
-    #     #for the minimum tau to include
-    #     min_tau = np.min(np.array([0.01,tau_peak_fraction*tau_nu0]))
-    #     Delta_nu = sigma_nu*np.sqrt(-2*np.log(min_tau/tau_nu0))
-    #     n_nu = int(2*Delta_nu/FWHM_nu * nu_per_FHWM)
-    #     nu = np.linspace(nu0-Delta_nu,nu0+Delta_nu,n_nu)
-    #     #doing an approximation: in principle, tau has an additional 1/nu**2 dependence,
-    #     #but if Delta_nu is small compared to nu0, that dependence is negligible
-    #     phi_nu_shape = np.exp(-(nu-nu0)**2/(2*sigma_nu**2))
-    #     tau_nu = tau_nu0*phi_nu_shape
-    #     return nu,tau_nu,phi_nu_shape
-
     @staticmethod
     @nb.jit(nopython=True,cache=True)
     def fast_fluxes_Gaussian(
@@ -619,10 +582,6 @@ class Cloud():
                    compute_flux_nu,width_v,tau_peak_fraction,nu_per_FHWM):
         obs_line_fluxes = []
         for i in transitions:
-            # nu,tau_nu,_ = prepare_Gaussian_flux(
-            #                           nu0=nu0_lines[i],tau_nu0=tau_nu0_lines[i],
-            #                           width_v=width_v,tau_peak_fraction=tau_peak_fraction,
-            #                           nu_per_FHWM=nu_per_FHWM)
             nu0 = nu0_lines[i]
             tau_nu0 = tau_nu0_lines[i]
             FWHM_nu = width_v/constants.c*nu0
@@ -646,70 +605,8 @@ class Cloud():
             obs_line_fluxes.append(flux)
         return np.array(obs_line_fluxes)
 
-    # @staticmethod
-    # @nb.jit(nopython=True,cache=True)
-    # def fast_fluxes_Gaussian_LVG_sphere(
-    #            solid_angle,transitions,tau_nu0_lines,nu0_lines,compute_flux_nu,
-    #            width_v,beta_function,N2_lines,A21_lines,DeltaE_lines,tau_peak_fraction,
-    #            nu_per_FHWM):
-    #     obs_line_fluxes = []
-    #     for i in transitions:
-    #         nu0 = nu0_lines[i]
-    #         FWHM_nu = width_v/constants.c*nu0
-    #         sigma_nu = helpers.FWHM2sigma(FWHM_nu)
-    #         nu,tau_nu,phi_nu_shape = prepare_Gaussian_flux(
-    #                                   nu0=nu0_lines[i],tau_nu0=tau_nu0_lines[i],
-    #                                   width_v=width_v,tau_peak_fraction=tau_peak_fraction,
-    #                                   nu_per_FHWM=nu_per_FHWM)
-    #         phi_nu =  phi_nu_shape/(np.sqrt(2*np.pi)*sigma_nu)
-    #         beta_nu = beta_function(tau_nu)
-    #         N2 = N2_lines[i]
-    #         A21 = A21_lines[i]
-    #         DeltaE = DeltaE_lines[i]
-    #         spectrum = compute_flux_nu(
-    #                      beta_nu=beta_nu,solid_angle=solid_angle,N2=N2,A21=A21,
-    #                      DeltaE=DeltaE,phi_nu=phi_nu)
-    #         flux = helpers.fast_trapz(spectrum,nu)
-    #         obs_line_fluxes.append(flux)
-    #     return np.array(obs_line_fluxes)
-
-    # def get_fast_flux_function(self):
-    #     general_kwargs = {'tau_nu0_lines':self.tau_nu0,'nu0_lines':self.nu0_lines,
-    #                       'compute_flux_nu':self.geometry.compute_flux_nu,
-    #                       'width_v':self.emitting_molecule.width_v}
-    #     gauss_kwargs = {'tau_peak_fraction':self.tau_peak_fraction,
-    #                     'nu_per_FHWM':self.nu_per_FHWM}
-    #     if self.geometry_name == 'LVG sphere':
-    #         N2_lines = np.array([self.N*self.level_pop[trans.up.number] for trans in
-    #                               self.emitting_molecule.rad_transitions])
-    #         LVG_kwargs = {'beta_function':self.geometry.beta,'N2_lines':N2_lines,
-    #                       'A21_lines':self.A21_lines,'DeltaE_lines':self.DeltaE_lines}
-    #         if self.line_profile_type == 'Gaussian':
-    #             def fast_flux(solid_angle,transitions):
-    #                 return self.fast_fluxes_Gaussian_LVG_sphere(
-    #                             solid_angle=solid_angle,transitions=transitions,
-    #                             **general_kwargs,**gauss_kwargs,**LVG_kwargs)
-    #         elif self.line_profile_type == 'rectangular':
-    #             def fast_flux(solid_angle,transitions):
-    #                 return self.fast_fluxes_rectangular_LVG_sphere(
-    #                             solid_angle=solid_angle,transitions=transitions,
-    #                             **general_kwargs,**LVG_kwargs)
-    #         else:
-    #             raise ValueError(f'line profile {self.line_profile_type} unknown')
-    #     else:
-    #         if self.line_profile_type == 'Gaussian':
-    #             def fast_flux(solid_angle,transitions):
-    #                 return self.fast_fluxes_Gaussian_general(
-    #                                solid_angle=solid_angle,transitions=transitions,
-    #                                Tex=self.Tex,**general_kwargs,**gauss_kwargs)
-    #         elif self.line_profile_type == 'rectangular':
-    #             def fast_flux(solid_angle,transitions):
-    #                 return self.fast_fluxes_rectangular_general(
-    #                      solid_angle=solid_angle,transitions=transitions,Tex=self.Tex,
-    #                      **general_kwargs)
-    #         else:
-    #             raise ValueError(f'line profile {self.line_profile_type} unknown')
-    #     return fast_flux
+    def all_transitions(self):
+        return list(range(self.emitting_molecule.n_rad_transitions))
 
     def fluxes(self,solid_angle,transitions=None):
         r'''Calculate the observed fluxes.
@@ -729,7 +626,7 @@ class Cloud():
             file.
         '''
         if transitions is None:
-            transitions = list(range(self.emitting_molecule.n_rad_transitions))
+            transitions = self.all_transitions()
         transitions = nb.typed.List(transitions)
         general_kwargs = {'tau_nu0_lines':self.tau_nu0,'nu0_lines':self.nu0_lines,
                           'solid_angle':solid_angle,'transitions':transitions,
@@ -834,6 +731,84 @@ class Cloud():
                                tau_nu=tau_nu_line,source_function=source_function,
                                solid_angle=solid_angle,**LVG_sphere_kwargs)
         return spectrum
+
+    def model_grid(self,ext_backgrounds,N_values,Tkin_values,collider_densities_values,
+                   requested_output,solid_angle=None,transitions=None,nu=None):
+        r'''Iterator over a grid of models. Models are calculated for all possible combinations
+            of the input parameters.
+
+        Args:
+            ext_backgrounds (:obj:`dict`): A dictionary of functions, one entry for
+                each background that should be used. The keys of the dictionary are used
+                in the output to identify which background was used for a certain output
+            N_values (:obj:`list` or numpy.ndarray): The list of column densities to
+                compute models for, in [m\ :sup:`-2`].
+            Tkin_values (:obj:`list` or numpy.ndarray): The list of kinetic temperatures
+                to compute models for, in [K].
+            collider_densities_values (:obj:`dict`): A dictionary with one entry for each
+                collider. Each entry is a list of densities for which models should be
+                computed for. Units are [m\ :sup:`-3`].
+            requested_output (:obj:`list`): The list of requested outputs. Possible entries
+                are 'level_pop','Tex','tau_nu0','fluxes','tau_nu', and 'spectrum'
+            solid_angle (:obj:`float`): The solid angle of the source in [sr].
+                Defaults to None. Compulsory if 'fluxes' or 'spectrum'
+                are requested.
+            transitions (:obj:`list`): The indices of the
+                transitions for which to calculate Tex, tau_nu and fluxes. If None, then
+                values for all transitions are calculated. Defaults to None. The
+                indices are relative to the list of transitions in the LAMDA file,
+                starting with 0.
+            nu (numpy.ndarray): The frequencies in [Hz]. Compulsory if 'tau_nu'
+                or 'spectrum' is requested.
+
+        Returns:
+            dict: dictionary with fields 'ext_background','N','Tkin' and 'collider_densities'
+                to identify the input parameters of the model, as well as any requested
+                output. Units of outputs: 'level_pop': no units; 'Tex': [K];
+                'tau_nu0': no units;'fluxes': [W/m\ :sup:`2`]; 'tau_nu': no units;
+                'spectrum': [W/m\ :sup:`2`/Hz]
+        '''
+        #it is expensive to update Tkin and collider densities, so those should be in
+        #the outermost loops
+        allowed_outputs = ('level_pop','Tex','tau_nu0','fluxes','tau_nu','spectrum')
+        for request in requested_output:
+            assert request in allowed_outputs,f'requested output "{request}" is invalid'
+        if 'fluxes' in requested_output or 'spectrum' in requested_output:
+            assert solid_angle is not None
+        if 'tau_nu' in requested_output or 'spectrum' in requested_output:
+            assert nu is not None
+        if transitions is None:
+            transitions = self.all_transitions()
+        colliders = list(collider_densities_values.keys())
+        ordered_collider_density_values = [collider_densities_values[coll] for coll
+                                           in colliders]
+        for Tkin in Tkin_values:
+            for collider_density_set in itertools.product(*ordered_collider_density_values):
+                collider_densities = {collider:value for collider,value in
+                                      zip(colliders,collider_density_set)}
+                for ext_background_name,ext_background in ext_backgrounds.items():
+                    for N in N_values:
+                        self.set_parameters(
+                               ext_background=ext_background,N=N,Tkin=Tkin,
+                               collider_densities=collider_densities)
+                        self.solve_radiative_transfer()
+                        output = {'ext_background':ext_background_name,'N':N,
+                                  'Tkin':Tkin,'collider_densities':collider_densities}
+                        if 'level_pop' in requested_output:
+                            output['level_pop'] = self.level_pop
+                        if 'Tex' in requested_output:
+                            output['Tex'] = self.Tex[transitions]
+                        if 'tau_nu0' in requested_output:
+                            output['tau_nu0'] = self.tau_nu0[transitions]
+                        if 'fluxes' in requested_output:
+                            output['fluxes'] = self.fluxes(solid_angle=solid_angle,
+                                                           transitions=transitions)
+                        if 'tau_nu' in requested_output:
+                            output['tau_nu'] = self.tau_nu(nu=nu)
+                        if 'spectrum' in requested_output:
+                            output['spectrum'] = self.spectrum(
+                                                    solid_angle=solid_angle,nu=nu)
+                        yield output
 
     def print_results(self):
         '''Prints the results from the radiative transfer computation.'''

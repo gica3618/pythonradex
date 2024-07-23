@@ -34,7 +34,11 @@ Bibliography
 
 .. [deJong80] de Jong, T., Boland, W., & Dalgarno, A. 1980, Astronomy and Astrophysics, 91, 68
 
+.. [deJong75] de Jong, T., Chu, S., & Dalgarno, A. 1975, Astrophysical Journal, 199, 69 
+
 .. [Elitzur92] Elitzur, M. 1992, *Astronomical masers*, ISBN 978-0-7923-1217-8, Springer Dordrecht
+
+.. [Goldreich74] Goldreich, P., & Kwan, J. 1974, Astrophysical Journal, 189, 441
 
 .. [Ng74] Ng, K.-C. 1974, Journal of Chemical Physics, 61, 2680
 

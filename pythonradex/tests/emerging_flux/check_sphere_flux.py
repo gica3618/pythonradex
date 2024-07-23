@@ -44,11 +44,15 @@ class LVGSphere1D(escape_probability.Flux1D):
     pass
 
 beta_funcs = {'uniform sphere':escape_probability_functions.beta_uniform_sphere,
+              'uniform sphere RADEX':escape_probability_functions.beta_uniform_sphere,
               'LVG sphere':escape_probability_functions.beta_LVG_sphere,
-              'LVG sphere 1Dflux':escape_probability_functions.beta_LVG_sphere}
+              'LVG sphere 1Dflux':escape_probability_functions.beta_LVG_sphere,
+              'LVG sphere RADEX':escape_probability_functions.beta_LVG_sphere_RADEX}
 geometries = {'uniform sphere':escape_probability.UniformSphere(),
+              'uniform sphere RADEX':escape_probability.UniformSphereRADEX(),
               'LVG sphere':escape_probability.UniformLVGSphere(),
-              'LVG sphere 1Dflux':LVGSphere1D()}
+              'LVG sphere 1Dflux':LVGSphere1D(),
+              'LVG sphere RADEX':escape_probability.LVGSphereRADEX()}
 
 pythonradex_fluxes = {ID:np.empty(n_values.size) for ID in beta_funcs.keys()}
 beta_fluxes = {ID:np.empty(n_values.size) for ID in beta_funcs.keys()}
@@ -89,3 +93,6 @@ for ID in beta_funcs.keys():
     ax.set_xlabel('number density [cm-3]')
     ax.set_ylabel('flux')
     ax.legend(loc='best')
+    flux_ratio = pythonradex_fluxes[ID]/beta_fluxes[ID]
+    max_flux_ratio = np.max(flux_ratio)
+    print(f'{ID}: max flux ratio: {max_flux_ratio:.3g}')

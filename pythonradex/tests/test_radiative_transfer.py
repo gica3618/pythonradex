@@ -646,6 +646,91 @@ def test_overlapping_lines():
         lines = sorted(lines,key=lambda l: l.nu0)[:3]
         assert not nol.lines_are_overlapping(lines)
 
+class TestModelGrid():
+    
+    cloud = radiative_transfer.Cloud(
+                          datafilepath=datafilepath,geometry='uniform sphere',
+                          line_profile_type='rectangular',width_v=1*constants.kilo,
+                          iteration_mode='ALI',use_NG_acceleration=True,
+                          average_beta_over_line_profile=False)
+    ext_backgrounds = {'CMB':helpers.generate_CMB_background(z=2),
+                       'zero':helpers.zero_background}
+    N_values = np.array((1e14,1e16))/constants.centi**2
+    Tkin_values = [20,200,231]
+    collider_densities_values = {'ortho-H2':np.array((1e3,1e4))/constants.centi**3,
+                                 'para-H2':np.array((1e4,1e7))/constants.centi**3}
+    grid_kwargs = {'ext_backgrounds':ext_backgrounds,'N_values':N_values,
+                   'Tkin_values':Tkin_values,
+                   'collider_densities_values':collider_densities_values}
+    requested_output = ['level_pop','Tex','tau_nu0','fluxes','tau_nu','spectrum']
+    transitions = [3,4]
+    solid_angle = 1
+    nu = np.linspace(115.27,115.28,10)*constants.giga
+    
+    def test_wrong_requested_output(self):
+        wrong_requested_output = ['Tex','levelpop']
+        with pytest.raises(AssertionError): 
+            for model in self.cloud.model_grid(**self.grid_kwargs,
+                                               requested_output=wrong_requested_output):
+                pass
+
+    def test_insufficient_input(self):
+        #test that errors are thrown if solid_angle or nu are not provided
+        for request in ('fluxes','spectrum'):
+            with pytest.raises(AssertionError): 
+                for model in self.cloud.model_grid(
+                                **self.grid_kwargs,requested_output=[request,],
+                                nu=self.nu):
+                    pass
+        for request in ('tau_nu','spectrum'):
+            with pytest.raises(AssertionError): 
+                for model in self.cloud.model_grid(
+                                **self.grid_kwargs,requested_output=[request,],
+                                solid_angle=self.solid_angle):
+                    pass
+
+    @pytest.mark.filterwarnings("ignore:negative optical depth")
+    def test_grid(self):
+        iterator = self.cloud.model_grid(
+                        **self.grid_kwargs,requested_output=self.requested_output,
+                        solid_angle=self.solid_angle,transitions=self.transitions,
+                        nu=self.nu)
+        models = [m for m in iterator]
+        n_check_models = 0
+        for backgroundID,ext_background in self.ext_backgrounds.items():
+            for N in self.N_values:
+                for Tkin in self.Tkin_values:
+                    for n_ortho,n_para in itertools.product(self.collider_densities_values['ortho-H2'],
+                                                            self.collider_densities_values['para-H2']):
+                        collider_densities = {'ortho-H2':n_ortho,'para-H2':n_para}
+                        self.cloud.set_parameters(
+                              ext_background=ext_background,N=N,Tkin=Tkin,
+                              collider_densities=collider_densities)
+                        self.cloud.solve_radiative_transfer()
+                        fluxes = self.cloud.fluxes(solid_angle=self.solid_angle,
+                                                   transitions=self.transitions)
+                        tau_nu = self.cloud.tau_nu(nu=self.nu)
+                        spectrum = self.cloud.spectrum(
+                                            solid_angle=self.solid_angle,nu=self.nu)
+                        #'level_pop','Tex','tau_nu0','fluxes','tau_nu', and 'spectrum'
+                        matching_models = [m for m in models if
+                                           m['ext_background']==backgroundID
+                                           and m['N']==N and m['Tkin']==Tkin
+                                           and m['collider_densities']==collider_densities]
+                        assert len(matching_models) == 1
+                        matching_model = matching_models[0]
+                        assert np.all(matching_model['level_pop'] == self.cloud.level_pop)
+                        assert np.all(matching_model['Tex']
+                                      == self.cloud.Tex[self.transitions])
+                        assert np.all(matching_model['tau_nu0']
+                                      == self.cloud.tau_nu0[self.transitions])
+                        assert np.all(matching_model['fluxes'] == fluxes)
+                        assert np.all(matching_model['tau_nu'] == tau_nu)
+                        assert np.all(matching_model['spectrum']==spectrum)
+                        n_check_models += 1
+        assert n_check_models == len(models)
+
+
 def test_print_results():
     for cloud in generate_new_clouds():
         cloud.set_parameters(ext_background=ext_background,
