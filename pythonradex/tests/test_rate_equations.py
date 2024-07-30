@@ -37,7 +37,7 @@ Jbar_lines_0 = np.zeros(test_molecule.n_rad_transitions)
 Jbar_lines_B_nu = np.array([helpers.B_nu(nu=trans.nu0,T=Tkin) for trans in
                             test_molecule.rad_transitions])
 beta_lines_thin = np.ones(test_molecule.n_rad_transitions)
-I_ext_lines_0 = np.zeros(test_molecule.n_rad_transitions)
+betaIext_lines_0 = np.zeros(test_molecule.n_rad_transitions)
 
 
 def test_RateEquations_constructor():
@@ -85,7 +85,7 @@ def test_coll_rate_matrix():
 
 #following functions test the physics of RateEquations
 
-def solve_for_level_pops(collider_densities,Jbar_lines,beta_lines,I_ext_lines):
+def solve_for_level_pops(collider_densities,Jbar_lines,beta_lines,betaIext_lines):
     kwargs = {'molecule':test_molecule,'collider_densities':collider_densities,
               'Tkin':Tkin}
     Einstein_kwargs = {'A21_lines':A21_lines,'B12_lines':B12_lines,
@@ -94,13 +94,14 @@ def solve_for_level_pops(collider_densities,Jbar_lines,beta_lines,I_ext_lines):
     level_pop_LI = rate_equations_LI.solve(Jbar_lines=Jbar_lines,**Einstein_kwargs)
     rate_equations_ALI = radiative_transfer.RateEquations(mode='ALI',**kwargs)
     level_pop_ALI = rate_equations_ALI.solve(
-                          beta_lines=beta_lines,I_ext_lines=I_ext_lines,**Einstein_kwargs)
+                          beta_lines=beta_lines,betaIext_lines=betaIext_lines,
+                          **Einstein_kwargs)
     return level_pop_LI,level_pop_ALI
 
 def test_compute_level_populations_no_excitation():
     level_pops = solve_for_level_pops(collider_densities=collider_densities_0,
                                       Jbar_lines=Jbar_lines_0,beta_lines=beta_lines_thin,
-                                      I_ext_lines=I_ext_lines_0)
+                                      betaIext_lines=betaIext_lines_0)
     expected_level_pop = np.zeros(len(test_molecule.levels))
     expected_level_pop[0] = 1
     for level_pop in level_pops:
@@ -109,20 +110,22 @@ def test_compute_level_populations_no_excitation():
 def test_compute_level_populations_LTE_from_coll():
     level_pops = solve_for_level_pops(collider_densities=collider_densities_large,
                                       Jbar_lines=Jbar_lines_0,beta_lines=beta_lines_thin,
-                                      I_ext_lines=I_ext_lines_0)
+                                      betaIext_lines=betaIext_lines_0)
     for level_pop in level_pops:
         assert np.allclose(level_pop,expected_LTE_level_pop,rtol=1e-2,atol=0)
 
 def test_compute_level_populations_LTE_from_rad():
+    betaIext_lines = beta_lines_thin*Jbar_lines_B_nu
     level_pops = solve_for_level_pops(collider_densities=collider_densities_0,
                                       Jbar_lines=Jbar_lines_B_nu,beta_lines=beta_lines_thin,
-                                      I_ext_lines=Jbar_lines_B_nu)
+                                      betaIext_lines=betaIext_lines)
     for level_pop in level_pops:
         assert np.allclose(level_pop,expected_LTE_level_pop,rtol=1e-3,atol=0)
 
 def test_compute_level_populations_LTE_rad_and_coll():
+    betaIext_lines = beta_lines_thin*Jbar_lines_B_nu
     level_pops = solve_for_level_pops(collider_densities=collider_densities_large,
                                       Jbar_lines=Jbar_lines_B_nu,beta_lines=beta_lines_thin,
-                                      I_ext_lines=Jbar_lines_B_nu)
+                                      betaIext_lines=betaIext_lines)
     for level_pop in level_pops:
         assert np.allclose(level_pop,expected_LTE_level_pop,rtol=1e-3,atol=0)

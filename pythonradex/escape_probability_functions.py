@@ -17,11 +17,15 @@ from pythonradex import helpers
 
 min_reliable_tau = -1
 
+@nb.jit(nopython=True,cache=True)
+def clip_prob(prob):
+    return np.where(prob>1,1,np.where(prob<0,0,prob))
+
 ####### functions for escape probability using Taylor expansion ######
 
 @nb.jit(nopython=True,cache=True)
 def identify_tau_regions(tau_nu):
-    tau_epsilon = 0.00005
+    tau_epsilon = 0.05 #important that this is not too small, to avoid the unstable region
     normal_tau_region = tau_nu > tau_epsilon
     small_tau_region = np.abs(tau_nu) <= tau_epsilon
     negative_tau_region = (tau_nu >= min_reliable_tau) & (tau_nu<-tau_epsilon)
@@ -107,7 +111,7 @@ def generate_Taylor_beta(beta_ana,beta_Taylor):
         #here I just use abs(tau) to stabilize the code
         prob[unreliable] = beta_ana(np.abs(tau_nu[unreliable]))
         helpers.assert_all_finite(prob)
-        return prob
+        return clip_prob(prob)
     return beta
 
 beta_uniform_sphere = generate_Taylor_beta(beta_ana=beta_analytical_uniform_sphere,
@@ -125,7 +129,7 @@ def integral_term_for_uniform_slab(tau):
     mu = np.linspace(1e-5,1,200)
     return np.trapz((1-np.exp(-tau/mu))*mu,mu)
 
-tau_grid_for_UniformSlab = np.logspace(-3,2,1000)
+tau_grid_for_UniformSlab = np.logspace(-5,2,1000)
 min_grid_tau = np.min(tau_grid_for_UniformSlab)
 max_grid_tau = np.max(tau_grid_for_UniformSlab)
 #the expression for the flux contains an integral term;
@@ -151,7 +155,7 @@ def beta_uniform_slab(tau_nu):
     int_term = interpolated_integral_term(tau=tau_nu)
     prob = np.where(tau_nu<min_grid_tau,1,int_term/tau_nu)
     helpers.assert_all_finite(prob)
-    return prob
+    return clip_prob(prob)
 
 ######### LVG sphere as implemented by RADEX ##################
 
@@ -176,9 +180,9 @@ def beta_LVG_sphere_RADEX(tau_nu):
     #width_v=3 km/s, Ntot=1e20 cm-2, RADEX gives an invalid solution
     assert -7 < min_reliable_tau < -0.01
     gtr7 = 7 <= tau_nu
-    less7 = (0.01 <= tau_nu) & (tau_nu < 7)
-    small = (-0.01 <= tau_nu) & (tau_nu < 0.01)
-    negative = (min_reliable_tau <= tau_nu) & (tau_nu < -0.01)
+    less7 = (0.001 <= tau_nu) & (tau_nu < 7)
+    small = (-0.001 <= tau_nu) & (tau_nu < 0.001)
+    negative = (min_reliable_tau <= tau_nu) & (tau_nu < -0.001)
     unreliable_less7 = (-7 <= tau_nu) & (tau_nu < min_reliable_tau)
     unreliable_gtr7 = tau_nu < -7
     assert gtr7.sum()+less7.sum()+small.sum()+negative.sum()+unreliable_less7.sum()\
@@ -190,4 +194,4 @@ def beta_LVG_sphere_RADEX(tau_nu):
     beta[negative] = beta_LVG_sphere_RADEX_less7(tau_nu[negative])
     beta[unreliable_less7] = beta_LVG_sphere_RADEX_less7(np.abs(tau_nu[unreliable_less7]))
     beta[unreliable_gtr7] = beta_LVG_sphere_RADEX_gtr7(np.abs(tau_nu[unreliable_gtr7]))
-    return beta
+    return clip_prob(beta)

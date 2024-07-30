@@ -23,7 +23,7 @@ line_profile_types = ('rectangular','Gaussian')
 geometries = tuple(radiative_transfer.Cloud.geometries.keys())
 iteration_modes = ('ALI','LI')
 use_ng_options = (True,False)
-average_beta_options = (True,False)
+average_options = (True,False)
 
 def allowed_param_combination(geometry,line_profile_type):
     if geometry in ('LVG sphere','LVG slab') and line_profile_type=='Gaussian':
@@ -33,18 +33,18 @@ def allowed_param_combination(geometry,line_profile_type):
 
 def cloud_params_iterator():
     return itertools.product(geometries,line_profile_types,iteration_modes,
-                             use_ng_options,average_beta_options)
+                             use_ng_options,average_options)
 
 def generate_new_clouds():
     clouds = []
-    for geo,lp,mode,use_ng,average_beta in cloud_params_iterator():
+    for geo,lp,mode,use_ng,average in cloud_params_iterator():
         if not allowed_param_combination(geometry=geo,line_profile_type=lp):
             continue
         cld = radiative_transfer.Cloud(
                               datafilepath=datafilepath,geometry=geo,
                               line_profile_type=lp,width_v=width_v,iteration_mode=mode,
                               use_NG_acceleration=use_ng,
-                              average_beta_over_line_profile=average_beta)
+                              average_over_line_profile=average)
         clouds.append(cld)
     return clouds
 
@@ -55,18 +55,27 @@ def test_warning_overlapping_lines():
                               geometry='uniform sphere',
                               line_profile_type='rectangular',width_v=10*constants.kilo,
                               iteration_mode='ALI',use_NG_acceleration=True,
-                              average_beta_over_line_profile=True)
+                              treat_overlapping_lines=False)
+
+def test_overlapping_needs_averaging():
+    with pytest.raises(ValueError):
+        radiative_transfer.Cloud(
+                              datafilepath=os.path.join(here,'LAMDA_files/hcl.dat'),
+                              geometry='uniform sphere',
+                              line_profile_type='rectangular',width_v=10*constants.kilo,
+                              iteration_mode='ALI',use_NG_acceleration=True,
+                              average_over_line_profile=False,treat_overlapping_lines=True)
 
 def test_too_large_width_v():
     width_vs = np.array((1e4,1.2e4,1e5))*constants.kilo
     for width_v in width_vs:
-        for geo,lp,mode,use_ng,average_beta in cloud_params_iterator():
+        for geo,lp,mode,use_ng,average in cloud_params_iterator():
             with pytest.raises(AssertionError):
                 radiative_transfer.Cloud(
                                   datafilepath=datafilepath,geometry=geo,
                                   line_profile_type=lp,width_v=width_v,iteration_mode=mode,
                                   use_NG_acceleration=use_ng,
-                                  average_beta_over_line_profile=average_beta)
+                                  average_over_line_profile=average)
 
 def test_LVG_rectangular():
     for geo in ('LVG sphere','LVG slab'):
@@ -75,13 +84,13 @@ def test_LVG_rectangular():
                               datafilepath=datafilepath,geometry=geo,
                               line_profile_type='Gaussian',width_v=width_v,
                               iteration_mode='ALI',use_NG_acceleration=True,
-                              average_beta_over_line_profile=True)
+                              average_over_line_profile=True)
 
 def test_set_parameters():
     clouds = generate_new_clouds()
     collider_densities = {'para-H2':1}
     standard_params = {'ext_background':ext_background,'Tkin':20,
-                        'collider_densities':collider_densities,'N':N}
+                       'collider_densities':collider_densities,'N':N}
     def verify_cloud_params(cloud,params):
         for p in ('N','collider_densities','N'):
             assert getattr(cloud,p) == params[p]
@@ -115,6 +124,36 @@ def test_set_parameters():
             cloud.set_parameters(**changed_params)
             verify_cloud_params(cloud,changed_params)
 
+class Test_ext_background_checks():
+
+    @staticmethod
+    def slow_background(nu):
+        return helpers.generate_CMB_background(z=1)(nu)
+
+    @staticmethod
+    def fast_background(nu):
+        return np.sin(nu) 
+
+    def test_ext_background_variation_check(self):
+        clouds = generate_new_clouds()
+        for cloud in clouds:
+            cloud.ext_background = self.fast_background
+            assert not cloud.ext_background_is_slowly_varying()
+            cloud.ext_background = self.slow_background
+            assert cloud.ext_background_is_slowly_varying()
+    
+    def test_ext_background_check_at_initialisation(self):
+        cloud = radiative_transfer.Cloud(
+                              datafilepath=datafilepath,geometry='uniform sphere',
+                              line_profile_type='Gaussian',width_v=1*constants.kilo,
+                              iteration_mode='ALI',
+                              average_over_line_profile=False)
+        params = {'N':N,'Tkin':25,'collider_densities':{'para-H2':1}}
+        with pytest.raises(ValueError):
+            cloud.set_parameters(ext_background=self.fast_background,**params)
+        cloud.set_parameters(ext_background=self.slow_background,**params)
+
+
 N_values = np.logspace(12,16,4)/constants.centi**2
 ext_backgrounds = [ext_background,lambda nu: 0,lambda nu: ext_background(nu)/2]
 Tkins = np.linspace(20,200,4)
@@ -128,7 +167,7 @@ def param_iterator():
 def test_set_parameters_with_physics():
     cloud_kwargs = {'datafilepath':datafilepath,'geometry':'uniform sphere',
                     'line_profile_type':'rectangular','width_v':width_v,'iteration_mode':'ALI',
-                    'use_NG_acceleration':True,'average_beta_over_line_profile':False}
+                    'use_NG_acceleration':True,'average_over_line_profile':False}
     cloud_to_modify = radiative_transfer.Cloud(**cloud_kwargs)
     def generate_new_parametrised_cloud(params):
         cloud = radiative_transfer.Cloud(**cloud_kwargs)
@@ -146,61 +185,129 @@ def test_set_parameters_with_physics():
         reference_cloud.solve_radiative_transfer()
         assert np.all(cloud_to_modify.level_pop==reference_cloud.level_pop)
 
-def test_beta_alllines():
+
+class Test_rate_equation_quantities():
+
     T = 45
-    N = 1e14/constants.centi**2
-    for geo,avg_beta,lp in itertools.product(geometries,average_beta_options,
-                                             line_profile_types):
-        if not allowed_param_combination(geometry=geo,line_profile_type=lp):
-            continue
-        cloud = radiative_transfer.Cloud(
-                            datafilepath=datafilepath,geometry=geo,
-                            line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
-                            use_NG_acceleration=True,
-                            average_beta_over_line_profile=avg_beta)
-        cloud.set_parameters(ext_background=ext_background,N=N,Tkin=T,
-                              collider_densities={'para-H2':1e4/constants.centi**3})
-        level_pop = cloud.emitting_molecule.LTE_level_pop(T=T)
-        expected_beta = []
+
+    def cloud_iterator(self):
+        #note that it doesn't matter what I put for average_over_line_profile
+        #here, because I use the averaged/non-averaged functions of the cloud
+        #directly in the tests
+        for geo,lp in itertools.product(geometries,line_profile_types):
+            if not allowed_param_combination(geometry=geo,line_profile_type=lp):
+                continue
+            cloud = radiative_transfer.Cloud(
+                                datafilepath=datafilepath,geometry=geo,
+                                line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
+                                use_NG_acceleration=True,average_over_line_profile=False)
+            cloud.set_parameters(ext_background=ext_background,N=N,Tkin=self.T,
+                                 collider_densities={'para-H2':1e4/constants.centi**3})
+            level_pop = cloud.emitting_molecule.LTE_level_pop(T=self.T)
+            yield cloud,level_pop
+
+    def line_iterator(self,cloud,level_pop):
         for line in cloud.emitting_molecule.rad_transitions:
             n_low = line.low.number
             n_up = line.up.number
-            N1 = N*level_pop[n_low]
-            N2 = N*level_pop[n_up]
-            if avg_beta:
-                nu = line.line_profile.coarse_nu_array
-                phi_nu = line.line_profile.coarse_phi_nu_array
-                tau_nu = line.tau_nu(N1=N1,N2=N2,nu=nu)
-                beta = cloud.geometry.beta(tau_nu)
-                beta = np.trapz(beta*phi_nu,nu)/np.trapz(phi_nu,nu)
-                expected_beta.append(beta)
+            x1 = level_pop[n_low]
+            x2 = level_pop[n_up]
+            N1 = N*x1
+            N2 = N*x2
+            nu0 = line.nu0
+            width_nu = line.line_profile.width_nu
+            if cloud.line_profile_type == 'rectangular':
+                nu = np.linspace(nu0-width_nu/2,nu0+width_nu/2,300)
             else:
-                tau_nu0 = line.tau_nu0(N1=N1,N2=N2)
+                nu = np.linspace(nu0-width_nu*2,nu0+width_nu*2,400)
+            tau_nu = line.tau_nu(N1=N1,N2=N2,nu=nu)
+            beta_nu = cloud.geometry.beta(tau_nu)
+            Iext_nu = cloud.ext_background(nu)
+            phi_nu = line.line_profile.phi_nu(nu)
+            S = line.A21*x2/(x1*line.B12-x2*line.B21)
+            yield {'N1':N1,'N2':N2,'nu':nu,'tau_nu':tau_nu,'beta_nu':beta_nu,
+                   'Iext_nu':Iext_nu,'phi_nu':phi_nu,'S':S,'line':line}
+
+    def test_beta_wo_avg(self):
+        for cloud,level_pop in self.cloud_iterator():
+            expected_beta = []
+            calculated_beta = cloud.beta_alllines_without_average(level_populations=level_pop)
+            for line_data in self.line_iterator(cloud=cloud,level_pop=level_pop):
+                N1 = line_data['N1']
+                N2 = line_data['N2']
+                tau_nu0 = line_data['line'].tau_nu0(N1=N1,N2=N2)
                 beta = cloud.geometry.beta(np.array((tau_nu0,)))
                 expected_beta.append(beta[0])
-        assert np.allclose(expected_beta,cloud.beta_alllines(level_populations=level_pop),
-                            atol=0,rtol=1e-4)
-    
-def test_sourcefunction_alllines():
-    T = 123
-    for cloud in generate_new_clouds():
-        level_pop = cloud.emitting_molecule.LTE_level_pop(T=T)
-        expected_source_func = []
-        for line in cloud.emitting_molecule.rad_transitions:
-            n_low = line.low.number
-            x1 = level_pop[n_low]
-            n_up = line.up.number
-            x2 = level_pop[n_up]
-            s = line.A21*x2/(x1*line.B12-x2*line.B21)
-            expected_source_func.append(s)
-        cloud_source_func = cloud.source_function_alllines(level_populations=level_pop)
-        assert np.all(expected_source_func==cloud_source_func)
+            assert np.allclose(expected_beta,calculated_beta,atol=0,rtol=1e-4)
+
+    def test_beta_with_avg(self):
+        for cloud,level_pop in self.cloud_iterator():
+            expected_beta = []
+            calculated_beta = cloud.beta_allines_averaged(level_populations=level_pop)
+            for line_data in self.line_iterator(cloud=cloud,level_pop=level_pop):
+                beta_nu = line_data['beta_nu']
+                phi_nu = line_data['phi_nu']
+                nu = line_data['nu']
+                avg_beta = np.trapz(beta_nu*phi_nu,nu)/np.trapz(phi_nu,nu)
+                expected_beta.append(avg_beta)
+            assert np.allclose(expected_beta,calculated_beta,atol=0,rtol=1e-3)
+
+    def test_source_func_wo_avg(self):
+        for cloud,level_pop in self.cloud_iterator():
+            expected_S = []
+            calculated_S = cloud.source_function_alllines_without_average(
+                                 level_populations=level_pop)
+            for line_data in self.line_iterator(cloud=cloud,level_pop=level_pop):
+                expected_S.append(line_data['S'])
+            assert np.allclose(expected_S,calculated_S,atol=0,rtol=1e-3)
+                
+    def test_Jbar_wo_avg(self):
+        for cloud,level_pop in self.cloud_iterator():
+            calculated_beta = cloud.beta_alllines_without_average(
+                                                  level_populations=level_pop)
+            calculated_Jbar = cloud.Jbar_alllines_without_average( 
+                                               level_populations=level_pop)
+            calculated_S = cloud.source_function_alllines_without_average(
+                                   level_populations=level_pop)
+            expected_Jbar = calculated_beta*cloud.I_ext_lines\
+                           + (1-calculated_beta)*calculated_S
+            assert np.allclose(expected_Jbar,calculated_Jbar,atol=0,rtol=1e-3)
+            
+    def test_Jbar_with_avg(self):
+        for cloud,level_pop in self.cloud_iterator():
+            calculated_Jbar = cloud.Jbar_alllines_averaged(level_populations=level_pop)
+            expected_Jbar = []
+            for line_data in self.line_iterator(cloud=cloud,level_pop=level_pop):
+                beta_nu = line_data['beta_nu']
+                Iext_nu = line_data['Iext_nu']
+                S = line_data['S']
+                phi_nu = line_data['phi_nu']
+                nu = line_data['nu']
+                Jbar = np.trapz((beta_nu*Iext_nu+(1-beta_nu)*S)*phi_nu,nu)
+                Jbar /= np.trapz(phi_nu,nu)
+                expected_Jbar.append(Jbar)
+            assert np.allclose(expected_Jbar,calculated_Jbar,atol=0,rtol=1e-2)
+
+    def test_betaIext_averaged(self):
+        for cloud,level_pop in self.cloud_iterator():
+            calculated_avg = cloud.betaIext_alllines_averaged(level_populations=level_pop)
+            expected_avg = []
+            for line_data in self.line_iterator(cloud=cloud,level_pop=level_pop):
+                beta_nu = line_data['beta_nu']
+                Iext_nu = line_data['Iext_nu']
+                phi_nu = line_data['phi_nu']
+                nu = line_data['nu']
+                beta_Iext_avg = np.trapz(beta_nu*Iext_nu*phi_nu,nu)
+                beta_Iext_avg /= np.trapz(phi_nu,nu)
+                expected_avg.append(beta_Iext_avg)
+            assert np.allclose(expected_avg,calculated_avg,atol=0,rtol=1e-3)
+
 
 @pytest.mark.filterwarnings("ignore:negative optical depth")
 def test_ng_acceleration():
     cloud_kwargs = {'datafilepath':datafilepath,'geometry':'uniform sphere',
                     'line_profile_type':'rectangular','width_v':width_v,'iteration_mode':'ALI',
-                    'average_beta_over_line_profile':False}
+                    'average_over_line_profile':False}
     for N,ext_b,Tkin,coll_dens,colliders in param_iterator():
         level_pops = []
         params = {'N':N,'Tkin':Tkin,'ext_background':ext_b}
@@ -238,14 +345,14 @@ def test_radiative_transfer():
     collider_density_small = {'ortho-H2':1/constants.centi**3}
     collider_density_large = {'ortho-H2':1e11/constants.centi**3}
     LTE_background = lambda nu: helpers.B_nu(nu=nu,T=Tkin)
-    for geo,lp,use_ng,average_beta in itertools.product(geometries,line_profile_types,
-                                                        use_ng_options,average_beta_options):
+    for geo,lp,use_ng,average in itertools.product(geometries,line_profile_types,
+                                                        use_ng_options,average_options):
         if not allowed_param_combination(geometry=geo,line_profile_type=lp):
             continue
         cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geo,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
-                      use_NG_acceleration=use_ng,average_beta_over_line_profile=average_beta)
+                      use_NG_acceleration=use_ng,average_over_line_profile=average)
         LTE_level_pop = cloud.emitting_molecule.LTE_level_pop(T=Tkin)
         def check_LTE(cloud):
             cloud.solve_radiative_transfer()
@@ -258,6 +365,7 @@ def test_radiative_transfer():
             cloud.set_parameters(ext_background=LTE_background,N=N,Tkin=Tkin,
                                       collider_densities=collider_density_small)
             check_LTE(cloud)
+
 
 class TestFastFlux():
 
@@ -279,7 +387,7 @@ class TestFastFlux():
                 cloud = radiative_transfer.Cloud(
                           datafilepath=datafilepath,geometry=geometry,
                           line_profile_type=line_profile_type,width_v=width_v,iteration_mode='ALI',
-                          use_NG_acceleration=True,average_beta_over_line_profile=False)
+                          use_NG_acceleration=True,average_over_line_profile=False)
                 all_transitions = nb.typed.List(range(cloud.emitting_molecule.n_rad_transitions))
                 nu0_lines = np.array([line.nu0 for line in cloud.emitting_molecule.rad_transitions])
                 Tex = self.Tex0*np.ones(cloud.emitting_molecule.n_rad_transitions)
@@ -349,82 +457,6 @@ class TestFastFlux():
                                                 self.test_transitions]
                     assert np.allclose(selected_fluxes,expected_selected_fluxes,
                                         atol=atol,rtol=rtol)
-    
-    # @pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
-    # def test_fast_flux_LVG_sphere(self):
-    #     # test_fast_flux works on tau values and does not solve the radiative transfer,
-    #     # so no access to N2 which is needed for LVG sphere flux; thus need a separate test
-    #     Tkin = 30
-    #     collider_densities = {'ortho-H2':1e4/constants.centi**3}
-    #     N_values = np.logspace(10,18,10)/constants.centi**2
-    #     for line_profile_type in ('rectangular','Gaussian'):
-    #         for width_v in self.test_widths_v:
-    #             cloud = radiative_transfer.Cloud(
-    #                       datafilepath=datafilepath,geometry='LVG sphere',
-    #                       line_profile_type=line_profile_type,width_v=width_v,iteration_mode='ALI',
-    #                       use_NG_acceleration=True,average_beta_over_line_profile=False)
-    #             all_transitions = nb.typed.List(range(cloud.emitting_molecule.n_rad_transitions))
-    #             for N in N_values:
-    #                 cloud.set_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
-    #                                      collider_densities=collider_densities)
-    #                 cloud.solve_radiative_transfer()
-    #                 N2_lines = np.array([cloud.N*cloud.level_pop[trans.up.number]
-    #                                      for trans in
-    #                                      cloud.emitting_molecule.rad_transitions])
-    #                 general_kwargs = {'solid_angle':self.solid_angle,
-    #                                   'tau_nu0_lines':cloud.tau_nu0,
-    #                                   'nu0_lines':cloud.nu0_lines,
-    #                                   'compute_flux_nu':cloud.geometry.compute_flux_nu,
-    #                                   'width_v':cloud.emitting_molecule.width_v,
-    #                                   'beta_function':cloud.geometry.beta,
-    #                                   'N2_lines':N2_lines,'A21_lines':cloud.A21_lines,
-    #                                   'DeltaE_lines':cloud.DeltaE_lines}
-    #                 gauss_kwargs = {'tau_peak_fraction':radiative_transfer.Cloud.tau_peak_fraction,
-    #                                 'nu_per_FHWM':radiative_transfer.Cloud.nu_per_FHWM}
-    #                 if line_profile_type == 'rectangular':
-    #                     all_fluxes = cloud.fast_fluxes_rectangular_LVG_sphere(
-    #                                         **general_kwargs,transitions=all_transitions)
-    #                     selected_fluxes = cloud.fast_fluxes_rectangular_LVG_sphere(
-    #                                         **general_kwargs,transitions=self.test_transitions)
-    #                 elif line_profile_type == 'Gaussian':
-    #                     all_fluxes = cloud.fast_fluxes_Gaussian_LVG_sphere(
-    #                                     **general_kwargs,**gauss_kwargs,transitions=all_transitions)
-    #                     selected_fluxes = cloud.fast_fluxes_Gaussian_LVG_sphere(
-    #                                         **general_kwargs,**gauss_kwargs,
-    #                                         transitions=self.test_transitions)
-    #                 else:
-    #                     raise RuntimeError
-    #                 expected_fluxes = []
-    #                 for i,line in enumerate(cloud.emitting_molecule.rad_transitions):
-    #                     nu0 = line.nu0
-    #                     width_nu = cloud.emitting_molecule.width_v/constants.c*nu0
-    #                     if line_profile_type == 'rectangular':
-    #                         dense_nu = np.linspace(nu0-0.7*width_nu,nu0+0.7*width_nu,1000)
-    #                     elif line_profile_type == 'Gaussian':
-    #                         dense_nu = np.linspace(nu0-6*width_nu,nu0+6*width_nu,10000)
-    #                     else:
-    #                         raise RuntimeError
-    #                     dense_phi_nu = line.line_profile.phi_nu(dense_nu)
-    #                     expected_tau_nu = dense_phi_nu/dense_nu**2
-    #                     nu0_index = np.argmin(np.abs(dense_nu-nu0))
-    #                     norm = cloud.tau_nu0[i]/expected_tau_nu[nu0_index]
-    #                     expected_tau_nu *= norm
-    #                     N2 = cloud.level_pop[line.up.number]*cloud.N
-    #                     expected_spec = cloud.geometry.compute_flux_nu(
-    #                                       beta_nu=cloud.geometry.beta(expected_tau_nu),
-    #                                       solid_angle=self.solid_angle,
-    #                                       N2=N2,A21=line.A21,DeltaE=line.Delta_E,
-    #                                       phi_nu=dense_phi_nu)
-    #                     expected_flux = np.trapz(expected_spec,dense_nu)
-    #                     expected_fluxes.append(expected_flux)
-    #                 atol = 0
-    #                 rtol = 1e-2
-    #                 assert np.allclose(all_fluxes, expected_fluxes,atol=atol,rtol=rtol)
-    #                 expected_selected_fluxes = [expected_fluxes[i] for i in
-    #                                             self.test_transitions]
-    #                 assert np.allclose(selected_fluxes,expected_selected_fluxes,
-    #                                     atol=atol,rtol=rtol)
-
 
 def test_flux_thin():
     Tkin = 45
@@ -435,14 +467,14 @@ def test_flux_thin():
     sphere_volume = 4/3*sphere_radius**3*np.pi
     sphere_Omega = sphere_radius**2*np.pi/distance**2
     Omega = sphere_Omega #use the same Omega for all geometries
-    for lp,avg_beta in itertools.product(line_profile_types,average_beta_options):
+    for lp,avg in itertools.product(line_profile_types,average_options):
         for geometry in radiative_transfer.Cloud.geometries.keys():
             if not allowed_param_combination(geometry=geometry,line_profile_type=lp):
                 continue
             cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geometry,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
-                      use_NG_acceleration=True,average_beta_over_line_profile=False)
+                      use_NG_acceleration=True,average_over_line_profile=avg)
             cloud.set_parameters(ext_background=helpers.zero_background,N=N,
                                   Tkin=Tkin,collider_densities=collider_densities)
             cloud.solve_radiative_transfer()
@@ -476,14 +508,14 @@ def test_thick_LTE_flux():
     collider_densities = {'ortho-H2':1e10/constants.centi**3}
     distance = 1*constants.parsec
     Omega = 1*constants.au**2/distance**2
-    for lp,avg_beta in itertools.product(line_profile_types,average_beta_options):
+    for lp,avg in itertools.product(line_profile_types,average_options):
         for geometry in radiative_transfer.Cloud.geometries.keys():
             if not allowed_param_combination(geometry=geometry,line_profile_type=lp):
                 continue
             cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geometry,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
-                      use_NG_acceleration=True,average_beta_over_line_profile=False)
+                      use_NG_acceleration=True,average_over_line_profile=avg)
             cloud.set_parameters(ext_background=helpers.zero_background,N=N,
                                       Tkin=Tkin,collider_densities=collider_densities)
             cloud.solve_radiative_transfer()
@@ -508,14 +540,14 @@ def test_tau_and_spectrum_single_lines():
     N_values = {'thin':1e12/constants.centi**2,
                 'thick':1e19/constants.centi**2}
     trans_indices = (1,6)
-    for lp,avg_beta in itertools.product(line_profile_types,average_beta_options):
+    for lp,avg in itertools.product(line_profile_types,average_options):
         for geometry in radiative_transfer.Cloud.geometries.keys():
             if not allowed_param_combination(geometry=geometry,line_profile_type=lp):
                 continue
             cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geometry,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
-                      use_NG_acceleration=True,average_beta_over_line_profile=False)
+                      use_NG_acceleration=True,average_over_line_profile=avg)
             lines = [cloud.emitting_molecule.rad_transitions[i] for i in trans_indices]
             nu = np.array(())
             nu0_values = [line.nu0 for line in lines]
@@ -562,7 +594,7 @@ def test_tau_and_spectrum_single_lines():
 
 @pytest.mark.filterwarnings("ignore:lines are overlapping")
 @pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
-def test_tau_and_spectrum_overlapping_lines():
+def test_tau_and_spectrum_overlapping_lines_without_overlap_treatment():
     datafilepath = os.path.join(here,'LAMDA_files/hcl.dat')
     solid_angle = 1
     Tkin = 102
@@ -571,14 +603,15 @@ def test_tau_and_spectrum_overlapping_lines():
                 'thick':1e15/constants.centi**2}
     trans_indices = (0,1,2)
     width_v = 20*constants.kilo
-    for lp,avg_beta in itertools.product(line_profile_types,average_beta_options):
+    for lp,avg in itertools.product(line_profile_types,average_options):
         for geometry in radiative_transfer.Cloud.geometries.keys():
             if not allowed_param_combination(geometry=geometry,line_profile_type=lp):
                 continue
             cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry=geometry,
                       line_profile_type=lp,width_v=width_v,iteration_mode='ALI',
-                      use_NG_acceleration=True,average_beta_over_line_profile=False)
+                      use_NG_acceleration=True,average_over_line_profile=avg,
+                      treat_overlapping_lines=False)
             lines = [cloud.emitting_molecule.rad_transitions[i] for i in trans_indices]
             lines = sorted(lines,key=lambda l: l.nu0)
             assert len(lines) == 3
@@ -620,31 +653,85 @@ def test_tau_and_spectrum_overlapping_lines():
             if ID == 'thin':
                 assert np.allclose(tau_nu,0,atol=1e-3,rtol=0)
 
-@pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
-@pytest.mark.filterwarnings("ignore:lines are overlapping")
-def test_overlapping_lines():
-    #first three transitions of HCl are separated by ~8 km/s and 6 km/s respectively
-    def get_cloud(line_profile_type,width_v):
+
+class TestOverlappingLines():
+
+    @staticmethod
+    def get_cloud(line_profile_type,width_v,datafilename):
         return radiative_transfer.Cloud(
-                  datafilepath=os.path.join(here,'LAMDA_files/hcl.dat'),
+                  datafilepath=os.path.join(here,'LAMDA_files',datafilename),
                   geometry='uniform sphere',line_profile_type=line_profile_type,
                   width_v=width_v,iteration_mode='ALI',
-                  use_NG_acceleration=True,average_beta_over_line_profile=False)
-    overlapping = [get_cloud(line_profile_type='rectangular',width_v=8.5*constants.kilo),
-                   get_cloud(line_profile_type='rectangular',width_v=6.5*constants.kilo),
-                   get_cloud(line_profile_type='Gaussian',width_v=4.5*constants.kilo),
-                   get_cloud(line_profile_type='Gaussian',width_v=3.5*constants.kilo)]
-    nonoverlapping = [get_cloud(line_profile_type='rectangular',width_v=5.5*constants.kilo),
-                      get_cloud(line_profile_type='Gaussian',width_v=2.5*constants.kilo)
-                      ]
-    for ol in overlapping:
-        lines = ol.emitting_molecule.rad_transitions
-        lines = sorted(lines,key=lambda l: l.nu0)[:3]
-        assert ol.lines_are_overlapping(lines)
-    for nol in nonoverlapping:
-        lines = nol.emitting_molecule.rad_transitions
-        lines = sorted(lines,key=lambda l: l.nu0)[:3]
-        assert not nol.lines_are_overlapping(lines)
+                  use_NG_acceleration=True,average_over_line_profile=False,
+                  verbose=True)
+
+    def get_HCl_cloud(self,line_profile_type,width_v):
+        return self.get_cloud(line_profile_type=line_profile_type,width_v=width_v,
+                              datafilename='hcl.dat')
+
+    def get_CO_cloud(self,line_profile_type,width_v):
+        return self.get_cloud(line_profile_type=line_profile_type,width_v=width_v,
+                              datafilename='co.dat')
+
+    @pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
+    def test_overlapping_lines(self):
+        #first three transitions of HCl are separated by ~8 km/s and 6 km/s respectively
+        overlapping_3lines = [self.get_HCl_cloud(line_profile_type='rectangular',
+                                                 width_v=16*constants.kilo),
+                              self.get_HCl_cloud(line_profile_type='Gaussian',
+                                                 width_v=10*constants.kilo)
+                              ]
+        for ol in overlapping_3lines:
+            assert ol.overlapping_lines[0] == [1,2]
+            assert ol.overlapping_lines[1] == [0,2]
+            assert ol.overlapping_lines[2] == [0,1]
+        overlapping_2lines = [self.get_HCl_cloud(line_profile_type='rectangular',
+                                                 width_v=8.5*constants.kilo),
+                              self.get_HCl_cloud(line_profile_type='Gaussian',
+                                                 width_v=3.5*constants.kilo)
+                              ]
+        for ol in overlapping_2lines:
+            assert ol.overlapping_lines[0] == [1,]
+            assert ol.overlapping_lines[1] == [0,2]
+            assert ol.overlapping_lines[2] == [1,]
+        #transitions 4-11 are separated by ~11.2 km/s
+        overlapping_8lines = [self.get_HCl_cloud(line_profile_type='rectangular',
+                                                 width_v=11.5*constants.kilo),
+                              self.get_HCl_cloud(line_profile_type='Gaussian',
+                                                 width_v=4*constants.kilo)
+                              ]
+        for ol in overlapping_8lines:
+            for i in range(3,11):
+                assert ol.overlapping_lines[i] == [index for index in range(3,11)
+                                                   if index!=i]
+        for line_profile_type in line_profile_types:
+            CO_cloud = self.get_CO_cloud(line_profile_type=line_profile_type,
+                                         width_v=1*constants.kilo)
+            for overlap_lines in CO_cloud.overlapping_lines:
+                assert overlap_lines == []
+            HCl_cloud = self.get_HCl_cloud(line_profile_type=line_profile_type,
+                                           width_v=0.01*constants.kilo)
+            assert HCl_cloud.overlapping_lines[0] == []
+            assert HCl_cloud.overlapping_lines[11] == []
+
+    @pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
+    def test_any_overlapping(self):
+        #raise NotImplementedError('add some more tests here')
+        for line_profile_type in line_profile_types:
+            HCl_cloud = self.get_HCl_cloud(line_profile_type=line_profile_type,
+                                           width_v=10*constants.kilo)
+            assert HCl_cloud.any_line_has_overlap(line_indices=[0,1,2,3,4])
+            assert HCl_cloud.any_line_has_overlap(line_indices=[0,])
+            assert HCl_cloud.any_line_has_overlap(
+                          line_indices=list(range(len(HCl_cloud.emitting_molecule.rad_transitions))))
+            HCl_cloud = self.get_HCl_cloud(line_profile_type=line_profile_type,
+                                           width_v=1*constants.kilo)
+            assert not HCl_cloud.any_line_has_overlap(line_indices=[0,1,2])
+            CO_cloud = self.get_CO_cloud(line_profile_type=line_profile_type,
+                                         width_v=1*constants.kilo)
+            assert not CO_cloud.any_line_has_overlap(
+                       line_indices=list(range(len(CO_cloud.emitting_molecule.rad_transitions))))
+
 
 class TestModelGrid():
     
@@ -652,7 +739,7 @@ class TestModelGrid():
                           datafilepath=datafilepath,geometry='uniform sphere',
                           line_profile_type='rectangular',width_v=1*constants.kilo,
                           iteration_mode='ALI',use_NG_acceleration=True,
-                          average_beta_over_line_profile=False)
+                          average_over_line_profile=False)
     ext_backgrounds = {'CMB':helpers.generate_CMB_background(z=2),
                        'zero':helpers.zero_background}
     N_values = np.array((1e14,1e16))/constants.centi**2
@@ -669,7 +756,7 @@ class TestModelGrid():
     
     def test_wrong_requested_output(self):
         wrong_requested_output = ['Tex','levelpop']
-        with pytest.raises(AssertionError): 
+        with pytest.raises(AssertionError):
             for model in self.cloud.model_grid(**self.grid_kwargs,
                                                requested_output=wrong_requested_output):
                 pass

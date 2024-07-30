@@ -32,16 +32,17 @@ data_folder = '../LAMDA_files'
 datafilepath = os.path.join(data_folder,data_filename)
 geometry = 'uniform sphere'
 ext_background = helpers.generate_CMB_background(z=0)
+#ext_background = helpers.zero_background
 
-N_values = (1e13/constants.centi**2,1e18/constants.centi**2,1e20/constants.centi**2,
-               1e22/constants.centi**2)
+N_values = (1e13/constants.centi**2,1e14/constants.centi**2,1e17/constants.centi**2,
+            1e20/constants.centi**2)
 Tkin = 20
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
 timeit_number = 10
 
 for N in N_values:
-    print(f'N={N/constants.centi**2:.2g} cm-2')
+    print(f'N={N/constants.centi**-2:.2g} cm-2')
     for mode in ('ALI','LI'):
         for ng in (True,False):
             cloud = radiative_transfer.Cloud(
@@ -57,6 +58,6 @@ for N in N_values:
                                        number=timeit_number)
             max_tau = np.max(cloud.tau_nu0)
             Tex_10 = cloud.Tex[0]
-            print(f'time for {mode} (ng {ng}), max tau {max_tau:.6g}, '
-                  +f'Tex={Tex_10:.6g}: {solve_time:.2g}')
+            print(f'time for {mode} (ng {ng}), max tau {max_tau:.4g}, '
+                  +f'Tex={Tex_10:.4g}: {solve_time:.2g}')
     print('\n')

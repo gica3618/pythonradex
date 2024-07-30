@@ -90,14 +90,11 @@ class RateEquations():
 
     @staticmethod
     #@nb.jit(nopython=True,cache=True)#doesn't help
-    def rad_rates_ALI(beta_lines,I_ext_lines,A21_lines,B12_lines,B21_lines):
-        '''compute the rates for the accelerated Lambda iteration (ALI) method
-        for radiative transitions, from the escape probability for all lines (beta_lines)
-        and the external intensity for all lines (I_ext_lines).'''
+    def rad_rates_ALI(beta_lines,betaIext_lines,A21_lines,B12_lines,B21_lines):
         #see section 7.10 of the Dullemond radiative transfer lectures (in the
         #ALI_explained.pdf document)
-        uprate = B12_lines*I_ext_lines*beta_lines
-        downrate = A21_lines*beta_lines + B21_lines*I_ext_lines*beta_lines
+        uprate = B12_lines*betaIext_lines
+        downrate = A21_lines*beta_lines + B21_lines*betaIext_lines
         return uprate,downrate
 
     @staticmethod
@@ -147,9 +144,6 @@ class RateEquations():
                   +'density and/or low collider density'
 
     def solve(self,**kwargs):
-        '''Solve the SE equations
-           for LI mode, kwargs includes Jbar_lines
-           for ALI mode, kwargs includes beta_lines and I_ext_lines'''
         matrix = np.zeros((self.molecule.n_levels,self.molecule.n_levels))
         rad_rates = self.rad_rates(**kwargs)
         matrix = self.add_rad_rates(
@@ -201,8 +195,9 @@ class Cloud():
                      'rectangular':atomic_transition.RectangularLineProfile}
 
     def __init__(self,datafilepath,geometry,line_profile_type,width_v,iteration_mode='ALI',
-                 use_NG_acceleration=True,average_beta_over_line_profile=False,
-                 warn_negative_tau=True,debug=False,test_mode=False):
+                 use_NG_acceleration=True,average_over_line_profile=False,
+                 treat_overlapping_lines=False,warn_negative_tau=True,verbose=False,
+                 test_mode=False):
         '''Initialises a new instance of the Cloud class.
 
         Args:
@@ -233,14 +228,17 @@ class Cloud():
                 Iteration. ALI is recommended. Defaults to "ALI".
             use_NG_acceleration (:obj:`bool`): Whether to use Ng acceleration. Defaults
                 to True.
-            average_beta_over_line_profile (:obj:`bool`): Whether to average the escape
-                probability beta over the line profile, or just take the value at the
-                rest frequency (like RADEX). Defaults to False. Setting this to true makes the
-                calculation slower.
+            average_over_line_profile (:obj:`bool`): Whether to average the escape
+                probability, source function etc. over the line profile, or just take the value
+                at the rest frequency (like RADEX). Defaults to False. Setting this to true makes the
+                calculation slower. To treat overlapping lines, this needs to be activated.
+            treat_overlapping_lines (:obj:`bool`): Whether to treat overlapping lines.
+                Defaults to False. Can only be used in combination with static geometries
+                (i.e. not with LVG)
             warn_negative_tau (:obj:`bool`): Whether the raise a warning when negative
                 optical depth is encountered. Defaults to True. Setting this to False
                 is useful when calculating a grid of models.
-            debug (:obj:`bool`): Whether to print additional information. Defaults to False.
+            verbose (:obj:`bool`): Whether to print additional information. Defaults to False.
             test_mode (:obj:`bool`): Enter test mode. Only for developer, should not be used
                 by general user. Defaults to False.
         
@@ -252,10 +250,22 @@ class Cloud():
                                     datafilepath=datafilepath,
                                     line_profile_type=self.line_profile_type,
                                     width_v=width_v)
-        if self.lines_are_overlapping(lines=self.emitting_molecule.rad_transitions):
+        self.average_over_line_profile = average_over_line_profile
+        self.treat_overlapping_lines = treat_overlapping_lines
+        self.identify_overlapping_lines()
+        if self.treat_overlapping_lines:
+            if not self.average_over_line_profile:
+                raise ValueError('treating overlapping lines requires activation'
+                                 ' line profile averaging')
+        if self.any_line_has_overlap(
+                 line_indices=range(self.emitting_molecule.n_rad_transitions))\
+            and not self.treat_overlapping_lines:
             warnings.warn('lines of input molecule are overlapping, '
-                          +'but pythonradex does not treat overlapping lines; results '
-                          +'might not be correct')
+                          +'but treatment of overlapping lines not activated')
+        if verbose:
+            for i in range(len(self.overlapping_lines)):
+                if len(self.overlapping_lines[i]) > 0:
+                    print(f'identified overlaps for line {i}: {self.overlapping_lines[i]}')
         self.geometry_name = geometry
         if self.geometry_name in ('LVG sphere','LVG slab') and not test_mode:
             if not self.line_profile_type == 'rectangular':
@@ -268,23 +278,23 @@ class Cloud():
         self.geometry = self.geometries[geometry]()
         self.iteration_mode = iteration_mode
         self.use_NG_acceleration = use_NG_acceleration
-        if average_beta_over_line_profile:
-            self.beta_alllines = self.beta_alllines_average
-        else:
-            self.beta_alllines = self.beta_alllines_nu0
+        # if average_beta_over_line_profile:
+        #     self.beta_alllines = self.beta_alllines_average
+        # else:
+        #     self.beta_alllines = self.beta_alllines_nu0
         self.warn_negative_tau = warn_negative_tau
-        self.debug = debug
+        self.verbose = verbose
         #the following attributes are needed for the compiled functions:
         rad_trans = self.emitting_molecule.rad_transitions
         self.A21_lines = np.array([line.A21 for line in rad_trans])
         self.B12_lines = np.array([line.B12 for line in rad_trans])
         self.B21_lines = np.array([line.B21 for line in rad_trans])
         self.DeltaE_lines = np.array([line.Delta_E for line in rad_trans])
-        self.coarse_nu_lines = np.array([line.line_profile.coarse_nu_array for line in
-                                  rad_trans])
+        # self.coarse_nu_lines = np.array([line.line_profile.coarse_nu_array for line in
+        #                           rad_trans])
         self.nu0_lines = np.array([line.nu0 for line in rad_trans])
-        self.phi_nu_lines = np.array([line.line_profile.coarse_phi_nu_array for
-                                      line in rad_trans])
+        # self.phi_nu_lines = np.array([line.line_profile.coarse_phi_nu_array for
+        #                               line in rad_trans])
         self.phi_nu0_lines = np.array([line.line_profile.phi_nu0 for line in
                                        rad_trans])
         self.gup_lines = np.array([line.up.g for line in rad_trans])
@@ -297,7 +307,7 @@ class Cloud():
 
         Args:
             ext_background (func): A function taking the frequency in Hz as input
-                and returning the background radiation field in [W/m\ :sup:`2`/Hz/sr]
+                and returning the background radiation field in [W/m\ :sup:`2`/Hz/sr].
             N (:obj:`float`): The column density in [m\ :sup:`-2`].
             Tkin (:obj:`float`): The kinetic temperature of the gas in [K].
             collider_densities (dict): A dictionary of the number densities of
@@ -313,6 +323,10 @@ class Cloud():
         #note that setting up the rate equations is expensive, so I only do it if
         #necessary
         self.ext_background = ext_background
+        if not self.ext_background_is_slowly_varying() and\
+                                      not self.average_over_line_profile:
+            raise ValueError('external background is varying over line profile. Please'
+                             +' activate averaging over line profile')
         #needed for the compiled functions:
         self.I_ext_lines = np.array([self.ext_background(line.nu0) for line in
                                      self.emitting_molecule.rad_transitions])
@@ -330,28 +344,39 @@ class Cloud():
                                       collider_densities=self.collider_densities,
                                       Tkin=self.Tkin,mode=self.iteration_mode)
 
-    @staticmethod
-    @nb.jit(nopython=True,cache=True)
-    def fast_averaged_beta_lines(level_populations,low_number_lines,up_number_lines,N,
-                                 A21_lines,phi_nu_lines,gup_lines,glow_lines,nu_lines,
-                                 beta_function):
-        n_lines = low_number_lines.size
-        averaged_beta = np.empty(n_lines)
-        for i in range(n_lines):
-            N1 = N * level_populations[low_number_lines[i]]
-            N2 = N * level_populations[up_number_lines[i]]
-            tau_nu = atomic_transition.fast_tau_nu(
-                          A21=A21_lines[i],phi_nu=phi_nu_lines[i,:],
-                          g_up=gup_lines[i],g_low=glow_lines[i],N1=N1,N2=N2,
-                          nu=nu_lines[i,:])
-            beta_nu = beta_function(tau_nu)
-            #phi_nu is already normalised, but since I use the coarse grid here,
-            #I re-normalise
-            phi_nu = phi_nu_lines[i,:]
-            nu = nu_lines[i,:]
-            norm = helpers.fast_trapz(y=phi_nu,x=nu)
-            averaged_beta[i] = helpers.fast_trapz(y=beta_nu*phi_nu,x=nu)/norm
-        return averaged_beta
+    def ext_background_is_slowly_varying(self):
+        nu0 = self.emitting_molecule.nu0_lines
+        Delta_nu = self.emitting_molecule.width_v/constants.c*nu0
+        Iext_nu0 = np.array((self.ext_background(nu0),))
+        Iext_nu0_plus_Deltanu = np.array((self.ext_background(nu0+Delta_nu),))
+        relative_diff = helpers.relative_difference(Iext_nu0,Iext_nu0_plus_Deltanu)
+        if np.any(relative_diff>1e-2):
+            return False
+        else:
+            return True
+
+    # @staticmethod
+    # @nb.jit(nopython=True,cache=True)
+    # def fast_averaged_beta_lines(level_populations,low_number_lines,up_number_lines,N,
+    #                              A21_lines,phi_nu_lines,gup_lines,glow_lines,nu_lines,
+    #                              beta_function):
+    #     n_lines = low_number_lines.size
+    #     averaged_beta = np.empty(n_lines)
+    #     for i in range(n_lines):
+    #         N1 = N * level_populations[low_number_lines[i]]
+    #         N2 = N * level_populations[up_number_lines[i]]
+    #         tau_nu = atomic_transition.fast_tau_nu(
+    #                       A21=A21_lines[i],phi_nu=phi_nu_lines[i,:],
+    #                       g_up=gup_lines[i],g_low=glow_lines[i],N1=N1,N2=N2,
+    #                       nu=nu_lines[i,:])
+    #         beta_nu = beta_function(tau_nu)
+    #         #phi_nu is already normalised, but since I use the coarse grid here,
+    #         #I re-normalise
+    #         phi_nu = phi_nu_lines[i,:]
+    #         nu = nu_lines[i,:]
+    #         norm = helpers.fast_trapz(y=phi_nu,x=nu)
+    #         averaged_beta[i] = helpers.fast_trapz(y=beta_nu*phi_nu,x=nu)/norm
+    #     return averaged_beta
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
@@ -369,16 +394,16 @@ class Cloud():
                                  nu=nu0_lines[i])
         return beta_function(tau_nu0_lines)
 
-    def beta_alllines_average(self,level_populations):
-        return self.fast_averaged_beta_lines(
-                        level_populations=level_populations,
-                        low_number_lines=self.low_number_lines,
-                        up_number_lines=self.up_number_lines,N=self.N,
-                        A21_lines=self.A21_lines,phi_nu_lines=self.phi_nu_lines,
-                        gup_lines=self.gup_lines,glow_lines=self.glow_lines,
-                        nu_lines=self.coarse_nu_lines,beta_function=self.geometry.beta)
+    # def beta_alllines_average(self,level_populations):
+    #     return self.fast_averaged_beta_lines(
+    #                     level_populations=level_populations,
+    #                     low_number_lines=self.low_number_lines,
+    #                     up_number_lines=self.up_number_lines,N=self.N,
+    #                     A21_lines=self.A21_lines,phi_nu_lines=self.phi_nu_lines,
+    #                     gup_lines=self.gup_lines,glow_lines=self.glow_lines,
+    #                     nu_lines=self.coarse_nu_lines,beta_function=self.geometry.beta)
 
-    def beta_alllines_nu0(self,level_populations):
+    def beta_alllines_without_average(self,level_populations):
         return self.fast_beta_nu0_lines(
                        level_populations=level_populations,
                        low_number_lines=self.low_number_lines,
@@ -389,8 +414,9 @@ class Cloud():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def fast_source_function_alllines(level_populations,low_number_lines,
-                                      up_number_lines,A21_lines,B21_lines,B12_lines):
+    def fast_source_function_alllines_without_average(
+               level_populations,low_number_lines,up_number_lines,A21_lines,
+               B21_lines,B12_lines):
         n_lines = low_number_lines.size
         source_func = np.zeros(n_lines)
         for i in range(n_lines):
@@ -403,8 +429,8 @@ class Cloud():
                 source_func[i] = s
         return source_func
 
-    def source_function_alllines(self,level_populations):
-        return self.fast_source_function_alllines(
+    def source_function_alllines_without_average(self,level_populations):
+        return self.fast_source_function_alllines_without_average(
                  level_populations=level_populations,
                  low_number_lines=self.low_number_lines,
                  up_number_lines=self.up_number_lines,A21_lines=self.A21_lines,
@@ -412,38 +438,112 @@ class Cloud():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def fast_Jbar_allines(beta_lines,I_ext_lines,source_func):
+    def fast_Jbar_allines_without_average(beta_lines,I_ext_lines,source_func):
         return beta_lines*I_ext_lines + (1-beta_lines)*source_func
 
-    def Jbar_alllines(self,level_populations,beta_lines):
-        source_func = self.source_function_alllines(level_populations=level_populations)
-        return self.fast_Jbar_allines(
+    def Jbar_alllines_without_average(self,level_populations):
+        beta_lines = self.beta_alllines_without_average(level_populations=level_populations)
+        source_func = self.source_function_alllines_without_average(
+                                       level_populations=level_populations)
+        return self.fast_Jbar_allines_without_average(
                     beta_lines=beta_lines,I_ext_lines=self.I_ext_lines,
                     source_func=source_func)
 
+    def Jbar_alllines_averaged(self,level_populations):
+        Jbar = np.empty(self.emitting_molecule.n_rad_transitions)
+        for i,line in enumerate(self.emitting_molecule.rad_transitions):
+            x1,x2 = level_populations[line.low.number],level_populations[line.up.number]
+            N1,N2 = x1*self.N,x2*self.N
+            if self.treat_overlapping_lines:
+                raise NotImplementedError
+            else:
+                def tau_func(nu):
+                    return line.tau_nu(N1=N1,N2=N2,nu=nu)
+                def source_func(nu):
+                    return line.A21*x2/(x1*line.B12-x2*line.B21)
+            def J(nu):
+                beta = self.geometry.beta(tau_func(nu))
+                Iext = self.ext_background(nu)
+                S = source_func(nu)
+                return beta*Iext + (1-beta)*S
+            Jbar[i] = line.line_profile.average_over_phi_nu(J)
+        return Jbar
+
+    def beta_allines_averaged(self,level_populations):
+        beta_bar = np.empty(self.emitting_molecule.n_rad_transitions)
+        for i,line in enumerate(self.emitting_molecule.rad_transitions):
+            x1,x2 = level_populations[line.low.number],level_populations[line.up.number]
+            N1,N2 = x1*self.N,x2*self.N
+            if self.treat_overlapping_lines:
+                raise NotImplementedError
+            else:
+                def tau_func(nu):
+                    return line.tau_nu(N1=N1,N2=N2,nu=nu)
+            def beta(nu):
+                return self.geometry.beta(tau_func(nu))
+            beta_bar[i] = line.line_profile.average_over_phi_nu(beta)
+        return beta_bar
+
+    def betaIext_alllines_averaged(self,level_populations):
+        betaIext_bar = np.empty(self.emitting_molecule.n_rad_transitions)
+        for i,line in enumerate(self.emitting_molecule.rad_transitions):
+            x1,x2 = level_populations[line.low.number],level_populations[line.up.number]
+            N1,N2 = x1*self.N,x2*self.N
+            if self.treat_overlapping_lines:
+                raise NotImplementedError
+            else:
+                def tau_func(nu):
+                    return line.tau_nu(N1=N1,N2=N2,nu=nu)
+            def betaIext(nu):
+                return self.geometry.beta(tau_func(nu))*self.ext_background(nu)
+            betaIext_bar[i] = line.line_profile.average_over_phi_nu(betaIext)
+        return betaIext_bar
+
     def get_new_level_pop(self,old_level_pop):
         assert self.rate_equations.mode in ('ALI','LI')
-        Einstein_kwargs = {'A21_lines':self.A21_lines,
-                          'B12_lines':self.B12_lines,'B21_lines':self.B21_lines}
-        ALI_kwargs = {'I_ext_lines':self.I_ext_lines} | Einstein_kwargs
+        Einstein_kwargs = {'B12_lines':self.B12_lines,'B21_lines':self.B21_lines,
+                           'A21_lines':self.A21_lines}
         if old_level_pop is None:
             #assume optically thin emission for the first iteration
             if self.rate_equations.mode == 'ALI':
                 beta_lines = np.ones(self.emitting_molecule.n_rad_transitions)
-                return self.rate_equations.solve(beta_lines=beta_lines,**ALI_kwargs)
+                return self.rate_equations.solve(beta_lines=beta_lines,
+                                                 betaIext_lines=beta_lines*self.I_ext_lines,
+                                                 **Einstein_kwargs)
             elif self.rate_equations.mode == 'LI':
                 Jbar_lines = self.I_ext_lines
                 return self.rate_equations.solve(Jbar_lines=Jbar_lines,
                                                  **Einstein_kwargs)
         else:
-            beta_lines = self.beta_alllines(level_populations=old_level_pop)
-            if self.rate_equations.mode == 'ALI':
-                return self.rate_equations.solve(beta_lines=beta_lines,**ALI_kwargs)
-            elif self.rate_equations.mode == 'LI':
-                Jbar_lines = self.Jbar_alllines(level_populations=old_level_pop,
-                                                beta_lines=beta_lines)
-                return self.rate_equations.solve(Jbar_lines=Jbar_lines,
-                                                 **Einstein_kwargs)
+            if self.average_over_line_profile:
+                if self.rate_equations.mode == 'ALI':
+                    if self.treat_overlapping_lines:
+                        raise NotImplementedError
+                    else:
+                        beta_lines = self.beta_allines_averaged(
+                                                level_populations=old_level_pop)
+                        betaIext_lines = self.betaIext_alllines_averaged(
+                                                level_populations=old_level_pop)
+                        return self.rate_equations.solve(beta_lines=beta_lines,
+                                                         betaIext_lines=betaIext_lines,
+                                                         **Einstein_kwargs)
+                else:
+                    Jbar_lines = self.Jbar_alllines_averaged(level_populations=old_level_pop)
+                    return self.rate_equations.solve(Jbar_lines=Jbar_lines,
+                                                     **Einstein_kwargs)
+            else:
+                if self.rate_equations.mode == 'ALI':
+                    beta_lines = self.beta_alllines_without_average(
+                                                level_populations=old_level_pop)
+                    return self.rate_equations.solve(
+                                   beta_lines=beta_lines,
+                                   betaIext_lines=beta_lines*self.I_ext_lines,
+                                   **Einstein_kwargs)
+                elif self.rate_equations.mode == 'LI':
+                    Jbar_lines = self.Jbar_alllines_without_average(
+                                          level_populations=old_level_pop)
+                    return self.rate_equations.solve(Jbar_lines=Jbar_lines,
+                                                     **Einstein_kwargs)
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
@@ -496,14 +596,14 @@ class Cloud():
         residual = np.inf
         while residual>self.relative_convergence or counter < self.min_iter:
             counter += 1
-            if counter%10 == 0 and self.debug:
+            if counter%10 == 0 and self.verbose:
                 print(f'iteration {counter}')
             if counter > self.max_iter:
                 raise RuntimeError('maximum number of iterations reached')
             new_level_pop = self.get_new_level_pop(old_level_pop=level_pop)
             Tex = self.emitting_molecule.get_Tex(new_level_pop)
             Tex_residual = helpers.relative_difference(Tex,old_Tex)
-            if self.debug:
+            if self.verbose:
                 print(f'max relative Tex residual: {np.max(Tex_residual):.3g}')
             tau_nu0_lines = self.emitting_molecule.get_tau_nu0(
                                        N=self.N,level_population=new_level_pop)
@@ -520,7 +620,7 @@ class Cloud():
                 and counter%self.ng_acceleration_interval==0:
                 level_pop = self.ng_accelerate(level_pop=level_pop,
                                                old_level_pops=old_level_pops)
-        if self.debug:
+        if self.verbose:
             print(f'converged in {counter} iterations')
         self.tau_nu0 = self.emitting_molecule.get_tau_nu0(
                                    N=self.N,level_population=level_pop)
@@ -683,24 +783,33 @@ class Cloud():
         tau_nu_lines = self.get_tau_nu_lines(nu=nu)
         return np.sum(tau_nu_lines,axis=0)
 
-    def lines_are_overlapping(self,lines):
-        n_lines = len(lines)
-        if n_lines <= 1:
-            return False
-        lines = sorted(lines,key=lambda l: l.nu0)
-        for i in range(n_lines-1):
-            nu01 = lines[i].nu0
-            nu02 = lines[i+1].nu0
-            width_nu1 = self.emitting_molecule.width_v/constants.c*nu01
-            width_nu2 = self.emitting_molecule.width_v/constants.c*nu02
-            if self.line_profile_type == 'rectangular':
-                if nu01+width_nu1/2 >= nu02-width_nu2/2:
-                    return True
-            elif self.line_profile_type == 'Gaussian':
-                if nu01+width_nu1 >= nu02-width_nu2:
-                    return True
-            else:
-                raise RuntimeError
+    def identify_overlapping_lines(self):
+        self.overlapping_lines = []
+        width_v = self.emitting_molecule.width_v
+        for i,line in enumerate(self.emitting_molecule.rad_transitions):
+            nu0 = line.nu0
+            width_nu = width_v/constants.c*nu0
+            overlapping_lines = []
+            for j,overlap_line in enumerate(self.emitting_molecule.rad_transitions):
+                if j == i:
+                    continue
+                nu0_overlap_line = overlap_line.nu0
+                width_nu_overlap_line = width_v/constants.c*nu0_overlap_line
+                if self.line_profile_type == 'rectangular':
+                    if np.abs(nu0-nu0_overlap_line) <= width_nu/2 + width_nu_overlap_line/2:
+                        overlapping_lines.append(j)
+                elif self.line_profile_type == 'Gaussian':
+                    #here I need to be conservative because the Gaussian profile can,
+                    #in theory, be arbitrarily broad (for arbitrarily high optical depth)
+                    #take +- 1.57 FWHM, where the Gaussian is 0.1% of the peak
+                    if np.abs(nu0-nu0_overlap_line) <= 1.57*width_nu + 1.57*width_nu_overlap_line:
+                        overlapping_lines.append(j)
+            self.overlapping_lines.append(overlapping_lines)
+
+    def any_line_has_overlap(self,line_indices):
+        for index in line_indices:
+            if len(self.overlapping_lines[index]) > 0:
+                return True
         return False
 
     def spectrum(self,solid_angle,nu):
@@ -717,7 +826,7 @@ class Cloud():
         #this also works for overlapping lines in the optically thin regime
         #but this is invalid for overlapping thick lines
         selected_lines,selected_line_indices = self.identify_lines(nu=nu)
-        if self.lines_are_overlapping(selected_lines):
+        if self.any_line_has_overlap(line_indices=selected_line_indices):
             warnings.warn('lines are overlapping, spectrum might not be correct!')
         tau_nu_lines = self.get_tau_nu_lines(nu=nu)
         spectrum = np.zeros_like(nu)

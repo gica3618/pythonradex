@@ -34,7 +34,7 @@ line_profile_types = ('rectangular','Gaussian')
 geometries = tuple(radiative_transfer.Cloud.geometries.keys())
 iteration_modes = ('ALI','LI')
 use_ng_options = (True,False)
-average_beta_options = (True,False)
+average_options = (True,False)
 
 def allowed_param_combination(geometry,line_profile_type):
     if geometry in ('LVG sphere','LVG slab') and line_profile_type=='Gaussian':
@@ -46,9 +46,9 @@ def allowed_param_combination(geometry,line_profile_type):
 @pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
 def test_LTE():
     max_taus = []
-    for filename,geo,lp,iter_mode,ng,avg_beta in itertools.product(
+    for filename,geo,lp,iter_mode,ng,avg in itertools.product(
                         filenames,geometries,line_profile_types,iteration_modes,
-                        use_ng_options,average_beta_options):
+                        use_ng_options,average_options):
         if not allowed_param_combination(geometry=geo,line_profile_type=lp):
             continue
         specie = filename.split('.')[0]
@@ -56,7 +56,7 @@ def test_LTE():
         cloud = radiative_transfer.Cloud(
                             datafilepath=datafilepath,geometry=geo,
                             line_profile_type=lp,width_v=width_v,iteration_mode=iter_mode,
-                            use_NG_acceleration=ng,average_beta_over_line_profile=avg_beta)
+                            use_NG_acceleration=ng,average_over_line_profile=avg)
         cloud_params = {'Tkin':Tkin,'ext_background':ext_background,
                         'collider_densities':collider_densities[specie]}
         for N in N_values[specie]:

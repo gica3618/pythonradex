@@ -20,8 +20,14 @@ Taylor_geometries = [{'analytical':epf.beta_analytical_uniform_sphere,
                       'Taylor':epf.beta_Taylor_LVG_sphere,
                       'beta':epf.beta_LVG_sphere}]
 
+def test_clipping():
+    prob = np.array(((1.0001,1,0.9999,0.5,-0.001,0)))
+    expected_clipped_prop = np.array((1,1,0.9999,0.5,0,0))
+    clipped_prob = epf.clip_prob(prob=prob)
+    assert np.all(clipped_prob==expected_clipped_prop)
+
 def test_identify_tau_regions():
-    test_tau = np.array((-2,-1.2,-0.5,0,0.00004,0.00006,1,10))
+    test_tau = np.array((-2,-1.2,-0.5,0,0.04,0.06,1,10))
     normal_tau_region,small_tau_region,negative_tau_region,\
                 unreliable_negative_region = epf.identify_tau_regions(tau_nu=test_tau)
     assert np.all(np.where(normal_tau_region)[0]==np.array((5,6,7)))
@@ -44,10 +50,10 @@ small_tau = np.array((0.001,))
 medium_tau = np.array((1.,))
 large_tau = np.array((100.,))
 unreliable_tau = np.array((-5,))
-Taylor_taus = np.array((-0.00004,0.00004))
+Taylor_taus = np.array((-0.04,0.04))
 analytical_taus = np.array((-0.2,0.2))
 #boundary points between analytical / Taylor / unreliable:
-boundary_taus = [-1,-0.00005,0.00005]
+boundary_taus = [-1,-0.05,0.05]
 def test_Taylor_betas():
     for geo in Taylor_geometries:
         beta = geo['beta']
@@ -56,8 +62,9 @@ def test_Taylor_betas():
         assert beta(medium_tau) > 0 and beta(medium_tau) < 1
         assert beta(large_tau) < 0.02
         assert beta(unreliable_tau) == beta(np.abs(unreliable_tau))
-        assert np.all(beta(Taylor_taus)==geo['Taylor'](Taylor_taus))
-        assert np.all(beta(analytical_taus)==geo['analytical'](analytical_taus))
+        assert np.all(beta(Taylor_taus)==epf.clip_prob(geo['Taylor'](Taylor_taus)))
+        assert np.all(beta(analytical_taus)
+                      ==epf.clip_prob(geo['analytical'](analytical_taus)))
         #test that everything goes well at the boundaries:
         for boundary_value in boundary_taus:
             beta(np.array((boundary_value,)))
@@ -68,7 +75,7 @@ def test_integral_term_interpolation():
     above_max_tau = np.array((epf.max_grid_tau*2,))
     assert epf.interpolated_integral_term(below_min_tau) == below_min_tau
     assert epf.interpolated_integral_term(above_max_tau) == 0.5
-    min_log_tau = -4
+    min_log_tau = -5.3
     max_log_tau = 4
     tau_values = np.logspace(min_log_tau,max_log_tau,100)
     #make sure the test covers the space outside the grid as well:
@@ -100,11 +107,11 @@ def test_LVG_sphere_RADEX_beta():
     positive_less7 = np.array((0.01,6.5))
     assert np.all(epf.beta_LVG_sphere_RADEX(positive_less7)
                                == epf.beta_LVG_sphere_RADEX_less7(positive_less7))
-    small= np.array((-0.01,-0.009,0,0.008))
+    small = np.array((-0.01,-0.009,0,0.0008))
     assert np.all(epf.beta_LVG_sphere_RADEX(small)==1)
     negative = np.array((-1,-0.5,-0.11))
     assert np.all(epf.beta_LVG_sphere_RADEX(negative)
-                  ==epf.beta_LVG_sphere_RADEX_less7(negative))
+                  ==epf.clip_prob(epf.beta_LVG_sphere_RADEX_less7(negative)))
     unreliable_less7 = np.array((-7,-5.5,-1.001))
     assert np.all(epf.beta_LVG_sphere_RADEX(unreliable_less7)
                   ==epf.beta_LVG_sphere_RADEX_less7(np.abs(unreliable_less7)))

@@ -115,7 +115,7 @@ def test_vs_RADEX():
                            datafilepath=datafilepath,geometry=geo,
                            line_profile_type=line_profile_type,width_v=width_v,
                            iteration_mode='ALI',use_NG_acceleration=False,
-                           average_beta_over_line_profile=False,test_mode=True)
+                           average_over_line_profile=False,test_mode=True)
                 cloud_params = {'N':N,'Tkin':Tkin,
                                 'collider_densities':collider_densities}
                 cloud.set_parameters(

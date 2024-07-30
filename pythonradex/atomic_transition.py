@@ -58,15 +58,15 @@ class LineProfile():
         self.width_v = width_v
         self.width_nu = helpers.Delta_nu(Delta_v=self.width_v,nu0=self.nu0)
         self.initialise_phi_nu_params()
-        self.initialise_coarse_nu_array()
-        self.coarse_phi_nu_array = self.phi_nu(nu=self.coarse_nu_array)
+        # self.initialise_coarse_nu_array()
+        # self.coarse_phi_nu_array = self.phi_nu(nu=self.coarse_nu_array)
         self.phi_nu0 = self.phi_nu(nu=self.nu0)
 
     def initialise_phi_nu_params(self):
         raise NotImplementedError
     
-    def initialise_coarse_nu_array(self):
-        raise NotImplementedError
+    # def initialise_coarse_nu_array(self):
+    #     raise NotImplementedError
 
     def phi_nu(self,nu):
         r'''The value of the line profile in frequency space.
@@ -95,6 +95,9 @@ class LineProfile():
         nu = self.nu0*(1-v/constants.c)
         return self.phi_nu(nu)*self.nu0/constants.c
 
+    def average_over_phi_nu(self,func):
+        raise NotImplementedError
+
 
 class GaussianLineProfile(LineProfile):
 
@@ -110,14 +113,40 @@ class GaussianLineProfile(LineProfile):
         self.sigma_nu = helpers.FWHM2sigma(self.width_nu)
         self.normalisation = 1/(self.sigma_nu*np.sqrt(2*np.pi))
 
-    def initialise_coarse_nu_array(self):
-        #choose +- 1.57 FWHM, where the Gaussian is at ~0.1% of the peak
-        self.coarse_nu_array = np.linspace(self.nu0-1.57*self.width_nu,
-                                           self.nu0+1.57*self.width_nu,
-                                           self.n_nu_elements_for_coarse_array)
+    # def initialise_coarse_nu_array(self):
+    #     #choose +- 1.57 FWHM, where the Gaussian is at ~0.1% of the peak
+    #     self.coarse_nu_array = np.linspace(self.nu0-1.57*self.width_nu,
+    #                                        self.nu0+1.57*self.width_nu,
+    #                                        self.n_nu_elements_for_coarse_array)
 
     def phi_nu(self,nu):
         return self.normalisation*np.exp(-(nu-self.nu0)**2/(2*self.sigma_nu**2))
+
+    def average_over_phi_nu(self,func):
+        #choose +- 1 FWHM initially, where the Gaussian is at ~6% of the peak
+        #note that at least two iterations are done, so the final width is
+        #at least +-1.65 FWHM
+        width = 2 #units of width_nu
+        elements_per_width = 15
+        old_average = np.inf
+        residual = np.inf
+        niter = 0
+        while residual > 1e-2:
+            n_elements = int(elements_per_width*width)
+            nu = np.linspace(self.nu0-width/2*self.width_nu,
+                             self.nu0+width/2*self.width_nu,n_elements)
+            phi_nu = self.phi_nu(nu)
+            norm = helpers.fast_trapz(y=phi_nu,x=nu)
+            new_average = helpers.fast_trapz(y=func(nu)*phi_nu,x=nu)/norm
+            residual = helpers.relative_difference(a=np.array((new_average,)),
+                                                   b=np.array((old_average,)))
+            old_average = new_average
+            #I want to cover at least the width corresponding to the definition of
+            #overlapping lines, which is 3.14; so add 1.3 to make it 2+1.3=3.3
+            width += 1.3
+            elements_per_width += 15
+            niter += 1
+        return new_average
 
 
 class RectangularLineProfile(LineProfile):
@@ -127,15 +156,31 @@ class RectangularLineProfile(LineProfile):
     def initialise_phi_nu_params(self):
         self.normalisation = 1/self.width_nu
 
-    def initialise_coarse_nu_array(self):
-        self.coarse_nu_array = np.linspace(self.nu0-self.width_nu*0.55,
-                                           self.nu0+self.width_nu*0.55,
-                                           self.n_nu_elements_for_coarse_array)
+    # def initialise_coarse_nu_array(self):
+    #     self.coarse_nu_array = np.linspace(self.nu0-self.width_nu*0.55,
+    #                                        self.nu0+self.width_nu*0.55,
+    #                                        self.n_nu_elements_for_coarse_array)
 
     def phi_nu(self,nu):
-        inside_line = (nu>self.nu0-self.width_nu/2) & (nu<self.nu0+self.width_nu/2)
+        inside_line = (nu>=self.nu0-self.width_nu/2) & (nu<=self.nu0+self.width_nu/2)
         return np.where(inside_line,self.normalisation,0)
 
+    def average_over_phi_nu(self,func):
+        #easier than Gaussian, just have to iterate over n_elements
+        n_elements = 7
+        old_average = np.inf
+        residual = np.inf
+        while residual > 1e-2:
+            nu = np.linspace(self.nu0-self.width_nu/2,self.nu0+self.width_nu/2,
+                             n_elements)
+            phi_nu = self.phi_nu(nu)
+            norm = helpers.fast_trapz(y=phi_nu,x=nu)
+            new_average = helpers.fast_trapz(y=func(nu)*phi_nu,x=nu)/norm
+            residual = helpers.relative_difference(a=np.array((new_average,)),
+                                                   b=np.array((old_average,)))
+            old_average = new_average
+            n_elements += 10
+        return new_average
 
 line_profiles = {'Gaussian':GaussianLineProfile,'rectangular':RectangularLineProfile}
 
