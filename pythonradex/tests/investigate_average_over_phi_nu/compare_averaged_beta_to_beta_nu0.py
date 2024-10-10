@@ -10,7 +10,7 @@ from scipy import constants
 import numpy as np
 import sys
 sys.path.append('/home/gianni/science/projects/code/pythonradex')
-from pythonradex import escape_probability
+from pythonradex import escape_probability,atomic_transition
 import matplotlib.pyplot as plt
 
 nu0 = 200*constants.giga
@@ -28,9 +28,7 @@ esc_probs = {'uniform sphere':escape_probability.UniformSphere(),
              'LVG sphere':escape_probability.UniformLVGSphere(),
              'LVG sphere RADEX':escape_probability.LVGSphereRADEX()}
 
-phi_nu_norm = 1/(np.sqrt(2*np.pi)*width_sigma)
-phi_nu = np.exp(-(nu-nu0)**2/(2*width_sigma**2)) * phi_nu_norm
-#print(np.trapz(phi_nu,nu))
+line_profile = atomic_transition.GaussianLineProfile(nu0=nu0,width_v=width_v)
 
 for esc_prob_name,esc_prob in esc_probs.items():
     beta_nu0 = np.empty(tau_nu0_values.size)
@@ -38,10 +36,12 @@ for esc_prob_name,esc_prob in esc_probs.items():
     fig,axes = plt.subplots(2)
     fig.suptitle(esc_prob_name)
     for i,tau_nu0 in enumerate(tau_nu0_values):
-        tau_nu = tau_nu0*phi_nu/phi_nu_norm
-        beta_nu0[i] = esc_prob.beta(np.array((tau_nu0,)))
-        beta_tau = esc_prob.beta(tau_nu)
-        beta_averaged[i] = np.trapz(beta_tau*phi_nu,nu)
+        def beta_func(nu):
+            phi_nu = line_profile.phi_nu(nu)
+            tau_nu = np.atleast_1d(phi_nu/np.max(phi_nu)*tau_nu0)
+            return esc_prob.beta(tau_nu)
+        beta_nu0[i] = beta_func(nu=nu0)
+        beta_averaged[i] = line_profile.average_over_phi_nu(beta_func)
     relative_diff = np.abs((beta_nu0-beta_averaged)/beta_nu0)
     axes[0].plot(tau_nu0_values,beta_nu0,label='beta nu0')
     axes[0].plot(tau_nu0_values,beta_averaged,label='beta averaged')

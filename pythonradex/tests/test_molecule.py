@@ -5,7 +5,7 @@ Created on Mon Nov 13 15:35:53 2017
 @author: gianni
 """
 import os
-from pythonradex import molecule,atomic_transition,LAMDA_file
+from pythonradex import molecule,atomic_transition,LAMDA_file,helpers
 import numpy as np
 from scipy import constants
 
@@ -172,3 +172,220 @@ def test_Tex():
                         g_up=rad_trans.up.g,x1=x1,x2=x2)
             expected_Tex.append(tex)
         assert np.all(Tex==expected_Tex)
+
+def get_molecule(line_profile_type,width_v,datafilename):
+    return molecule.EmittingMolecule(
+               datafilepath=os.path.join(here,'LAMDA_files',datafilename),
+               line_profile_type=line_profile_type,width_v=width_v)
+
+class TestOverlappingLines():
+
+    line_profile_types = ('rectangular','Gaussian')    
+
+    def get_HCl_molecule(self,line_profile_type,width_v):
+        return get_molecule(line_profile_type=line_profile_type,width_v=width_v,
+                                 datafilename='hcl.dat')
+
+    def get_CO_molecule(self,line_profile_type,width_v):
+        return get_molecule(line_profile_type=line_profile_type,width_v=width_v,
+                                 datafilename='co.dat')
+
+    def test_overlapping_lines(self):
+        #first three transitions of HCl are separated by ~8 km/s and 6 km/s respectively
+        overlapping_3lines = [self.get_HCl_molecule(line_profile_type='rectangular',
+                                                    width_v=16*constants.kilo),
+                              self.get_HCl_molecule(line_profile_type='Gaussian',
+                                                    width_v=10*constants.kilo)
+                              ]
+        for ol in overlapping_3lines:
+            assert ol.overlapping_lines[0] == [1,2]
+            assert ol.overlapping_lines[1] == [0,2]
+            assert ol.overlapping_lines[2] == [0,1]
+        overlapping_2lines = [self.get_HCl_molecule(line_profile_type='rectangular',
+                                                    width_v=8.5*constants.kilo),
+                              self.get_HCl_molecule(line_profile_type='Gaussian',
+                                                    width_v=3.5*constants.kilo)
+                              ]
+        for ol in overlapping_2lines:
+            assert ol.overlapping_lines[0] == [1,]
+            assert ol.overlapping_lines[1] == [0,2]
+            assert ol.overlapping_lines[2] == [1,]
+        #transitions 4-11 are separated by ~11.2 km/s
+        overlapping_8lines = [self.get_HCl_molecule(line_profile_type='rectangular',
+                                                    width_v=11.5*constants.kilo),
+                              self.get_HCl_molecule(line_profile_type='Gaussian',
+                                                    width_v=4*constants.kilo)
+                              ]
+        for ol in overlapping_8lines:
+            for i in range(3,11):
+                assert ol.overlapping_lines[i] == [index for index in range(3,11)
+                                                   if index!=i]
+        for line_profile_type in self.line_profile_types:
+            CO_molecule = self.get_CO_molecule(line_profile_type=line_profile_type,
+                                               width_v=1*constants.kilo)
+            for overlap_lines in CO_molecule.overlapping_lines:
+                assert overlap_lines == []
+            HCl_molecule = self.get_HCl_molecule(line_profile_type=line_profile_type,
+                                                 width_v=0.01*constants.kilo)
+            assert HCl_molecule.overlapping_lines[0] == []
+            assert HCl_molecule.overlapping_lines[11] == []
+
+    def test_any_overlapping(self):
+        for line_profile_type in self.line_profile_types:
+            HCl_molecule = self.get_HCl_molecule(line_profile_type=line_profile_type,
+                                                 width_v=10*constants.kilo)
+            assert HCl_molecule.any_line_has_overlap(line_indices=[0,1,2,3,4])
+            assert HCl_molecule.any_line_has_overlap(line_indices=[0,])
+            assert HCl_molecule.any_line_has_overlap(
+                          line_indices=list(range(len(HCl_molecule.rad_transitions))))
+            HCl_molecule = self.get_HCl_molecule(line_profile_type=line_profile_type,
+                                                 width_v=1*constants.kilo)
+            assert not HCl_molecule.any_line_has_overlap(line_indices=[0,1,2])
+            CO_molecule = self.get_CO_molecule(line_profile_type=line_profile_type,
+                                               width_v=1*constants.kilo)
+            assert not CO_molecule.any_line_has_overlap(
+                       line_indices=list(range(len(CO_molecule.rad_transitions))))
+
+class TestTotalQuantities():
+
+    CO_molecule = get_molecule(line_profile_type='Gaussian',width_v=1*constants.kilo,
+                               datafilename='co.dat')
+    HCl_molecule = get_molecule(line_profile_type='Gaussian',width_v=10*constants.kilo,
+                                datafilename='hcl.dat')   
+    N_CO = 1e15/constants.centi**2
+    N_HCl = 1e14/constants.centi**2
+    test_tau = 1
+    test_S = helpers.B_nu(nu=230*constants.giga,T=100)
+
+    @staticmethod
+    def tau_dust_zero(nu):
+        return np.zeros_like(nu)
+        
+    @staticmethod
+    def S_dust_zero(nu):    
+        return np.zeros_like(nu)
+
+    def tau_dust_nonzero(self,nu):
+        return np.ones_like(nu)*self.test_tau
+
+    def S_dust_nonzero(self,nu):    
+        return np.ones_like(nu)*self.test_S
+
+    def tau_dust_iterator(self):
+        for tau_d,tau_dust in zip((0,self.test_tau),
+                                  (self.tau_dust_zero,self.tau_dust_nonzero)):
+            yield tau_d,tau_dust
+
+    def S_dust_iterator(self):
+        for S_d,S_dust in zip((0,self.test_S),(self.S_dust_zero,self.S_dust_nonzero)):
+            yield S_d,S_dust
+
+    def test_no_overlap(self):
+        line_index = 3
+        line = self.CO_molecule.rad_transitions[line_index]
+        width_nu = line.line_profile.width_nu
+        nu = np.linspace(line.nu0-3*width_nu,line.nu0+3*width_nu,200)
+        level_population = self.CO_molecule.LTE_level_pop(T=23)
+        x1 = level_population[line.low.number]
+        x2 = level_population[line.up.number]
+        tau_line = line.tau_nu(nu=nu,N1=x1*self.N_CO,N2=x2*self.N_CO)
+        
+        for tau_d,tau_dust in self.tau_dust_iterator():
+            tau_tot = self.CO_molecule.get_tau_tot_nu(
+                          line_index=line_index,level_population=level_population,
+                          N=self.N_CO,tau_dust=tau_dust)(nu)
+            x1 = level_population[line.low.number]
+            x2 = level_population[line.up.number]
+            expected_tau_tot = line.tau_nu(N1=self.N_CO*x1,N2=self.N_CO*x2,nu=nu)\
+                                + tau_d
+            assert np.all(tau_tot==expected_tau_tot)
+
+        for S_d,S_dust in self.S_dust_iterator():
+            for tau_d,tau_dust in self.tau_dust_iterator(): 
+                K = self.CO_molecule.get_K_nu(
+                        line_index=line_index,level_population=level_population,
+                        N=self.N_CO,tau_dust=tau_dust,S_dust=S_dust)(nu)
+                tau_tot = tau_d+tau_line
+                expected_K = np.where(tau_tot!=0,tau_d*S_d/tau_tot,0)
+                assert np.all(K==expected_K)
+
+        for S_d,S_dust in self.S_dust_iterator():
+            for tau_d,tau_dust in self.tau_dust_iterator(): 
+                S = self.CO_molecule.get_total_S_nu(
+                          line_index=line_index,level_population=level_population,
+                          N=self.N_CO,tau_dust=tau_dust,S_dust=S_dust)(nu)
+                expected_S = tau_line*line.source_function(x1=x1,x2=x2)\
+                              + tau_d*S_d
+                tau_tot = tau_line+tau_d
+                expected_S = np.where(tau_tot!=0,expected_S/tau_tot,0)
+                #for some unknown reason, they are not exactly the same,
+                #so need to use allclose
+                assert np.allclose(S,expected_S,atol=0,rtol=1e-15)
+
+    def test_with_overlap(self):
+        line_index = 1
+        line = self.HCl_molecule.rad_transitions[line_index]
+        assert self.HCl_molecule.overlapping_lines[line_index] == [0,2]
+        width_nu = line.line_profile.width_nu
+        nu_start = self.HCl_molecule.rad_transitions[0].nu0-3*width_nu
+        nu_end = self.HCl_molecule.rad_transitions[2].nu0+3*width_nu
+        nu = np.linspace(nu_start,nu_end,500)
+        level_population = self.CO_molecule.LTE_level_pop(T=23)
+
+        for tau_d,tau_dust in self.tau_dust_iterator():
+            tau_tot = self.HCl_molecule.get_tau_tot_nu(
+                          line_index=line_index,level_population=level_population,
+                          N=self.N_HCl,tau_dust=tau_dust)(nu)
+            expected_tau_tot = np.zeros_like(nu)
+            for i in (0,1,2):
+                line_i = self.HCl_molecule.rad_transitions[i]
+                x1 = level_population[line_i.low.number]
+                x2 = level_population[line_i.up.number]
+                expected_tau_tot += line_i.tau_nu(N1=self.N_HCl*x1,N2=self.N_HCl*x2,
+                                                  nu=nu)
+            expected_tau_tot += tau_d
+            assert np.all(tau_tot==expected_tau_tot)
+
+        for S_d,S_dust in self.S_dust_iterator():
+            for tau_d,tau_dust in self.tau_dust_iterator():
+                tau_tot = self.HCl_molecule.get_tau_tot_nu(
+                              line_index=line_index,level_population=level_population,
+                              N=self.N_HCl,tau_dust=tau_dust)(nu)
+                assert np.any(tau_tot>0)
+                K = self.HCl_molecule.get_K_nu(
+                        line_index=line_index,level_population=level_population,
+                        N=self.N_HCl,tau_dust=tau_dust,S_dust=S_dust)(nu)
+                expected_K = np.zeros_like(nu)
+                for i in (0,2):
+                    line_i = self.HCl_molecule.rad_transitions[i]
+                    x1 = level_population[line_i.low.number]
+                    x2 = level_population[line_i.up.number]
+                    expected_K += line_i.source_function(x1=x1,x2=x2)\
+                                      *line_i.tau_nu(N1=self.N_HCl*x1,
+                                                     N2=self.N_HCl*x2,nu=nu)
+                expected_K += tau_d*S_d
+                expected_K = np.where(tau_tot!=0,expected_K/tau_tot,0)
+                assert np.allclose(expected_K,K,atol=0,rtol=1e-6)
+
+
+        for S_d,S_dust in self.S_dust_iterator():
+            for tau_d,tau_dust in self.tau_dust_iterator():
+                tau_tot = self.HCl_molecule.get_tau_tot_nu(
+                              line_index=line_index,level_population=level_population,
+                              N=self.N_HCl,tau_dust=tau_dust)(nu)
+                S = self.HCl_molecule.get_total_S_nu(
+                          line_index=line_index,level_population=level_population,
+                          N=self.N_HCl,tau_dust=tau_dust,S_dust=S_dust)(nu)
+                expected_S = np.zeros_like(nu)
+                for i in (0,1,2):
+                    line_i = self.HCl_molecule.rad_transitions[i]
+                    x1 = level_population[line_i.low.number]
+                    x2 = level_population[line_i.up.number]
+                    expected_S += line_i.source_function(x1=x1,x2=x2)\
+                                      *line_i.tau_nu(N1=self.N_HCl*x1,N2=self.N_HCl*x2,
+                                                     nu=nu)
+                expected_S += tau_d*S_d
+                # S_line = line.source_function(x1=level_population[line.low.number],
+                #                               x2=level_population[line.up.number])
+                expected_S = np.where(tau_tot!=0,expected_S/tau_tot,0)
+                assert np.allclose(expected_S,S,atol=0,rtol=1e-6)

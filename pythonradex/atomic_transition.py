@@ -113,12 +113,6 @@ class GaussianLineProfile(LineProfile):
         self.sigma_nu = helpers.FWHM2sigma(self.width_nu)
         self.normalisation = 1/(self.sigma_nu*np.sqrt(2*np.pi))
 
-    # def initialise_coarse_nu_array(self):
-    #     #choose +- 1.57 FWHM, where the Gaussian is at ~0.1% of the peak
-    #     self.coarse_nu_array = np.linspace(self.nu0-1.57*self.width_nu,
-    #                                        self.nu0+1.57*self.width_nu,
-    #                                        self.n_nu_elements_for_coarse_array)
-
     def phi_nu(self,nu):
         return self.normalisation*np.exp(-(nu-self.nu0)**2/(2*self.sigma_nu**2))
 
@@ -127,7 +121,7 @@ class GaussianLineProfile(LineProfile):
         #note that at least two iterations are done, so the final width is
         #at least +-1.65 FWHM
         width = 2 #units of width_nu
-        elements_per_width = 15
+        elements_per_width = 20
         old_average = np.inf
         residual = np.inf
         niter = 0
@@ -156,18 +150,15 @@ class RectangularLineProfile(LineProfile):
     def initialise_phi_nu_params(self):
         self.normalisation = 1/self.width_nu
 
-    # def initialise_coarse_nu_array(self):
-    #     self.coarse_nu_array = np.linspace(self.nu0-self.width_nu*0.55,
-    #                                        self.nu0+self.width_nu*0.55,
-    #                                        self.n_nu_elements_for_coarse_array)
-
     def phi_nu(self,nu):
         inside_line = (nu>=self.nu0-self.width_nu/2) & (nu<=self.nu0+self.width_nu/2)
         return np.where(inside_line,self.normalisation,0)
 
     def average_over_phi_nu(self,func):
         #easier than Gaussian, just have to iterate over n_elements
-        n_elements = 7
+        #note that the func doesn't need to be constant over the line profile,
+        #so I need to have a sufficient number of elements
+        n_elements = 20
         old_average = np.inf
         residual = np.inf
         while residual > 1e-2:
@@ -179,7 +170,7 @@ class RectangularLineProfile(LineProfile):
             residual = helpers.relative_difference(a=np.array((new_average,)),
                                                    b=np.array((old_average,)))
             old_average = new_average
-            n_elements += 10
+            n_elements += 15
         return new_average
 
 line_profiles = {'Gaussian':GaussianLineProfile,'rectangular':RectangularLineProfile}
@@ -265,6 +256,13 @@ class RadiativeTransition(Transition):
             self.nu0 = nu0
         self.B21 = helpers.B21(A21=self.A21,nu=self.nu0)
         self.B12 = helpers.B12(A21=self.A21,nu=self.nu0,g1=self.low.g,g2=self.up.g)
+
+    def source_function(self,x1,x2):
+        S = np.where((x1==0) & (x2==0),0,self.A21*x2/(x1*self.B12-x2*self.B21))
+        # if np.any(S < 0):
+        #     raise RuntimeError('negative source function, potentially due to '
+        #                        +'high columndensity and/or low collider density')
+        return S
 
 
 class EmissionLine(RadiativeTransition):

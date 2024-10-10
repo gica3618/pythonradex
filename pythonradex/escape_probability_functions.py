@@ -73,7 +73,7 @@ def beta_Taylor_LVG_slab(tau_nu):
 #the local number density must be the same everywhere
 #Thus, we need to assume that the LVG sphere is uniform, otherwise we cannot handle it
 #in pythonradex.
-#We are indeed considering the model by Goldreich & Kwan (1974) which has uniform density
+#We are indeed considering the model by Goldreich & Kwan (1974) which has uniform density.
 #in fact, same argument also implies that LVG slab needs to be uniform...
 
 @nb.jit(nopython=True,cache=True)
@@ -98,7 +98,7 @@ def generate_Taylor_beta(beta_ana,beta_Taylor):
         #very negative tau leads to very large transition rates, which makes the
         #matrix of the rate equations ill-conditioned.
         #thus, for tau < -1, I just take abs(tau). Note that this is different
-        #from RADEX: they make something quite strange: the have different
+        #from RADEX: they make something quite strange: they have different
         #approximations for positive large, normal and small tau. But then they
         #use abs(tau) to decide which function to use, but then use tau in that
         #function (line 333 in matrix.f)

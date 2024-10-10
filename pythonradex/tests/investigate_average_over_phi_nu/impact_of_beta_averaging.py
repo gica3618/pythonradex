@@ -69,7 +69,7 @@ for test_case in test_cases:
         taus = []
         for average in (True,False):
             cloud = radiative_transfer.Cloud(
-                                  average_beta_over_line_profile=average,**cloud_kwargs)
+                                  average_over_line_profile=average,**cloud_kwargs)
             cloud.set_parameters(**cloud_params)
             cloud.solve_radiative_transfer()
             Tex.append(cloud.Tex[trans_index])

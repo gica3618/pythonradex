@@ -43,7 +43,7 @@ def allowed_param_combination(geometry,line_profile_type):
         return True
 
 #HCl has overlapping lines, let's filter the warning
-@pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
+@pytest.mark.filterwarnings("ignore:some lines are overlapping")
 def test_LTE():
     max_taus = []
     for filename,geo,lp,iter_mode,ng,avg in itertools.product(

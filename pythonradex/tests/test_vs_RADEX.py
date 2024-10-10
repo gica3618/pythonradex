@@ -96,7 +96,7 @@ def read_RADEX_output(filepath,molecule):
 LAMDA_folder = '/home/gianni/science/projects/code/pythonradex/pythonradex/tests/LAMDA_files'
 RADEX_output_folder = '/home/gianni/science/projects/code/pythonradex/pythonradex/tests/RADEX_test_cases'
 
-@pytest.mark.filterwarnings("ignore:lines of input molecule are overlapping")
+@pytest.mark.filterwarnings("ignore:some lines are overlapping")
 @pytest.mark.filterwarnings("ignore:negative optical depth")
 def test_vs_RADEX():
     max_taus = []

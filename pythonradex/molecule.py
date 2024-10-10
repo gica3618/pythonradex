@@ -145,23 +145,32 @@ class EmittingMolecule(Molecule):
                           read_frequencies=read_frequencies,
                           partition_function=partition_function)
         self.width_v = width_v
+        self.line_profile_type = line_profile_type
         #convert radiative transitions to emission lines (but keep the same attribute name)
         self.rad_transitions = [atomic_transition.EmissionLine.from_radiative_transition(
                                radiative_transition=rad_trans,
                                line_profile_type=line_profile_type,width_v=width_v)
                                for rad_trans in self.rad_transitions]
+        self.identify_overlapping_lines()
+        if self.any_line_has_overlap(line_indices=range(self.n_rad_transitions)):
+            self.has_overlapping_lines = True
+        else:
+            self.has_overlapping_lines = False
         #collecting parameters, needed for numba-compiled functions:
-        self.A21_lines = np.array([line.A21 for line in self.rad_transitions])
-        self.nu0_lines = np.array([line.nu0 for line in self.rad_transitions])
-        self.phi_nu0_lines = np.array([line.line_profile.phi_nu(line.nu0) for line
-                                       in self.rad_transitions])
-        self.gup_lines = np.array([line.up.g for line in self.rad_transitions])
-        self.glow_lines = np.array([line.low.g for line in self.rad_transitions])
-        self.low_number_lines = np.array([line.low.number for line in
-                                          self.rad_transitions])
-        self.up_number_lines = np.array([line.up.number for line in
-                                         self.rad_transitions])
-        self.Delta_E_lines = np.array([line.Delta_E for line in self.rad_transitions])
+        self.A21 = np.array([line.A21 for line in self.rad_transitions])
+        self.B21 = np.array([line.B21 for line in self.rad_transitions])
+        self.B12 = np.array([line.B12 for line in self.rad_transitions])
+        self.nu0 = np.array([line.nu0 for line in self.rad_transitions])
+        self.phi_nu0 = np.array([line.line_profile.phi_nu(line.nu0) for line
+                                 in self.rad_transitions])
+        self.gup_rad_transitions = np.array([line.up.g for line in self.rad_transitions])
+        self.glow_rad_transitions = np.array([line.low.g for line in self.rad_transitions])
+        self.nlow_rad_transitions = np.array([line.low.number for line in
+                                              self.rad_transitions])
+        self.nup_rad_transitions = np.array([line.up.number for line in
+                                             self.rad_transitions])
+        self.Delta_E_rad_transitions = np.array([line.Delta_E for line in
+                                                 self.rad_transitions])
         self.ordered_colliders = sorted(self.coll_transitions.keys())
         self.coll_trans_low_up_number = nb.typed.List([])
         self.coll_Tkin_data = nb.typed.List([])
@@ -186,17 +195,17 @@ class EmittingMolecule(Molecule):
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def fast_tau_nu0(N,level_population,low_number_lines,up_number_lines,
-                     A21_lines,phi_nu0_lines,gup_lines,glow_lines,nu0_lines):
-        n_lines = low_number_lines.size
+    def fast_tau_nu0(N,level_population,nlow_rad_transitions,nup_rad_transitions,
+                     A21,phi_nu0,gup_rad_transitions,glow_rad_transitions,nu0):
+        n_lines = nlow_rad_transitions.size
         tau_nu0 = np.empty(n_lines)
         for i in range(n_lines):
-            N1 = level_population[low_number_lines[i]]*N
-            N2 = level_population[up_number_lines[i]]*N
+            N1 = level_population[nlow_rad_transitions[i]]*N
+            N2 = level_population[nup_rad_transitions[i]]*N
             tau_nu0[i] = atomic_transition.fast_tau_nu(
-                             A21=A21_lines[i],phi_nu=phi_nu0_lines[i],
-                             g_up=gup_lines[i],g_low=glow_lines[i],N1=N1,N2=N2,
-                             nu=nu0_lines[i])
+                             A21=A21[i],phi_nu=phi_nu0[i],
+                             g_up=gup_rad_transitions[i],g_low=glow_rad_transitions[i],
+                             N1=N1,N2=N2,nu=nu0[i])
         return tau_nu0
     
     def get_tau_nu0(self,N,level_population):
@@ -212,10 +221,10 @@ class EmittingMolecule(Molecule):
         '''
         return self.fast_tau_nu0(
                 N=N,level_population=level_population,
-                low_number_lines=self.low_number_lines,
-                up_number_lines=self.up_number_lines,A21_lines=self.A21_lines,
-                phi_nu0_lines=self.phi_nu0_lines,gup_lines=self.gup_lines,
-                glow_lines=self.glow_lines,nu0_lines=self.nu0_lines)
+                nlow_rad_transitions=self.nlow_rad_transitions,
+                nup_rad_transitions=self.nup_rad_transitions,A21=self.A21,
+                phi_nu0=self.phi_nu0,gup_rad_transitions=self.gup_rad_transitions,
+                glow_rad_transitions=self.glow_rad_transitions,nu0=self.nu0)
 
     def get_tau_nu0_LTE(self,N,T):
         r'''Compute the optical depth at the rest frequency in LTE
@@ -230,22 +239,23 @@ class EmittingMolecule(Molecule):
         level_population = self.LTE_level_pop(T=T)
         return self.fast_tau_nu0(
                 N=N,level_population=level_population,
-                low_number_lines=self.low_number_lines,
-                up_number_lines=self.up_number_lines,A21_lines=self.A21_lines,
-                phi_nu0_lines=self.phi_nu0_lines,gup_lines=self.gup_lines,
-                glow_lines=self.glow_lines,nu0_lines=self.nu0_lines)
+                nlow_rad_transitions=self.nlow_rad_transitions,
+                nup_rad_transitions=self.nup_rad_transitions,A21=self.A21,
+                phi_nu0=self.phi_nu0,gup_rad_transitions=self.gup_rad_transitions,
+                glow_rad_transitions=self.glow_rad_transitions,nu0=self.nu0)
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def fast_Tex(level_population,low_number_lines,up_number_lines,Delta_E_lines,
-                 gup_lines,glow_lines):
-        n_lines = low_number_lines.size
+    def fast_Tex(level_population,nlow_rad_transitions,nup_rad_transitions,
+                 Delta_E_rad_transitions,gup_rad_transitions,glow_rad_transitions):
+        n_lines = nlow_rad_transitions.size
         Tex = np.empty(n_lines)
         for i in range(n_lines):
             Tex[i] = atomic_transition.fast_Tex(
-                       Delta_E=Delta_E_lines[i],g_up=gup_lines[i],
-                       g_low=glow_lines[i],x1=level_population[low_number_lines[i]],
-                       x2=level_population[up_number_lines[i]])
+                       Delta_E=Delta_E_rad_transitions[i],g_up=gup_rad_transitions[i],
+                       g_low=glow_rad_transitions[i],
+                       x1=level_population[nlow_rad_transitions[i]],
+                       x2=level_population[nup_rad_transitions[i]])
         return Tex
 
     def get_Tex(self,level_population):
@@ -260,6 +270,91 @@ class EmittingMolecule(Molecule):
                 in the order as in the LAMDA file
         '''
         return self.fast_Tex(
-                 level_population=level_population,low_number_lines=self.low_number_lines,
-                 up_number_lines=self.up_number_lines,Delta_E_lines=self.Delta_E_lines,
-                 gup_lines=self.gup_lines,glow_lines=self.glow_lines)
+                 level_population=level_population,
+                 nlow_rad_transitions=self.nlow_rad_transitions,
+                 nup_rad_transitions=self.nup_rad_transitions,
+                 Delta_E_rad_transitions=self.Delta_E_rad_transitions,
+                 gup_rad_transitions=self.gup_rad_transitions,
+                 glow_rad_transitions=self.glow_rad_transitions)
+
+    def identify_overlapping_lines(self):
+        self.overlapping_lines = []
+        for i,line in enumerate(self.rad_transitions):
+            width_nu = self.width_v/constants.c*line.nu0
+            overlapping_lines = []
+            for j,overlap_line in enumerate(self.rad_transitions):
+                if j == i:
+                    continue
+                nu0_overlap_line = overlap_line.nu0
+                width_nu_overlap_line = self.width_v/constants.c*nu0_overlap_line
+                if self.line_profile_type == 'rectangular':
+                    if np.abs(line.nu0-nu0_overlap_line)\
+                                         <= width_nu/2 + width_nu_overlap_line/2:
+                        overlapping_lines.append(j)
+                elif self.line_profile_type == 'Gaussian':
+                    #here I need to be conservative because the Gaussian profile can,
+                    #in theory, be arbitrarily broad (for arbitrarily high optical depth)
+                    #take +- 1.57 FWHM, where the Gaussian is 0.1% of the peak
+                    if np.abs(line.nu0-nu0_overlap_line)\
+                                    <= 1.57*width_nu + 1.57*width_nu_overlap_line:
+                        overlapping_lines.append(j)
+            self.overlapping_lines.append(overlapping_lines)
+
+    def any_line_has_overlap(self,line_indices):
+        for index in line_indices:
+            if len(self.overlapping_lines[index]) > 0:
+                return True
+        return False
+
+    def get_tau_tot_nu(self,line_index,level_population,N,tau_dust):
+        overlapping_indices = self.overlapping_lines[line_index]
+        line = self.rad_transitions[line_index]
+        overlapping_lines = [self.rad_transitions[i] for i in overlapping_indices]
+        def tau_tot_nu(nu):
+            tau_tot = line.tau_nu(N1=N*level_population[line.low.number],
+                                  N2=N*level_population[line.up.number],nu=nu)
+            for ovl_line in overlapping_lines:
+                x1 = level_population[ovl_line.low.number]
+                x2 = level_population[ovl_line.up.number]
+                tau_tot += ovl_line.tau_nu(N1=x1*N,N2=x2*N,nu=nu)
+            tau_tot += tau_dust(nu)
+            return tau_tot
+        return tau_tot_nu
+
+    def get_K_nu(self,line_index,level_population,N,tau_dust,S_dust):
+        #see the hand notes
+        overlapping_indices = self.overlapping_lines[line_index]
+        overlapping_lines = [self.rad_transitions[i] for i in overlapping_indices]
+        tau_tot_nu = self.get_tau_tot_nu(line_index=line_index,
+                                         level_population=level_population,N=N,
+                                         tau_dust=tau_dust)
+        def K_nu(nu):
+            nominator = np.zeros_like(nu)
+            for ovl_line in overlapping_lines:
+                x1 = level_population[ovl_line.low.number]
+                x2 = level_population[ovl_line.up.number]
+                tau_nu = ovl_line.tau_nu(N1=x1*N,N2=x2*N,nu=nu)
+                S = ovl_line.source_function(x1=x1,x2=x2)
+                nominator += tau_nu*S
+            nominator += tau_dust(nu)*S_dust(nu)
+            tau_tot = tau_tot_nu(nu)
+            #if tau_tot is zero, then tau of the overlapping lines are all zero,
+            #so K should be zero as well
+            return np.where(tau_tot!=0,nominator/tau_tot,0)
+        return K_nu
+
+    def get_total_S_nu(self,line_index,level_population,N,tau_dust,S_dust):
+        K_nu = self.get_K_nu(line_index=line_index,level_population=level_population,
+                             N=N,tau_dust=tau_dust,S_dust=S_dust)
+        line = self.rad_transitions[line_index]
+        x1 = level_population[line.low.number]
+        x2 = level_population[line.up.number]
+        tau_tot_nu = self.get_tau_tot_nu(line_index=line_index,
+                                         level_population=level_population,N=N,
+                                         tau_dust=tau_dust)
+        S_line = line.source_function(x1=x1,x2=x2)
+        def S_nu(nu):
+            tau_nu_line = line.tau_nu(N1=x1*N,N2=x2*N,nu=nu)
+            tau_tot = tau_tot_nu(nu)
+            return np.where(tau_tot!=0,tau_nu_line*S_line/tau_tot + K_nu(nu),0)
+        return S_nu
