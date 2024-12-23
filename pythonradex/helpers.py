@@ -40,16 +40,16 @@ def generate_CMB_background(z=0):
         return B_nu(nu=nu,T=T_CMB)
     return CMB_background
 
-@nb.jit(nopython=True,cache=True)
-def zero_background(nu):
-    '''Zero intensity radiation field
+# @nb.jit(nopython=True,cache=True)
+# def zero_background(nu):
+#     '''Zero intensity radiation field
     
-    Args:
-        nu (:obj:`float` or numpy.ndarray): frequency in [Hz]
+#     Args:
+#         nu (:obj:`float` or numpy.ndarray): frequency in [Hz]
     
-    Returns:
-        numpy.ndarray: zero at all requested frequencies'''
-    return np.zeros_like(nu)
+#     Returns:
+#         numpy.ndarray: zero at all requested frequencies'''
+#     return np.zeros_like(nu)
 
 @nb.jit(nopython=True,cache=True)
 def FWHM2sigma(FWHM):

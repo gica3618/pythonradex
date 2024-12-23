@@ -244,7 +244,7 @@ class RadiativeTransition(Transition):
 
     def __init__(self,up,low,A21,nu0=None):
         Transition.__init__(self,up=up,low=low)
-        assert self.Delta_E > 0, 'negative Delta_E for radiative transition'
+        assert self.Delta_E > 0, 'non-positive Delta_E for radiative transition'
         self.A21 = A21
         nu0_from_Delta_E = self.Delta_E/constants.h
         if nu0 is None:

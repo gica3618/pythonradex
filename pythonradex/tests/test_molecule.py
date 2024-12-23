@@ -14,21 +14,13 @@ lamda_filepath = os.path.join(here,'LAMDA_files/co.dat')
 
 test_data = LAMDA_file.read(datafilepath=lamda_filepath,read_frequencies=False)
 line_profile_type = 'rectangular'
-width_v=1*constants.kilo
+width_v = 1*constants.kilo
 
-# molecule_std = molecule.Molecule(
-#                     levels=test_data['levels'],
-#                     rad_transitions=test_data['radiative transitions'],
-#                     coll_transitions=test_data['collisional transitions'])
 molecule_lamda = molecule.Molecule(
                                 datafilepath=lamda_filepath,read_frequencies=False)
 molecule_lamda_frequencies = molecule.Molecule(
                                 datafilepath=lamda_filepath,read_frequencies=True)
-# emitting_molecule_std = molecule.EmittingMolecule(
-#                          levels=test_data['levels'],
-#                          rad_transitions=test_data['radiative transitions'],
-#                          coll_transitions=test_data['collisional transitions'],
-#                          line_profile_type=line_profile_type,width_v=width_v)
+
 emitting_molecule_lamda = molecule.EmittingMolecule(
                            datafilepath=lamda_filepath,
                            line_profile_type=line_profile_type,width_v=width_v,
@@ -38,7 +30,6 @@ emitting_molecule_lamda_frequencies = molecule.EmittingMolecule(
                                         line_profile_type=line_profile_type,
                                         width_v=width_v,read_frequencies=True)
 
-#reference_mol = molecule_std
 test_molecules_no_freq = [molecule_lamda,emitting_molecule_lamda]
 test_molecules_freq = [molecule_lamda_frequencies,emitting_molecule_lamda_frequencies]
 test_molecules = test_molecules_no_freq+test_molecules_freq
@@ -79,6 +70,18 @@ def test_Molecule_coll_transitions():
                     assert np.all(getattr(coll_trans,attribute)\
                                       == getattr(mol.coll_transitions[collider][i],
                                                  attribute))
+
+def test_level_transitions():
+    test_mol = molecule.EmittingMolecule(
+                   datafilepath=os.path.join(here,'LAMDA_files/cn.dat'),
+                                            line_profile_type=line_profile_type,
+                                            width_v=width_v,read_frequencies=True)
+    assert test_mol.downward_rad_transitions[0] == []
+    assert test_mol.downward_rad_transitions[1] == [0,]
+    assert test_mol.downward_rad_transitions[3] == [2,3]
+    assert test_mol.level_transitions[0] == [0,1]
+    assert test_mol.level_transitions[1] == [0,3]
+    assert test_mol.level_transitions[2] == [1,2,4]
 
 def test_setting_partition_function():
     test_mol = molecule.Molecule(
@@ -155,6 +158,19 @@ def test_LTE_Tex():
         LTE_level_pop = mol.LTE_level_pop(T=T)
         Tex = mol.get_Tex(level_population=LTE_level_pop)
         assert np.allclose(a=T,b=Tex,atol=0,rtol=1e-10)
+
+def test_get_tau_line_nu():
+    N = 1e15/constants.centi**2
+    for mol in emitting_molecules:
+        level_pop = mol.LTE_level_pop(T=214)
+        tau_line_funcs = [mol.get_tau_line_nu(line_index=i,level_population=level_pop,N=N)
+                          for i in range(mol.n_rad_transitions)]
+        for i,line in enumerate(mol.rad_transitions):
+            width_nu = width_v/constants.c*line.nu0
+            nu = np.linspace(line.nu0-width_nu,line.nu0+width_nu,100)
+            expected_tau = line.tau_nu(N1=N*level_pop[line.low.number],
+                                       N2=N*level_pop[line.up.number],nu=nu)
+            assert np.all(expected_tau==tau_line_funcs[i](nu))
 
 def test_Tex():
     for mol in emitting_molecules:
@@ -254,31 +270,20 @@ class TestTotalQuantities():
                                 datafilename='hcl.dat')   
     N_CO = 1e15/constants.centi**2
     N_HCl = 1e14/constants.centi**2
-    test_tau = 1
+    test_tau_dust = 1
     test_S = helpers.B_nu(nu=230*constants.giga,T=100)
 
     @staticmethod
     def tau_dust_zero(nu):
         return np.zeros_like(nu)
-        
-    @staticmethod
-    def S_dust_zero(nu):    
-        return np.zeros_like(nu)
 
     def tau_dust_nonzero(self,nu):
-        return np.ones_like(nu)*self.test_tau
-
-    def S_dust_nonzero(self,nu):    
-        return np.ones_like(nu)*self.test_S
+        return np.ones_like(nu)*self.test_tau_dust
 
     def tau_dust_iterator(self):
-        for tau_d,tau_dust in zip((0,self.test_tau),
+        for tau_d,tau_dust in zip((0,self.test_tau_dust),
                                   (self.tau_dust_zero,self.tau_dust_nonzero)):
             yield tau_d,tau_dust
-
-    def S_dust_iterator(self):
-        for S_d,S_dust in zip((0,self.test_S),(self.S_dust_zero,self.S_dust_nonzero)):
-            yield S_d,S_dust
 
     def test_no_overlap(self):
         line_index = 3
@@ -289,7 +294,6 @@ class TestTotalQuantities():
         x1 = level_population[line.low.number]
         x2 = level_population[line.up.number]
         tau_line = line.tau_nu(nu=nu,N1=x1*self.N_CO,N2=x2*self.N_CO)
-        
         for tau_d,tau_dust in self.tau_dust_iterator():
             tau_tot = self.CO_molecule.get_tau_tot_nu(
                           line_index=line_index,level_population=level_population,
@@ -299,28 +303,6 @@ class TestTotalQuantities():
             expected_tau_tot = line.tau_nu(N1=self.N_CO*x1,N2=self.N_CO*x2,nu=nu)\
                                 + tau_d
             assert np.all(tau_tot==expected_tau_tot)
-
-        for S_d,S_dust in self.S_dust_iterator():
-            for tau_d,tau_dust in self.tau_dust_iterator(): 
-                K = self.CO_molecule.get_K_nu(
-                        line_index=line_index,level_population=level_population,
-                        N=self.N_CO,tau_dust=tau_dust,S_dust=S_dust)(nu)
-                tau_tot = tau_d+tau_line
-                expected_K = np.where(tau_tot!=0,tau_d*S_d/tau_tot,0)
-                assert np.all(K==expected_K)
-
-        for S_d,S_dust in self.S_dust_iterator():
-            for tau_d,tau_dust in self.tau_dust_iterator(): 
-                S = self.CO_molecule.get_total_S_nu(
-                          line_index=line_index,level_population=level_population,
-                          N=self.N_CO,tau_dust=tau_dust,S_dust=S_dust)(nu)
-                expected_S = tau_line*line.source_function(x1=x1,x2=x2)\
-                              + tau_d*S_d
-                tau_tot = tau_line+tau_d
-                expected_S = np.where(tau_tot!=0,expected_S/tau_tot,0)
-                #for some unknown reason, they are not exactly the same,
-                #so need to use allclose
-                assert np.allclose(S,expected_S,atol=0,rtol=1e-15)
 
     def test_with_overlap(self):
         line_index = 1
@@ -345,47 +327,3 @@ class TestTotalQuantities():
                                                   nu=nu)
             expected_tau_tot += tau_d
             assert np.all(tau_tot==expected_tau_tot)
-
-        for S_d,S_dust in self.S_dust_iterator():
-            for tau_d,tau_dust in self.tau_dust_iterator():
-                tau_tot = self.HCl_molecule.get_tau_tot_nu(
-                              line_index=line_index,level_population=level_population,
-                              N=self.N_HCl,tau_dust=tau_dust)(nu)
-                assert np.any(tau_tot>0)
-                K = self.HCl_molecule.get_K_nu(
-                        line_index=line_index,level_population=level_population,
-                        N=self.N_HCl,tau_dust=tau_dust,S_dust=S_dust)(nu)
-                expected_K = np.zeros_like(nu)
-                for i in (0,2):
-                    line_i = self.HCl_molecule.rad_transitions[i]
-                    x1 = level_population[line_i.low.number]
-                    x2 = level_population[line_i.up.number]
-                    expected_K += line_i.source_function(x1=x1,x2=x2)\
-                                      *line_i.tau_nu(N1=self.N_HCl*x1,
-                                                     N2=self.N_HCl*x2,nu=nu)
-                expected_K += tau_d*S_d
-                expected_K = np.where(tau_tot!=0,expected_K/tau_tot,0)
-                assert np.allclose(expected_K,K,atol=0,rtol=1e-6)
-
-
-        for S_d,S_dust in self.S_dust_iterator():
-            for tau_d,tau_dust in self.tau_dust_iterator():
-                tau_tot = self.HCl_molecule.get_tau_tot_nu(
-                              line_index=line_index,level_population=level_population,
-                              N=self.N_HCl,tau_dust=tau_dust)(nu)
-                S = self.HCl_molecule.get_total_S_nu(
-                          line_index=line_index,level_population=level_population,
-                          N=self.N_HCl,tau_dust=tau_dust,S_dust=S_dust)(nu)
-                expected_S = np.zeros_like(nu)
-                for i in (0,1,2):
-                    line_i = self.HCl_molecule.rad_transitions[i]
-                    x1 = level_population[line_i.low.number]
-                    x2 = level_population[line_i.up.number]
-                    expected_S += line_i.source_function(x1=x1,x2=x2)\
-                                      *line_i.tau_nu(N1=self.N_HCl*x1,N2=self.N_HCl*x2,
-                                                     nu=nu)
-                expected_S += tau_d*S_d
-                # S_line = line.source_function(x1=level_population[line.low.number],
-                #                               x2=level_population[line.up.number])
-                expected_S = np.where(tau_tot!=0,expected_S/tau_tot,0)
-                assert np.allclose(expected_S,S,atol=0,rtol=1e-6)

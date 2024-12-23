@@ -18,16 +18,15 @@ import pytest
 #to convert to Gaussian
 line_profile_type = 'Gaussian'
 ext_background = lambda nu: helpers.B_nu(nu=nu,T=RADEX_test_cases.T_background)
-iteration_mode = 'ALI'
 #for some unknown reason, LVG sphere RADEX shows much larger differences to pythonradex
 #than the other two geometries; to make the test pass, need to adopt more relaxed
 #conditions:
 rtol = {'uniform sphere RADEX':5e-2,
         'LVG slab':5e-2,
-        'LVG sphere RADEX':0.5}
+        'LVG sphere RADEX':0.2}
 frac_max_level_pop_to_consider = {'uniform sphere RADEX':1e-5,
                                   'LVG slab':1e-5,
-                                  'LVG sphere RADEX':0.3}
+                                  'LVG sphere RADEX':0.01}
 
 RADEX_geometry = {'uniform sphere RADEX':'Uniform sphere',
                   'LVG slab':'Plane parallel slab',
@@ -114,12 +113,12 @@ def test_vs_RADEX():
                 cloud = radiative_transfer.Cloud(
                            datafilepath=datafilepath,geometry=geo,
                            line_profile_type=line_profile_type,width_v=width_v,
-                           iteration_mode='ALI',use_NG_acceleration=False,
+                           use_NG_acceleration=False,
                            average_over_line_profile=False,test_mode=True)
-                cloud_params = {'N':N,'Tkin':Tkin,
-                                'collider_densities':collider_densities}
-                cloud.set_parameters(
-                       ext_background=ext_background,**cloud_params)
+                cloud.update_parameters(
+                       ext_background=ext_background,N=N,Tkin=Tkin,
+                       collider_densities=collider_densities,T_dust='zero',
+                       tau_dust='zero')
                 cloud.solve_radiative_transfer()
                 #print(f'tau: {np.min(cloud.tau_nu0)}, {np.max(cloud.tau_nu0)}')
                 RADEX_output_filename = RADEX_test_cases.RADEX_out_filename(
@@ -147,7 +146,7 @@ def test_vs_RADEX():
                 taus = []
                 for i,trans in enumerate(cloud.emitting_molecule.rad_transitions):
                     if level_pop_selection[trans.up.number]:
-                        taus.append(cloud.tau_nu0[i])
+                        taus.append(cloud.tau_nu0_individual_transitions[i])
                 if len(taus) > 0:
                     max_taus.append(np.max(taus))
                 assert np.allclose(RADEX_results['level_pop'][level_pop_selection],

@@ -169,6 +169,20 @@ class EmittingMolecule(Molecule):
                                               self.rad_transitions])
         self.nup_rad_transitions = np.array([line.up.number for line in
                                              self.rad_transitions])
+        #for each level, the rad transitions going downward:
+        self.downward_rad_transitions = []
+        #for each level, the rad transitions involving that level: 
+        self.level_transitions = []
+        for i in range(self.n_levels):
+            down_transitions = []
+            level_transitions = []
+            for j,trans in enumerate(self.rad_transitions):
+                if trans.up.number == i:
+                    down_transitions.append(j)
+                if trans.up.number == i or trans.low.number == i:
+                    level_transitions.append(j)
+            self.downward_rad_transitions.append(down_transitions)
+            self.level_transitions.append(level_transitions)
         self.Delta_E_rad_transitions = np.array([line.Delta_E for line in
                                                  self.rad_transitions])
         self.ordered_colliders = sorted(self.coll_transitions.keys())
@@ -306,6 +320,13 @@ class EmittingMolecule(Molecule):
                 return True
         return False
 
+    def get_tau_line_nu(self,line_index,level_population,N):
+        line = self.rad_transitions[line_index]
+        def tau_line_nu(nu):
+            return line.tau_nu(N1=N*level_population[line.low.number],
+                               N2=N*level_population[line.up.number],nu=nu)
+        return tau_line_nu
+
     def get_tau_tot_nu(self,line_index,level_population,N,tau_dust):
         overlapping_indices = self.overlapping_lines[line_index]
         line = self.rad_transitions[line_index]
@@ -320,41 +341,3 @@ class EmittingMolecule(Molecule):
             tau_tot += tau_dust(nu)
             return tau_tot
         return tau_tot_nu
-
-    def get_K_nu(self,line_index,level_population,N,tau_dust,S_dust):
-        #see the hand notes
-        overlapping_indices = self.overlapping_lines[line_index]
-        overlapping_lines = [self.rad_transitions[i] for i in overlapping_indices]
-        tau_tot_nu = self.get_tau_tot_nu(line_index=line_index,
-                                         level_population=level_population,N=N,
-                                         tau_dust=tau_dust)
-        def K_nu(nu):
-            nominator = np.zeros_like(nu)
-            for ovl_line in overlapping_lines:
-                x1 = level_population[ovl_line.low.number]
-                x2 = level_population[ovl_line.up.number]
-                tau_nu = ovl_line.tau_nu(N1=x1*N,N2=x2*N,nu=nu)
-                S = ovl_line.source_function(x1=x1,x2=x2)
-                nominator += tau_nu*S
-            nominator += tau_dust(nu)*S_dust(nu)
-            tau_tot = tau_tot_nu(nu)
-            #if tau_tot is zero, then tau of the overlapping lines are all zero,
-            #so K should be zero as well
-            return np.where(tau_tot!=0,nominator/tau_tot,0)
-        return K_nu
-
-    def get_total_S_nu(self,line_index,level_population,N,tau_dust,S_dust):
-        K_nu = self.get_K_nu(line_index=line_index,level_population=level_population,
-                             N=N,tau_dust=tau_dust,S_dust=S_dust)
-        line = self.rad_transitions[line_index]
-        x1 = level_population[line.low.number]
-        x2 = level_population[line.up.number]
-        tau_tot_nu = self.get_tau_tot_nu(line_index=line_index,
-                                         level_population=level_population,N=N,
-                                         tau_dust=tau_dust)
-        S_line = line.source_function(x1=x1,x2=x2)
-        def S_nu(nu):
-            tau_nu_line = line.tau_nu(N1=x1*N,N2=x2*N,nu=nu)
-            tau_tot = tau_tot_nu(nu)
-            return np.where(tau_tot!=0,tau_nu_line*S_line/tau_tot + K_nu(nu),0)
-        return S_nu
