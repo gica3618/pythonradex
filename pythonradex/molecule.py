@@ -169,20 +169,6 @@ class EmittingMolecule(Molecule):
                                               self.rad_transitions])
         self.nup_rad_transitions = np.array([line.up.number for line in
                                              self.rad_transitions])
-        #for each level, the rad transitions going downward:
-        self.downward_rad_transitions = []
-        #for each level, the rad transitions involving that level: 
-        self.level_transitions = []
-        for i in range(self.n_levels):
-            down_transitions = []
-            level_transitions = []
-            for j,trans in enumerate(self.rad_transitions):
-                if trans.up.number == i:
-                    down_transitions.append(j)
-                if trans.up.number == i or trans.low.number == i:
-                    level_transitions.append(j)
-            self.downward_rad_transitions.append(down_transitions)
-            self.level_transitions.append(level_transitions)
         self.Delta_E_rad_transitions = np.array([line.Delta_E for line in
                                                  self.rad_transitions])
         self.ordered_colliders = sorted(self.coll_transitions.keys())
@@ -209,7 +195,7 @@ class EmittingMolecule(Molecule):
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def fast_tau_nu0(N,level_population,nlow_rad_transitions,nup_rad_transitions,
+    def fast_tau_nu0_lines(N,level_population,nlow_rad_transitions,nup_rad_transitions,
                      A21,phi_nu0,gup_rad_transitions,glow_rad_transitions,nu0):
         n_lines = nlow_rad_transitions.size
         tau_nu0 = np.empty(n_lines)
@@ -222,8 +208,9 @@ class EmittingMolecule(Molecule):
                              N1=N1,N2=N2,nu=nu0[i])
         return tau_nu0
     
-    def get_tau_nu0(self,N,level_population):
-        r'''Compute the optical depth at the rest frequency
+    def get_tau_nu0_lines(self,N,level_population):
+        r'''Compute the optical depth at the rest frequency of all lines (dust
+        and overlapping lines are ignored)
         
         Args:
             N (:obj:`float`): the column density in [m\ :sup:`-2`]
@@ -233,15 +220,16 @@ class EmittingMolecule(Molecule):
         Returns:
             numpy.ndarray: the optical depth at the rest frequency
         '''
-        return self.fast_tau_nu0(
+        return self.fast_tau_nu0_lines(
                 N=N,level_population=level_population,
                 nlow_rad_transitions=self.nlow_rad_transitions,
                 nup_rad_transitions=self.nup_rad_transitions,A21=self.A21,
                 phi_nu0=self.phi_nu0,gup_rad_transitions=self.gup_rad_transitions,
                 glow_rad_transitions=self.glow_rad_transitions,nu0=self.nu0)
 
-    def get_tau_nu0_LTE(self,N,T):
-        r'''Compute the optical depth at the rest frequency in LTE
+    def get_tau_nu0_lines_LTE(self,N,T):
+        r'''Compute the optical depth at the rest frequency in LTE for all lines
+        (dust and overlapping lines are ignored)
         
         Args:
             N (:obj:`float`): the column density in [m\ :sup:`-2`]
@@ -251,7 +239,7 @@ class EmittingMolecule(Molecule):
             numpy.ndarray: the optical depth at the rest frequency assuming LTE
         '''
         level_population = self.LTE_level_pop(T=T)
-        return self.fast_tau_nu0(
+        return self.fast_tau_nu0_lines(
                 N=N,level_population=level_population,
                 nlow_rad_transitions=self.nlow_rad_transitions,
                 nup_rad_transitions=self.nup_rad_transitions,A21=self.A21,

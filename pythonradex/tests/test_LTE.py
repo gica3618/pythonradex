@@ -32,12 +32,13 @@ ext_background = helpers.generate_CMB_background()
 filenames = ['co.dat','hcl.dat','ocs@xpol.dat','c.dat']
 line_profile_types = ('rectangular','Gaussian')
 geometries = tuple(radiative_transfer.Cloud.geometries.keys())
-iteration_modes = ('ALI','LI')
 use_ng_options = (True,False)
-average_options = (True,False)
+treat_line_overlap_options = (True,False)
 
-def allowed_param_combination(geometry,line_profile_type):
-    if geometry in ('LVG sphere','LVG slab') and line_profile_type=='Gaussian':
+def allowed_param_combination(geometry,line_profile_type,treat_line_overlap):
+    if 'LVG' in geometry and line_profile_type=='Gaussian':
+        return False
+    elif 'LVG' in geometry and treat_line_overlap:
         return False
     else:
         return True
@@ -46,26 +47,28 @@ def allowed_param_combination(geometry,line_profile_type):
 @pytest.mark.filterwarnings("ignore:some lines are overlapping")
 def test_LTE():
     max_taus = []
-    for filename,geo,lp,iter_mode,ng,avg in itertools.product(
-                        filenames,geometries,line_profile_types,iteration_modes,
-                        use_ng_options,average_options):
-        if not allowed_param_combination(geometry=geo,line_profile_type=lp):
+    for filename,geo,lp,ng,treat_overlap in itertools.product(
+                        filenames,geometries,line_profile_types,
+                        use_ng_options,treat_line_overlap_options):
+        if not allowed_param_combination(geometry=geo,line_profile_type=lp,
+                                         treat_line_overlap=treat_overlap):
             continue
         specie = filename.split('.')[0]
         datafilepath = os.path.join(datafolder,filename)
         cloud = radiative_transfer.Cloud(
                             datafilepath=datafilepath,geometry=geo,
-                            line_profile_type=lp,width_v=width_v,iteration_mode=iter_mode,
-                            use_NG_acceleration=ng,average_over_line_profile=avg)
+                            line_profile_type=lp,width_v=width_v,
+                            use_NG_acceleration=ng,treat_line_overlap=treat_overlap)
         cloud_params = {'Tkin':Tkin,'ext_background':ext_background,
-                        'collider_densities':collider_densities[specie]}
+                        'collider_densities':collider_densities[specie],
+                        'T_dust':0,'tau_dust':0}
         for N in N_values[specie]:
             cloud_params['N'] = N
-            cloud.set_parameters(**cloud_params)
+            cloud.update_parameters(**cloud_params)
             cloud.solve_radiative_transfer()
             LTE_level_pop = cloud.emitting_molecule.LTE_level_pop(T=Tkin)
             selection = LTE_level_pop > min_level_pop[specie]*np.max(LTE_level_pop)
             assert np.allclose(cloud.level_pop[selection],LTE_level_pop[selection],
                                atol=1e-6,rtol=1e-2)
-            max_taus.append(np.max(cloud.tau_nu0))
+            max_taus.append(np.max(cloud.tau_nu0_individual_transitions))
     print(f'max tau: {np.max(max_taus)}')

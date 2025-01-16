@@ -71,17 +71,17 @@ def test_Molecule_coll_transitions():
                                       == getattr(mol.coll_transitions[collider][i],
                                                  attribute))
 
-def test_level_transitions():
-    test_mol = molecule.EmittingMolecule(
-                   datafilepath=os.path.join(here,'LAMDA_files/cn.dat'),
-                                            line_profile_type=line_profile_type,
-                                            width_v=width_v,read_frequencies=True)
-    assert test_mol.downward_rad_transitions[0] == []
-    assert test_mol.downward_rad_transitions[1] == [0,]
-    assert test_mol.downward_rad_transitions[3] == [2,3]
-    assert test_mol.level_transitions[0] == [0,1]
-    assert test_mol.level_transitions[1] == [0,3]
-    assert test_mol.level_transitions[2] == [1,2,4]
+# def test_level_transitions():
+#     test_mol = molecule.EmittingMolecule(
+#                    datafilepath=os.path.join(here,'LAMDA_files/cn.dat'),
+#                                             line_profile_type=line_profile_type,
+#                                             width_v=width_v,read_frequencies=True)
+#     assert test_mol.downward_rad_transitions[0] == []
+#     assert test_mol.downward_rad_transitions[1] == [0,]
+#     assert test_mol.downward_rad_transitions[3] == [2,3]
+#     assert test_mol.level_transitions[0] == [0,1]
+#     assert test_mol.level_transitions[1] == [0,3]
+#     assert test_mol.level_transitions[2] == [1,2,4]
 
 def test_setting_partition_function():
     test_mol = molecule.Molecule(

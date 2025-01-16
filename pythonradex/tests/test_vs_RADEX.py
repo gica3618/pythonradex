@@ -114,7 +114,7 @@ def test_vs_RADEX():
                            datafilepath=datafilepath,geometry=geo,
                            line_profile_type=line_profile_type,width_v=width_v,
                            use_NG_acceleration=False,
-                           average_over_line_profile=False,test_mode=True)
+                           treat_line_overlap=False,test_mode=True)
                 cloud.update_parameters(
                        ext_background=ext_background,N=N,Tkin=Tkin,
                        collider_densities=collider_densities,T_dust='zero',

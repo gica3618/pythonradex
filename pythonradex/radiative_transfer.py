@@ -128,55 +128,48 @@ class Cloud():
                                 'A21':self.emitting_molecule.A21}
 
     def check_parameters(self,collider_densities,T_dust,tau_dust,ext_background):
-        #TODO consider adding a warning if T_dust is not zero and tau_dust is zero,
-        #or the other way around (i.e. both need to be non-zero for dust to have an effect)
         if collider_densities is not None:
             for collider in collider_densities.keys():
                 if collider not in self.emitting_molecule.ordered_colliders:
                     raise ValueError(f'no data for collider "{collider}" available')
         if 'LVG' in self.geometry_name:
-            if not (T_dust in (None,'zero') and tau_dust in (None,'zero')):
+            if not (T_dust in (None,0) and tau_dust in (None,0)):
                 #this is because for LVG, it is assumed that radiation escaping
                 #the local slab will escape the entire cloud, which is not true
                 #if there is dust
                 raise ValueError('including dust continuum is currently not'
                                  +' supported for LVG geometries')
-        # if not self.average_over_line_profile:
-        #     for func_name,func in {'external background':ext_background,
-        #                            'T_dust':T_dust,'tau_dust':tau_dust}.items():
-        #         if func in (None,'zero'):
-        #             continue
-        #         if not self.is_slowly_varying_over_linewidth(func):
-        #             warnings.warn(f'{func_name} is significantly varying over'
-        #                              +' line profile. Please activate averaging over'
-        #                              +' line profile.')
 
     def update_parameters(self,N=None,Tkin=None,collider_densities=None,
                           ext_background=None,T_dust=None,tau_dust=None):
-        #TODO test this function
-        #TODO update documentation; None means "do not update the param"
-        #T_dust, tau_dust, ext_background can have special values 'zero'
-        #TODO consider adding the functionality that if T_dust and tau_dust are given
-        #as numbers, they should be constant for all nu
-        r'''Set the parameters for a new radiative transfer calculation.
+        r'''Set the parameters for a new radiative transfer calculation. Any of the
+            parameters can be set to None if no update of that parameter is wished.
 
         Args:
-            ext_background (func): A function taking the frequency in Hz as input
-                and returning the background radiation field in [W/m\ :sup:`2`/Hz/sr].
-            N (:obj:`float`): The column density in [m\ :sup:`-2`].
-            Tkin (:obj:`float`): The kinetic temperature of the gas in [K].
-            collider_densities (dict): A dictionary of the number densities of
-               each collider that should be considered, in units of [m\ :sup:`-3`]. The
-               following keys are recognised: "H2", "para-H2", "ortho-H2", "e",
-               "H", "He", "H+"
-            T_dust (func): The dust temperature in [K] as a function of frequency.
-                 It is assumed that the source function of the dust is a black body
-                 at temperature T_dust. Defaults to None (i.e. no internal dust
-                 radiation field). Can only be used with static geometries (i.e.
-                 not with LVG geometries).
-            tau_dust (func): optical depth of the dust as a function of frequency.
-                Defaults to None (i.e. no internal dust radiation field). Can
-                only be used with static geometries (i.e. not with LVG geometries).
+            ext_background (func, number or None): A function taking the
+                frequency in Hz as input nd returning the background radiation
+                field in [W/m\ :sup:`2`/Hz/sr]. A single number is interpreted as
+                a constant value for all frequencies. Defaults to None
+                (i.e. do not update).
+            N (:obj:`float` or None): The column density in [m\ :sup:`-2`].
+                Defaults to None (i.e. do not update).
+            Tkin (:obj:`float` or None): The kinetic temperature of the gas in [K].
+                Defaults to None (i.e. do not update).
+            collider_densities (dict or None): A dictionary of the number densities of
+                each collider that should be considered, in units of [m\ :sup:`-3`]. The
+                following keys are recognised: "H2", "para-H2", "ortho-H2", "e",
+                "H", "He", "H+". Defaults to None (i.e. do not update).
+            T_dust (func, number or None): The dust temperature in [K] as a
+                function of frequency. It is assumed that the source function
+                of the dust is a black body at temperature T_dust. A single number
+                is interpreted as a constant temperature for all frequencies.
+                Can only be used with static geometries (i.e. not with LVG geometries).
+                Defaults to None (i.e. do not update).
+            tau_dust (func, number or None): optical depth of the dust as a function of
+                frequency. A single number is interpreted as a constant optical
+                depth for all frequencies. Can only be used with static geometries
+                (i.e. not with LVG geometries). Defaults to None (i.e. do not update).
+                
         '''
         #why do I put this into a seperate method rather than __init__? The reason
         #is that the stuff in __init__ is expensive (in particular reading the
@@ -187,16 +180,16 @@ class Cloud():
         #necessary
         self.check_parameters(collider_densities=collider_densities,T_dust=T_dust,
                               tau_dust=tau_dust,ext_background=ext_background)
-        if N is not None:
-            self.N = N
         if not hasattr(self,'rate_equations'):
             self.rate_equations = rate_equations.RateEquations(
                                  molecule=self.emitting_molecule,
                                  collider_densities=collider_densities,Tkin=Tkin,
                                  treat_line_overlap=self.treat_line_overlap,
                                  ext_background=ext_background,T_dust=T_dust,
-                                 tau_dust=tau_dust,geometry=self.geometry,N=self.N)
+                                 tau_dust=tau_dust,geometry=self.geometry,N=N)
         else:
+            if N is not None:
+                self.rate_equations.set_N(N)
             if Tkin is not None or collider_densities is not None:
                 T = self.rate_equations.Tkin if Tkin is None else Tkin
                 coll_dens = self.rate_equations.collider_densities if collider_densities\
@@ -209,17 +202,6 @@ class Cloud():
                 Td = self.rate_equations.T_dust if T_dust is None else T_dust
                 taud = self.rate_equations.tau_dust if tau_dust is None else tau_dust
                 self.rate_equations.set_dust(T_dust=Td,tau_dust=taud)
-
-    # def is_slowly_varying_over_linewidth(self,func):
-    #     nu0 = self.emitting_molecule.nu0
-    #     Delta_nu = self.emitting_molecule.width_v/constants.c*nu0
-    #     func_nu0 = np.array((func(nu0),))
-    #     func_nu0_plus_Deltanu = np.array((func(nu0+Delta_nu),))
-    #     relative_diff = helpers.relative_difference(func_nu0,func_nu0_plus_Deltanu)
-    #     if np.any(relative_diff>self.slow_variation_limit):
-    #         return False
-    #     else:
-    #         return True
 
     def get_initial_level_pop(self):
         #assume LTE for the first iteration
@@ -286,8 +268,8 @@ class Cloud():
             Tex_residual = helpers.relative_difference(Tex,old_Tex)
             if self.verbose:
                 print(f'max relative Tex residual: {np.max(Tex_residual):.3g}')
-            tau_nu0 = self.emitting_molecule.get_tau_nu0(
-                                       N=self.N,level_population=new_level_pop)
+            tau_nu0 = self.emitting_molecule.get_tau_nu0_lines(
+                                       N=self.rate_equations.N,level_population=new_level_pop)
             residual = self.compute_residual(
                  Tex_residual=Tex_residual,tau=tau_nu0,
                  min_tau_considered_for_convergence=self.min_tau_considered_for_convergence)
@@ -305,8 +287,8 @@ class Cloud():
         if self.verbose:
             print(f'converged in {counter} iterations')
         self.n_iter_convergence = counter
-        self.tau_nu0_individual_transitions = self.emitting_molecule.get_tau_nu0(
-                                               N=self.N,level_population=level_pop)
+        self.tau_nu0_individual_transitions = self.emitting_molecule.get_tau_nu0_lines(
+                                               N=self.rate_equations.N,level_population=level_pop)
         if self.warn_negative_tau:
             if np.any(self.tau_nu0_individual_transitions < 0):
                 negative_tau_transition_indices = np.where(self.tau_nu0_individual_transitions < 0)[0]
@@ -583,15 +565,15 @@ class Cloud():
         return self.flux_calculator.spectrum(solid_angle=solid_angle)
 
     def model_grid(self,ext_backgrounds,N_values,Tkin_values,collider_densities_values,
-                   requested_output,T_dust=None,tau_dust=None,solid_angle=None,
+                   requested_output,T_dust=0,tau_dust=0,solid_angle=None,
                    transitions=None,nu=None):
-        r'''Iterator over a grid of models. Models are calculated for all possible combinations
-            of the input parameters.
+        r'''Iterator over a grid of models. Models are calculated for all
+            possible combinations of the input parameters.
 
         Args:
             ext_backgrounds (:obj:`dict`): A dictionary of functions, one entry for
                 each background that should be used. The keys of the dictionary are used
-                in the output to identify which background was used for a certain output
+                in the output to identify which background was used
             N_values (:obj:`list` or numpy.ndarray): The list of column densities to
                 compute models for, in [m\ :sup:`-2`].
             Tkin_values (:obj:`list` or numpy.ndarray): The list of kinetic temperatures
@@ -602,12 +584,15 @@ class Cloud():
             requested_output (:obj:`list`): The list of requested outputs. Possible entries
                 are 'level_pop','Tex','tau_nu0_individual_transitions','fluxes_of_individual_transitions','tau_nu',
                 and 'spectrum'
-            T_dust (func): The dust temperature in [K] as a function of frequency.
+            T_dust (func or number): The dust temperature in [K] as a function of frequency.
                  It is assumed that the source function of the dust is a black body
-                 at temperature T_dust. Defaults to None (i.e. no internal dust
+                 at temperature T_dust. A single number is interpreted as a constant value
+                 for all frequencies. Defaults to 0 (i.e. no internal dust
                  radiation field).
-            tau_dust (func): optical depth of the dust as a function of frequency.
-                Defaults to None (i.e. no internal dust radiation field).
+            tau_dust (func or number): optical depth of the dust as a function of frequency.
+                A single number is interpreted as a constant value
+                for all frequencies. Defaults to 0 (i.e. no internal dust
+                radiation field).
             solid_angle (:obj:`float`): The solid angle of the source in [sr].
                 Defaults to None. Compulsory if 'fluxes_of_individual_transitions' or 'spectrum'
                 are requested.
@@ -639,16 +624,16 @@ class Cloud():
             assert nu is not None
         if transitions is None:
             transitions = [i for i in range(self.emitting_molecule.n_rad_transitions)]
-        colliders = list(collider_densities_values.keys())
+        ordered_colliders = list(collider_densities_values.keys())
         ordered_collider_density_values = [collider_densities_values[coll] for coll
-                                           in colliders]
+                                           in ordered_colliders]
         for Tkin in Tkin_values:
             for collider_density_set in itertools.product(*ordered_collider_density_values):
                 collider_densities = {collider:value for collider,value in
-                                      zip(colliders,collider_density_set)}
+                                      zip(ordered_colliders,collider_density_set)}
                 for ext_background_name,ext_background in ext_backgrounds.items():
                     for N in N_values:
-                        self.set_parameters(
+                        self.update_parameters(
                                ext_background=ext_background,N=N,Tkin=Tkin,
                                collider_densities=collider_densities,T_dust=T_dust,
                                tau_dust=tau_dust)

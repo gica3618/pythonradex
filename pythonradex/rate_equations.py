@@ -9,7 +9,7 @@ Created on Fri Sep 13 09:03:13 2024
 import numba as nb
 import numpy as np
 from pythonradex import atomic_transition,helpers
-import itertools
+import numbers
 
 
 class RateEquations():
@@ -26,11 +26,18 @@ class RateEquations():
         self.compute_Unu0_Vnu0()
         #equation of steady state: A*x=b, x=fractional population that we search
         self.b = np.zeros(self.molecule.n_levels)
+        # the system of equations is not linearly independent
+        #thus, I replace one equation by the normalisation condition,
+        #i.e. x1+...+xn=1, where xi is the fractional population of level i
+        #I replace the first equation (arbitrary choice):
         self.b[0] = 1
         if not treat_line_overlap:
             self.GammaR = self.GammaR_nu0
         else:
             self.GammaR = self.GammaR_averaged
+
+    def set_N(self,N):
+        self.N = N
 
     def collider_is_requested(self,collider):
         return collider in self.collider_densities
@@ -67,6 +74,34 @@ class RateEquations():
                     glows=self.molecule.coll_glows,DeltaEs=self.molecule.coll_DeltaEs)
 
     @staticmethod
+    def generate_constant_func(const_value):
+        def const_func(nu):
+            return np.ones_like(nu)*const_value
+        return const_func
+
+    def assign_func_nu(self,func_name,argument):
+        if isinstance(argument, numbers.Number):
+            assert argument >= 0, 'ext_background, T_dust or tau_dust cannot be negative'
+            setattr(self,func_name,self.generate_constant_func(const_value=argument))
+        else:
+            setattr(self,func_name,argument)
+
+    def set_ext_background(self,ext_background):
+        self.assign_func_nu(func_name='ext_background',argument=ext_background)
+        if not self.treat_line_overlap:
+            self.Iext_nu0 = np.array([self.ext_background(nu0) for nu0 in
+                                      self.molecule.nu0])
+
+    def set_dust(self,T_dust,tau_dust):
+        for func_name,func in {'T_dust':T_dust,'tau_dust':tau_dust}.items():
+            self.assign_func_nu(func_name=func_name,argument=func)
+        if not self.treat_line_overlap:
+            self.tau_dust_nu0 = np.array([self.tau_dust(nu0) for nu0 in
+                                          self.molecule.nu0])
+            self.S_dust_nu0 = np.array([self.S_dust(nu=nu0) for nu0 in
+                                        self.molecule.nu0])
+
+    @staticmethod
     @nb.jit(nopython=True,cache=True)
     def construct_GammaC(
               Tkin,collider_selection,collider_densities_list,n_levels,
@@ -95,31 +130,6 @@ class RateEquations():
                 GammaC[n_up,n_up] += -K21*coll_density
         assert np.all(np.isfinite(GammaC))
         return GammaC
-
-    @staticmethod
-    def zero(nu):
-        return np.zeros_like(nu)
-
-    def assign_func_nu(self,func_name,func):
-        if func == 'zero':
-            setattr(self,func_name,self.zero)
-        else:
-            setattr(self,func_name,func)
-
-    def set_ext_background(self,ext_background):
-        self.assign_func_nu(func_name='ext_background',func=ext_background)
-        if not self.treat_line_overlap:
-            self.Iext_nu0 = np.array([self.ext_background(nu0) for nu0 in
-                                       self.molecule.nu0])
-
-    def set_dust(self,T_dust,tau_dust):
-        for func_name,func in {'T_dust':T_dust,'tau_dust':tau_dust}.items():
-            self.assign_func_nu(func_name=func_name,func=func)
-        if not self.treat_line_overlap:
-            self.tau_dust_nu0 = np.array([self.tau_dust(nu0) for nu0 in
-                                          self.molecule.nu0])
-            self.S_dust_nu0 = np.array([self.S_dust(nu=nu0) for nu0 in
-                                        self.molecule.nu0])
 
     def S_dust(self,nu):
         T = np.atleast_1d(self.T_dust(nu))
@@ -299,62 +309,39 @@ class RateEquations():
             V_Ieff[n_up,n_low] = self.V_nu0[n_up,n_low]*Ieff_averaged
         return V_Ieff
 
-    def get_mixed_term_transition_pairs(self,l,lprime):
-        #look at equation 2.19 in Rybicki & Hummer (1992)
-        #TODO this function needs a test
-        #the left side of the double sum is over transitions involving l
-        transitions_involving_l = self.molecule.level_transitions[l]
-        #the right side of the double sum is over transitions involving lprime,
-        #but since it contains U_lprime_lprimeprimeprime, I only need to consider
-        #downward transitions from lprime (since U is zero for upward transitions)
-        downward_transitions_from_lprime = self.molecule.downward_rad_transitions[lprime]
-        #a list containing pairs of transitions to consider, where the first element
-        #of the pair is the transitions involving l, and the second the one involving
-        #lprime
-        transition_pairs_to_consider = []
-        for downward_trans in downward_transitions_from_lprime:
-            trans_overlapping_with_downward_trans\
-                              = self.molecule.overlapping_lines[downward_trans]
-            for overlap_trans in trans_overlapping_with_downward_trans:
-                if overlap_trans in transitions_involving_l:
-                    transition_pairs_to_consider.append([overlap_trans,downward_trans])
-        #add the transition lprime -> l if it exists (this corresponds to the
-        #term where the transition in the lprimeprime and lprimeprimeprime is
-        #the same)
-        for downward_trans in downward_transitions_from_lprime:
-            if self.molecule.rad_transitions[downward_trans].low.number == l:
-                transition_pairs_to_consider.append([downward_trans,]*2)
-        return transition_pairs_to_consider
-
     def mixed_term_averaged(self,tau_tot_functions,tau_line_functions):
-        #TODO verify this function
         mixed_term = np.zeros((self.molecule.n_levels,)*2)
-        #rather than iterating over transitions as for the other matrices,
-        #here I iterate over every element of the matrix
-        for l,lprime in itertools.product(range(self.molecule.n_levels),repeat=2):
-            if l==lprime:
-                continue
-            transition_pairs_to_consider = self.get_mixed_term_transition_pairs(
-                                                               l=l,lprime=lprime)
-            mixed_l_lprime = 0
-            for trans_pair in transition_pairs_to_consider:
+        #I choose that trans corresponds to the term U_lprime_lprimeprimeprime
+        #while the pairing transition corresponds to chi_lprimeprime_l. This makes
+        #it easier because I know that U_ab is zero if a<b, so I can simply iterate
+        #over all transitions to have all posibilities for the U term covered
+        for i,trans in enumerate(self.molecule.rad_transitions):
+            #add the transition itself to the list of pairing transitions
+            #(this is for the term lprimeprime=lprime and lprimeprimeprime=l):
+            pairing_transitions = self.molecule.overlapping_lines[i] + [i,]
+            for j in pairing_transitions:
                 def mixed(nu):
                     #for tau_tot it doesn't matter which transition I take,
-                    #becuase they are overlapping
-                    tau_tot = tau_tot_functions[trans_pair[0]](nu)
+                    #because they are overlapping
+                    tau_tot = tau_tot_functions[i](nu)
                     beta = self.geometry.beta(tau_tot)
                     #need to be careful here: need to take tau_line of the
                     #lprimeprime -> l transition
-                    tau_line = tau_line_functions[trans_pair[0]](nu)
+                    tau_line = tau_line_functions[j](nu)
                     #A21 (U matrix) needs to be from the lprime -> lprimeprimeprime
                     #transition
-                    A21 = self.molecule.rad_transitions[trans_pair[1]].A21
+                    A21 = trans.A21
                     return np.where(tau_tot==0,0,(1-beta)*tau_line/tau_tot*A21)
                 #need to average over the line profile of the
                 #lprime -> lprimeprimeprime transition!
-                mixed_l_lprime += self.molecule.rad_transitions[trans_pair[1]]\
-                                        .line_profile.average_over_phi_nu(mixed)
-            mixed_term[l,lprime] = mixed_l_lprime
+                mixed_averaged = trans.line_profile.average_over_phi_nu(mixed)
+                pairing_trans = self.molecule.rad_transitions[j]
+                #only non-diagonal terms need to be calculated, as the diagonal
+                #of Gamma will be calculated from the non-diagonal terms directly
+                if trans.up.number != pairing_trans.low.number:
+                    mixed_term[trans.up.number,pairing_trans.low.number] += mixed_averaged
+                if trans.up.number != pairing_trans.up.number:
+                    mixed_term[trans.up.number,pairing_trans.up.number] += -mixed_averaged
         return mixed_term
 
     def GammaR_averaged(self,level_population):
@@ -373,10 +360,7 @@ class RateEquations():
     @staticmethod
     @nb.jit(nopython=True,cache=True)
     def apply_normalisation_condition(Gamma,n_levels):
-        # the system of equations is not linearly independent
-        #thus, I replace one equation by the normalisation condition,
-        #i.e. x1+...+xn=1, where xi is the fractional population of level i
-        #I replace the first equation (arbitrary choice):
+        #first equation is replace by normalisation condition
         Gamma[0,:] = np.ones(n_levels)
         return Gamma
 
@@ -437,22 +421,3 @@ class RateEquations():
     #         #destruction of lower level towards upper level
     #         matrix[ln,ln] += -up
     #     return matrix
-
-    # @staticmethod
-    # #@nb.jit(nopython=True,cache=True) #doesn't help
-    # def add_coll_rates(matrix,GammaC):
-    #     return matrix + GammaC
-
-    # def solve(self,**kwargs):
-    #     matrix = np.zeros((self.molecule.n_levels,self.molecule.n_levels))
-    #     rad_rates = self.rad_rates(**kwargs)
-    #     matrix = self.add_rad_rates(
-    #                  matrix=matrix,rad_rates=rad_rates,
-    #                  nlow_rad_transitions=self.molecule.nlow_rad_transitions,
-    #                  nup_rad_transitions=self.molecule.nup_rad_transitions)
-    #     matrix = self.add_coll_rates(matrix=matrix,GammaC=self.GammaC)
-    #     matrix = self.apply_normalisation_condition(
-    #                                      matrix=matrix,n_levels=self.molecule.n_levels)
-    #     fractional_population = self.fast_solve(matrix=matrix,b=self.b)
-    #     self.assert_frac_pop_positive(fractional_population=fractional_population)
-    #     return fractional_population
