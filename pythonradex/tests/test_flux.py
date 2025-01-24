@@ -16,8 +16,7 @@ import os
 
 
 def allowed_param_combination(geometry,line_profile_type):
-    if geometry in ('LVG sphere','LVG slab','LVG sphere RADEX')\
-                                        and line_profile_type=='Gaussian':
+    if 'LVG' in geometry and line_profile_type=='Gaussian':
         return False
     else:
         return True
@@ -26,7 +25,6 @@ here = os.path.dirname(os.path.abspath(__file__))
 CO_datafilepath = os.path.join(here,'LAMDA_files/co.dat')
 HCl_datafilepath = os.path.join(here,'LAMDA_files/hcl.dat')
 line_profile_types = ('rectangular','Gaussian')
-average_options = (True,False)
 zero = lambda nu: np.zeros_like(nu)
 
 
@@ -219,7 +217,7 @@ def test_tau_nu_constructor():
         mol = molecule.EmittingMolecule(datafilepath=CO_datafilepath,
                                         line_profile_type=lp,width_v=width_v)
         level_population = mol.LTE_level_pop(T)
-        tau_nu0 = mol.get_tau_nu0(N=N,level_population=level_population)
+        tau_nu0 = mol.get_tau_nu0_lines(N=N,level_population=level_population)
         fluxcalculator = flux.FluxCalculator(
                                  emitting_molecule=mol,level_population=level_population,
                                  geometry_name=geo_name,
@@ -276,7 +274,7 @@ class TestFluxesWithPhysics():
             molecules = self.HCl_molecules
         for lp,mol in molecules.items():
             level_pop = mol.LTE_level_pop(self.Tkin)
-            tau_nu0 = mol.get_tau_nu0(N=N,level_population=level_pop)
+            tau_nu0 = mol.get_tau_nu0_lines(N=N,level_population=level_pop)
             for geo_name,geo in radiative_transfer.Cloud.geometries.items():
                 if not allowed_param_combination(geometry=geo_name,
                                                  line_profile_type=lp):
@@ -384,7 +382,7 @@ class TestFluxesWithPhysics():
                 if ID == 'thin':
                     assert np.allclose(expected_tau_nu,0,atol=1e-3,rtol=0)
 
-    @pytest.mark.filterwarnings("ignore:lines are overlapping")
+    @pytest.mark.filterwarnings("ignore:LVG sphere geometry")
     @pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
     def test_tau_and_spectrum_overlapping_lines_without_overlap_treatment(self):
         N = 1e10/constants.centi**2

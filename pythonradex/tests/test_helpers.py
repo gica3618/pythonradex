@@ -18,10 +18,6 @@ def test_relative_difference_arrays():
     assert np.allclose(relative_difference,expected_relative_difference,atol=0,
                        rtol=1e-10)
 
-def test_zero_background():
-    assert helpers.zero_background(10) == 0
-    assert np.all(helpers.zero_background(np.random.rand(10)) == 0)
-
 def test_CMB_background():
     test_nu = np.logspace(np.log10(1),np.log10(1000),20)*constants.giga
     test_z = (0,2)

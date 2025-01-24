@@ -59,11 +59,12 @@ class FluxCalculator():
         #note that integrated fluxes only make sense for non-overlapping lines,
         #so this function can only be used for non-overlapping lines
         obs_line_fluxes = []
+        n_nu_elements = 15
         for i in transitions:
             tau_nu0 = tau_nu0_individual_transitions[i]
             nu,tau_nu,source_function = get_flux_parameters_for_rectangular_flux(
                                         width_v=width_v,nu0=nu0[i],tau_nu0=tau_nu0,
-                                        Tex=Tex[i],n_nu_elements=15)
+                                        Tex=Tex[i],n_nu_elements=n_nu_elements)
             flux_nu = compute_flux_nu(tau_nu=tau_nu,
                                       source_function=source_function,
                                       solid_angle=solid_angle)
@@ -80,13 +81,14 @@ class FluxCalculator():
                  solid_angle,transitions,tau_nu0_individual_transitions,Tex,nu0,
                  compute_flux_nu,width_v,V_LVG_sphere):
         obs_line_fluxes = []
+        #LVG sphere spectrum is not flat, so need more nu elements than for
+        #rectangular spectrum
+        n_nu_elements = 51
         for i in transitions:
             tau_nu0 = tau_nu0_individual_transitions[i]
-            #LVG sphere spectrum is not flat, so need more nu elements than for
-            #rectangular spectrum
             nu,tau_nu,source_function = get_flux_parameters_for_rectangular_flux(
                                         width_v=width_v,nu0=nu0[i],tau_nu0=tau_nu0,
-                                        Tex=Tex[i],n_nu_elements=51)
+                                        Tex=Tex[i],n_nu_elements=n_nu_elements)
             flux_nu = compute_flux_nu(tau_nu=tau_nu,
                                       source_function=source_function,
                                       solid_angle=solid_angle,nu=nu,nu0=nu0[i],
@@ -124,6 +126,8 @@ class FluxCalculator():
             #peak is not useful; in those cases, I need to set an absolute value
             #for the minimum tau to include
             min_tau = np.min(np.array([0.01,tau_peak_fraction*tau_nu0]))
+            #calculate the distance in freq spac between tau_nu0 and min_tau:
+            #(min_tau = tau_nu0*exp(-(nu-nu0)**2/(2*sigma_nu**2))
             Delta_nu = sigma_nu*np.sqrt(-2*np.log(min_tau/tau_nu0))
             n_nu = int(2*Delta_nu/FWHM_nu * nu_per_FHWM)
             nu = np.linspace(nu0[i]-Delta_nu,nu0[i]+Delta_nu,n_nu)
@@ -151,34 +155,6 @@ class FluxCalculator():
         return np.array(total_tau)
 
     def fluxes_of_individual_transitions(self,solid_angle,transitions=None):
-        #TODO needs a test
-        r''' Calculate the fluxes from individual lines, that is, the amount of
-            energy per time reaching the telescope via photons emitted by the molecule.
-            This calculation is only easily possible if the dust is optically thin (i.e.
-            the dust does not hinder line photons from escaping the cloud). Thus, this
-            function throws an error if the dust is not optically thin. It is the
-            responsibility of the user to choose an appropriate observational
-            quantity to be compared to the line fluxes calculated here. In particular,
-            for optically thin lines, the continuum-subtracted observation might
-            be appropriate. On the other hand, for optically thick lines, the
-            non-continuum-subtracted observations might be more appropriate
-            (because the optically thick line blocks the continuum at the line
-            center; see e.g. Weaver et al. 2018)
-
-        Args:
-            solid_angle (:obj:`float`): The solid angle of the source in [sr].
-            transitions (:obj:`list` of :obj:`str` or None): The indices of the
-                transitions for which to calculate the fluxes. If None, then the
-                fluxes of all transitions are calculated. Defaults to None. The
-                indices are relative to the list of transitions in the LAMDA file,
-                starting with 0.
-        
-        Returns:
-            list: The list of fluxes in [W/m\ :sup:`2`] corresponding to the
-            input list of requested transitions. If not specific transitions
-            where requested (transitions=None), hen the list of fluxes corresponds
-            to the transitions as listed in the LAMDA file.
-        '''
         max_acceptable_tau = 0.1 #for dust and overlapping lines
         if transitions is None:
             transitions = self.all_transitions()
@@ -187,7 +163,7 @@ class FluxCalculator():
                                                         transitions=transitions)
             if np.any(tau_overlapping_lines>max_acceptable_tau):
                 raise ValueError('fluxes of individual lines can only be calculated'
-                                 +' for non-overlapping lines')
+                                 +' for non-overlapping lines or thin overlapping lines')
         for i in transitions:
             line = self.emitting_molecule.rad_transitions[i]
             if self.tau_dust(line.nu0) > max_acceptable_tau:
@@ -266,9 +242,12 @@ class FluxCalculator():
             #assumption for LVG sphere: lines do not overlap and there is no dust,
             #so I can just sum them up
             #this also works for overlapping lines in the optically thin regime
+            #reason for this special case: the formula to compute the flux for an LVG
+            #sphere depends on nu0, which is not well defined if there are several
+            #lines
             if self.emitting_molecule.any_line_has_overlap(
                                 line_indices=self.nu_selected_line_indices):
-                warnings.warn('lines are overlapping, '
+                warnings.warn('LVG sphere geometry: lines are overlapping, '
                               +'output spectrum will only be correct if all lines'
                               +' are optically thin!')
             for dust_func in (self.S_dust,self.tau_dust):

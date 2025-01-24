@@ -123,11 +123,15 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
     obs_flux_density = {}
     lineprofile_nu0 = {}
     for geo,line_profile_type in itertools.product(geometries,line_profile_types):
-        cloud = radiative_transfer.Cloud(
-                    datafilepath=filepath,geometry=geo,
-                    line_profile_type=line_profile_type,width_v=width_v)
-        cloud.set_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
-                             collider_densities=coll_partner_densities)
+        try:
+            cloud = radiative_transfer.Cloud(
+                        datafilepath=filepath,geometry=geo,
+                        line_profile_type=line_profile_type,width_v=width_v)
+        except ValueError:
+            continue
+        cloud.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
+                                collider_densities=coll_partner_densities,
+                                T_dust=0,tau_dust=0)
         cloud.solve_radiative_transfer()
         #differs slightly from the nu0 given in the LAMDA file, because I calculate it
         #if I use the nu0 from LAMDA file, the line profile is 0 at nu0
@@ -137,9 +141,10 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
                            cloud.emitting_molecule.rad_transitions[trans_number].\
                             line_profile.phi_nu(pythonradex_nu0)
         key = '{:s} {:s}'.format(geo,line_profile_type)
-        tau[key] = cloud.tau_nu0[trans_number]
+        tau[key] = cloud.tau_nu0_individual_transitions[trans_number]
         Tex[key] = cloud.Tex[trans_number] 
-        obs_flux[key] = cloud.fluxes(solid_angle=Omega,transitions=[trans_number,])
+        obs_flux[key] = cloud.fluxes_of_individual_transitions(
+                                   solid_angle=Omega,transitions=[trans_number,])
         nu0 = cloud.emitting_molecule.rad_transitions[trans_number].nu0
         width_nu = width_v/constants.c*nu0
         nu = np.linspace(nu0-width_nu,nu0+width_nu,100)

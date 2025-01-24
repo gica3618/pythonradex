@@ -25,22 +25,22 @@ ext_background = helpers.generate_CMB_background(z=0)
 cloud = radiative_transfer.Cloud(
                 datafilepath='/home/gianni/science/LAMDA_database_files/co.dat',
                 geometry='uniform sphere',line_profile_type='Gaussian',
-                width_v=1*constants.kilo,debug=False,iteration_mode='ALI',
-                use_NG_acceleration=True,average_beta_over_line_profile=False,
-                warn_negative_tau=False)
+                width_v=1*constants.kilo,use_NG_acceleration=True,
+                treat_line_overlap=False,warn_negative_tau=False)
 #solve a first time to compile the functions:
-cloud.set_parameters(
+cloud.update_parameters(
      ext_background=ext_background,Tkin=Tkin_values[0],
-     collider_densities={collider:coll_density_values[0]},N=N_values[0])
+     collider_densities={collider:coll_density_values[0]},N=N_values[0],
+     T_dust=0,tau_dust=0)
 cloud.solve_radiative_transfer()
 
 start = time.time()
 for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                              Tkin_values):
     collider_densities = {collider:coll_dens}
-    cloud.set_parameters(
+    cloud.update_parameters(
          ext_background=ext_background,Tkin=Tkin,
-         collider_densities=collider_densities,N=N)
+         collider_densities=collider_densities,N=N,T_dust=0,tau_dust=0)
     cloud.solve_radiative_transfer()
 end = time.time()
 print(f'total time to run grid: {end-start}')

@@ -117,8 +117,8 @@ def test_vs_RADEX():
                            treat_line_overlap=False,test_mode=True)
                 cloud.update_parameters(
                        ext_background=ext_background,N=N,Tkin=Tkin,
-                       collider_densities=collider_densities,T_dust='zero',
-                       tau_dust='zero')
+                       collider_densities=collider_densities,T_dust=0,
+                       tau_dust=0)
                 cloud.solve_radiative_transfer()
                 #print(f'tau: {np.min(cloud.tau_nu0)}, {np.max(cloud.tau_nu0)}')
                 RADEX_output_filename = RADEX_test_cases.RADEX_out_filename(

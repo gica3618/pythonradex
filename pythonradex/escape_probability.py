@@ -93,7 +93,7 @@ class UniformLVGSlab(Flux1D):
         self.beta = escape_probability_functions.beta_LVG_slab
 
 
-class UniformLVGSphere(Flux1D):
+class UniformLVGSphere():
     """The escape probability and flux for a uniform large velocity gradient (LVG)
     sphere"""
 

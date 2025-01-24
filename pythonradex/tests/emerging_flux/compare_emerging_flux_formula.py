@@ -39,7 +39,7 @@ expected_ratio_thin = 2/3
 
 fig,axes = plt.subplots(3)
 axes[0].plot(tau_values,f_sphere,label='sphere')
-axes[0].plot(tau_values,f_0D,label='0D')
+axes[0].plot(tau_values,f_0D,label='0D (RADEX)')
 axes[0].set_ylabel('flux')
 axes[0].legend(loc='best')
 axes[0].set_yscale('log')

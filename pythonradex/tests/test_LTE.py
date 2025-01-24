@@ -15,9 +15,9 @@ import numpy as np
 here = os.path.dirname(os.path.abspath(__file__))
 datafolder = os.path.join(here,'LAMDA_files')
 N_values = {'co':np.array((1e12,1e15,1e18))/constants.centi**2,
-               'hcl':np.array((1e10,1e12,1e14))/constants.centi**2,
-               'ocs@xpol':np.array((1e10,1e13,1e15))/constants.centi**2,
-               'c':np.array((1e12,1e15,1e20))/constants.centi**2}
+            'hcl':np.array((1e10,1e12,1e14))/constants.centi**2,
+            'ocs@xpol':np.array((1e10,1e13,1e15))/constants.centi**2,
+            'c':np.array((1e12,1e15,1e20))/constants.centi**2}
 collider_densities = {'co':{'ortho-H2':1e9/constants.centi**3},
                       'hcl':{'ortho-H2':1e11/constants.centi**3},
                       'ocs@xpol':{'H2':1e9/constants.centi**3},

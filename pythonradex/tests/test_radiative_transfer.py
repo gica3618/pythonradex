@@ -11,6 +11,7 @@ import numpy as np
 import itertools
 import pytest
 import numbers
+import copy
 
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -100,67 +101,210 @@ class TestInitialisation():
 
 class TestUpdateParameters():
 
-    @staticmethod
-    def verify_cloud_params(cloud,params):
-        for p in ('N','collider_densities','Tkin'):
-            assert getattr(cloud.rate_equations,p) == params[p]
-        nu0s = np.array([line.nu0 for line in cloud.emitting_molecule.rad_transitions])
-        expected_I_ext_nu0 = np.array([params['ext_background'](nu0) for nu0 in nu0s])
-        I_ext_nu0 = np.array([cloud.rate_equations.ext_background(nu0) for nu0 in
-                              cloud.rate_equations.molecule.nu0])
-        assert np.all(expected_I_ext_nu0==I_ext_nu0)
-        for dust_param in ('T_dust','tau_dust'):
-            if params[dust_param] == None:
-                pass
-            elif isinstance(params[dust_param],numbers.Number):
-                assert np.all(getattr(cloud.rate_equations,dust_param)(nu0s)
-                              ==params[dust_param])
-            else:
-                dust_param_nu0 = [params[dust_param](nu0) for nu0 in nu0s]
-                assert np.all(dust_param_nu0==getattr(cloud.rate_equations,dust_param)(nu0s))
+    standard_params = {'ext_background':cmb,
+                       'Tkin':20,'collider_densities':{'para-H2':1},
+                       'N':1e15/constants.centi**2,'T_dust':0,'tau_dust':0}    
+    non_func_params = ['Tkin','collider_densities','N']
+    func_params = ['ext_background','T_dust','tau_dust']
+    all_params = non_func_params+func_params
 
-    def test_update_parameters(self):
-        collider_densities = {'para-H2':1}
-        N = 1e15/constants.centi**2
-        standard_params = {'ext_background':cmb,
-                           'Tkin':20,'collider_densities':collider_densities,
-                           'N':N,'T_dust':0,'tau_dust':0}
+    def copy_cloud_parameters(self,cloud):
+        params = {}
+        for param in self.all_params:
+            params[param] = copy.deepcopy(getattr(cloud.rate_equations,param))
+        return params
+
+    def test_copy_cloud_parameters(self):
+        def T_dust_old(nu):
+            return 2*nu
+        def T_dust_new(nu):
+            return 3*nu
+        cloud = radiative_transfer.Cloud(
+                          datafilepath=datafilepath['CO'],geometry='uniform sphere',
+                          line_profile_type='Gaussian',width_v=1*constants.kilo,
+                          use_NG_acceleration=True)
+        cloud.update_parameters(N=1e14,Tkin=20,collider_densities={'para-H2':1},
+                                ext_background=0,T_dust=T_dust_old,tau_dust=1)
+        old_params = self.copy_cloud_parameters(cloud)
+        cloud.update_parameters(T_dust=T_dust_new)
+        test_nu = 100*constants.giga
+        assert old_params['T_dust'](test_nu) == 2*test_nu
+        assert cloud.rate_equations.T_dust(test_nu) == 3*test_nu
+
+    def verify_cloud_params(self,cloud,new_params,original_params):
+        #original_params=None is used for the very first setting of the params when
+        #previous params do not yet exist
+        #original_params are only used if any of the new params is None
+        nu0s = cloud.emitting_molecule.nu0
+        for pname in self.all_params:
+            if original_params is None:
+                assert new_params[pname] is not None
+            else:
+                assert pname in original_params
+            if pname not in new_params:
+                new_params[pname] = None
+        for pname,p in new_params.items():
+            if p is None:
+                assert original_params is not None
+                expected_p = original_params[pname]
+            else:
+                expected_p = p
+            if pname in self.non_func_params:
+                assert getattr(cloud.rate_equations,pname) == expected_p
+            elif pname in self.func_params:
+                if isinstance(expected_p,numbers.Number):
+                    expected = np.ones_like(nu0s)*expected_p
+                else:
+                    expected =  expected_p(nu0s)
+                values_nu0 = getattr(cloud.rate_equations,pname)(nu0s)
+                assert np.all(expected==values_nu0)
+            else:
+                raise ValueError
+
+    def test_should_be_updated(self):
+        def func1(x):
+            return x**2
+        def func2(x):
+            return x*9
+        func3 = lambda x: x-4
+        for old in (0,1.2,func1,func3):
+            #if I give None, it should not be updated
+            assert not radiative_transfer.Cloud.should_be_updated(
+                                               new_func_or_number=None,old=old)
+        #case 1: new value is a number
+        assert radiative_transfer.Cloud.should_be_updated(new_func_or_number=1.1,old=func1)
+        assert radiative_transfer.Cloud.should_be_updated(new_func_or_number=1,old=2)
+        for num in (1,1.23):
+            assert not radiative_transfer.Cloud.should_be_updated(
+                                               new_func_or_number=num,old=num)
+        #case 2: new value is a func
+        for func in (func1,func2,func3):
+            #whenever I give a func, I want to update (even when giving the same func
+            #as the old one)
+            assert radiative_transfer.Cloud.should_be_updated(
+                                                  new_func_or_number=func,old=func1)
+            assert radiative_transfer.Cloud.should_be_updated(
+                                            new_func_or_number=func,old=2.1)
+
+    def test_initial_param_setting(self):
         for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
-            for i in range(2):
-                #two times the because the first time is special (initial setting of params)
-                cloud.update_parameters(**standard_params)
-                self.verify_cloud_params(cloud,standard_params)
-            new_params = {'ext_background':lambda nu: cmb(nu)/2,'N':4*N,
-                          'Tkin':4*standard_params['Tkin']}
-            for param_name,new_value in new_params.items():
-                changed_params = standard_params.copy()
-                changed_params[param_name] = new_value
+            cloud.update_parameters(**self.standard_params)
+            self.verify_cloud_params(cloud=cloud,new_params=self.standard_params,
+                                     original_params=None)
+
+    def test_update_N(self):
+        for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+            cloud.update_parameters(**self.standard_params)
+            changed_values = [None,self.standard_params['N'],
+                              self.standard_params['N']/2.12]
+            for value in changed_values:
+                changed_params = self.standard_params.copy()
+                changed_params['N'] = value
+                original_params = self.copy_cloud_parameters(cloud)
                 cloud.update_parameters(**changed_params)
-                self.verify_cloud_params(cloud,changed_params)
-            #T_dust and tau_dust are only allowed for non LVG geometries
-            if 'LVG' not in cloud.geometry_name:
-                for T_dust,tau_dust in zip((123,lambda nu: np.ones_like(nu)*145),
-                                           (2,lambda nu: np.ones_like(nu)*0.5)):
-                    changed_params = standard_params.copy()
-                    changed_params['T_dust'] = T_dust
-                    changed_params['tau_dust'] = tau_dust
-                    cloud.update_parameters(**changed_params)
-                    self.verify_cloud_params(cloud,changed_params)
-            new_collider_densities\
-                   = [standard_params['collider_densities'] | {'ortho-H2':200},
-                      {'para-H2':standard_params['collider_densities']['para-H2']*2},
-                      {'ortho-H2':300}]
-            for new_coll_densities in new_collider_densities:
-                changed_params = standard_params.copy()
-                changed_params['collider_densities'] = new_coll_densities
+                self.verify_cloud_params(cloud=cloud,new_params=changed_params,
+                                         original_params=original_params)
+
+    def test_update_Tkin_colldens(self):
+        for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+            cloud.update_parameters(**self.standard_params)
+            changed_Tkin = [None,self.standard_params['Tkin'],12.3]
+            changed_coll_dens = [None,self.standard_params['collider_densities'],
+                                 {'para-H2':23},{'para-H2':31,'ortho-H2':34},
+                                 {'ortho-H2':2389}]
+            for Tkin,coll_dens in itertools.product(changed_Tkin,changed_coll_dens):
+                changed_params = self.standard_params.copy()
+                changed_params['Tkin'] = Tkin
+                changed_params['collider_densities'] = coll_dens
+                original_params = self.copy_cloud_parameters(cloud)
                 cloud.update_parameters(**changed_params)
-                self.verify_cloud_params(cloud,changed_params)
-                #test also change of colliders and Tkin at the same time:
-                changed_params = standard_params.copy()
-                changed_params['collider_densities'] = new_coll_densities
-                changed_params['Tkin'] = 2*standard_params['Tkin']
+                self.verify_cloud_params(cloud=cloud,new_params=changed_params,
+                                         original_params=original_params)
+
+    def test_update_ext_background(self):
+        for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+            cloud.update_parameters(**self.standard_params)
+            changed_ext_bgs = [None,self.standard_params['ext_background'],
+                               lambda nu: nu*2.234,helpers.generate_CMB_background(z=2)]
+            for ext_bg in changed_ext_bgs:
+                changed_params = self.standard_params.copy()
+                changed_params['ext_background'] = ext_bg
+                original_params = self.copy_cloud_parameters(cloud)
                 cloud.update_parameters(**changed_params)
-                self.verify_cloud_params(cloud,changed_params)
+                self.verify_cloud_params(cloud=cloud,new_params=changed_params,
+                                         original_params=original_params)
+
+    def test_update_dust(self):
+        for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+            if 'LVG' in cloud.geometry_name:
+                continue
+            def some_func(nu):
+                return nu/2
+            cloud.update_parameters(**self.standard_params)
+            changed_Tdust = [None,self.standard_params['T_dust'],some_func,
+                             lambda nu: nu/(100*constants.giga)*123]
+            changed_tau_dust = [None,self.standard_params['tau_dust'],some_func,
+                                lambda nu: nu/(100*constants.giga)*0.258]
+            for T_dust,tau_dust in itertools.product(changed_Tdust,changed_tau_dust):
+                changed_params = self.standard_params.copy()
+                changed_params['T_dust'] = T_dust
+                changed_params['tau_dust'] = tau_dust
+                original_params = self.copy_cloud_parameters(cloud)
+                cloud.update_parameters(**changed_params)
+                self.verify_cloud_params(cloud=cloud,new_params=changed_params,
+                                         original_params=original_params)
+
+    def test_update_several_parameters(self):
+        for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+            cloud.update_parameters(**self.standard_params)
+            self.verify_cloud_params(cloud=cloud,new_params=self.standard_params,
+                                     original_params=None)
+            new_params = {'ext_background':lambda nu: cmb(nu)/2,
+                          'N':4*self.standard_params['N'],
+                          'Tkin':4*self.standard_params['Tkin']}
+            if 'LVG' in cloud.geometry_name:
+                T_dust = None
+                tau_dust = None
+            else:
+                T_dust = lambda nu: nu/(100*constants.giga)*174
+                tau_dust = lambda nu: nu/(100*constants.giga)*0.89
+            new_params['T_dust'] = T_dust
+            new_params['tau_dust'] = tau_dust
+            old_params = self.copy_cloud_parameters(cloud=cloud)
+            cloud.update_parameters(**new_params)
+            self.verify_cloud_params(cloud=cloud,new_params=new_params,
+                                     original_params=old_params)
+
+
+            # for param_name,new_value in new_params.items():
+            #     changed_params = standard_params.copy()
+            #     changed_params[param_name] = new_value
+            #     cloud.update_parameters(**changed_params)
+            #     self.verify_cloud_params(cloud,changed_params)
+            # #T_dust and tau_dust are only allowed for non LVG geometries
+            # if 'LVG' not in cloud.geometry_name:
+            #     for T_dust,tau_dust in zip((123,lambda nu: np.ones_like(nu)*145),
+            #                                (2,lambda nu: np.ones_like(nu)*0.5)):
+            #         changed_params = standard_params.copy()
+            #         changed_params['T_dust'] = T_dust
+            #         changed_params['tau_dust'] = tau_dust
+            #         cloud.update_parameters(**changed_params)
+            #         self.verify_cloud_params(cloud,changed_params)
+            # new_collider_densities\
+            #        = [standard_params['collider_densities'] | {'ortho-H2':200},
+            #           {'para-H2':standard_params['collider_densities']['para-H2']*2},
+            #           {'ortho-H2':300}]
+            # for new_coll_densities in new_collider_densities:
+            #     changed_params = standard_params.copy()
+            #     changed_params['collider_densities'] = new_coll_densities
+            #     cloud.update_parameters(**changed_params)
+            #     self.verify_cloud_params(cloud,changed_params)
+            #     #test also change of colliders and Tkin at the same time:
+            #     changed_params = standard_params.copy()
+            #     changed_params['collider_densities'] = new_coll_densities
+            #     changed_params['Tkin'] = 2*standard_params['Tkin']
+            #     cloud.update_parameters(**changed_params)
+            #     self.verify_cloud_params(cloud,changed_params)
 
     def test_None_parameters(self):
         for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
@@ -175,11 +319,14 @@ class TestUpdateParameters():
                 new_params = old_params.copy()
                 new_params[param] = None
                 cloud.update_parameters(**new_params)
-                self.verify_cloud_params(cloud=cloud,params=old_params)
+                self.verify_cloud_params(cloud=cloud,new_params=new_params,
+                                         original_params=old_params)
             #test also if everything is None
+            current_params = self.copy_cloud_parameters(cloud)
             new_params = {p:None for p in old_params}
             cloud.update_parameters(**new_params)
-            self.verify_cloud_params(cloud=cloud,params=old_params)
+            self.verify_cloud_params(cloud=cloud,new_params=new_params,
+                                     original_params=current_params)
 
     def test_invalid_collider_densities(self):
         test_cloud = get_general_test_cloud(specie='CO',width_v=1*constants.kilo)
@@ -325,11 +472,24 @@ class TestModelGrid():
                                 nu=self.nu):
                     pass
         for request in ('tau_nu','spectrum'):
-            with pytest.raises(AssertionError): 
+            with pytest.raises(AssertionError):
                 for model in self.cloud.model_grid(
                                 **self.grid_kwargs_no_dust,requested_output=[request,],
                                 solid_angle=self.solid_angle):
                     pass
+
+    def tests_invalid_coll_densities(self):
+        invalid_coll_densities = [{'ortho-H2':[1,2],'para-H2':[1,]},
+                                  {'ortho-H2':[1,],'para-H2':[1,2]},
+                                  {'ortho-H2':[1,2],'para-H2':[1,3,4,5,5]},]
+        for coll_densities in invalid_coll_densities:
+            grid_kwargs = self.grid_kwargs_no_dust.copy()
+            grid_kwargs['collider_densities_values'] = coll_densities
+            with pytest.raises(AssertionError):
+                grid = self.cloud.model_grid(
+                                **grid_kwargs,requested_output=self.requested_output,
+                                solid_angle=self.solid_angle)
+                list(grid)
 
     @pytest.mark.filterwarnings("ignore:negative optical depth")
     @pytest.mark.filterwarnings("ignore:invalid value encountered")
@@ -344,9 +504,8 @@ class TestModelGrid():
             for backgroundID,ext_background in self.ext_backgrounds.items():
                 for N in self.N_values:
                     for Tkin in self.Tkin_values:
-                        for n_ortho,n_para in\
-                                    itertools.product(self.collider_densities_values['ortho-H2'],
-                                                      self.collider_densities_values['para-H2']):
+                        for n_ortho,n_para in zip(self.collider_densities_values['ortho-H2'],
+                                                  self.collider_densities_values['para-H2']):
                             collider_densities = {'ortho-H2':n_ortho,'para-H2':n_para}
                             update_kwargs = {'ext_background':ext_background,'N':N,
                                              'Tkin':Tkin,

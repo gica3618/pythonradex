@@ -6,7 +6,7 @@
 Welcome to the ``pyhonradex`` documentation!
 ============================================
 
-``pythonradex`` is a python re-implementation of the RADEX_ code [vanderTak07]_. It solves the radiative transfer for a uniform medium in non-LTE with an escape probability formalism. The code can be used to quickly estimate the emission from an astrophysical gas given input parameters such as the density and kinetic temperature of the collision partners, the column density of the gas and width of the emission lines.
+``pythonradex`` is a python implementation of the RADEX_ code [vanderTak07]_. It solves the radiative transfer for a uniform medium in non-LTE with an escape probability formalism. The code can be used to quickly estimate the emission from an astrophysical gas given input parameters such as the density and kinetic temperature of the collision partners, the column density of the gas and width of the emission lines. It partially supports treatment of overlapping lines and of an internal dust continuum field.
 
 ``pyhonradex`` also provides a convenient method to read files from the LAMDA_ database.
 

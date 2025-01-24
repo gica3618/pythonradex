@@ -31,7 +31,7 @@ def test_negative_tau():
             cloud = radiative_transfer.Cloud(
                             datafilepath=os.path.join(here,'LAMDA_files/co.dat'),
                             geometry=geo,line_profile_type='rectangular',width_v=width_v)
-            cloud.set_parameters(
-                   ext_background=ext_background,N=N,Tkin=Tkin,
-                   collider_densities=collider_densities)
+            cloud.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
+                                    collider_densities=collider_densities,
+                                    T_dust=0,tau_dust=0)
             cloud.solve_radiative_transfer()

@@ -17,11 +17,7 @@ import numpy as np
 import os
 import itertools
 
-data_filename = 'co.dat'
-Tkin = 100
-coll_partner_densities = {'para-H2':1e3/constants.centi**3}
 trans_index = 0
-N_values = np.array((1e14,1e16,1e18,1e20,1e22))/constants.centi**2
 geometry = 'uniform sphere'
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
@@ -56,27 +52,29 @@ ext_background = helpers.generate_CMB_background(z=0)
 data_folder = '/home/gianni/science/LAMDA_database_files'
 for test_case in test_cases:
     for coll_density,N,Tkin in itertools.product(test_case['coll_partner_densities'],
-                                                    test_case['N_values'],
-                                                    test_case['Tkin_values']):
+                                                 test_case['N_values'],
+                                                 test_case['Tkin_values']):
         cloud_kwargs = {'datafilepath':os.path.join(data_folder,test_case['data_filename']),
-                      'geometry':geometry,'line_profile_type':line_profile_type,
-                      'width_v':width_v,'iteration_mode':'ALI','use_NG_acceleration':True}
+                        'geometry':geometry,'line_profile_type':line_profile_type,
+                        'width_v':width_v,'use_NG_acceleration':True}
         cloud_params = {'ext_background':ext_background,'Tkin':Tkin,
                         'collider_densities':{test_case['coll_partner']:coll_density},
-                        'N':N}
+                        'N':N,'T_dust':0,'tau_dust':0}
         fluxes = []
         Tex = []
         taus = []
-        for average in (True,False):
+        for treat_overlap in (True,False):
             cloud = radiative_transfer.Cloud(
-                                  average_over_line_profile=average,**cloud_kwargs)
-            cloud.set_parameters(**cloud_params)
+                                  treat_line_overlap=treat_overlap,**cloud_kwargs)
+            cloud.update_parameters(**cloud_params)
             cloud.solve_radiative_transfer()
             Tex.append(cloud.Tex[trans_index])
-            fluxes.append(cloud.fluxes(solid_angle=1,transitions=[trans_index,]))
-            taus.append(cloud.tau_nu0[trans_index])
+            fluxes.append(cloud.fluxes_of_individual_transitions(
+                                       solid_angle=1,transitions=[trans_index,]))
+            taus.append(cloud.tau_nu0_individual_transitions[trans_index])
         Tex_relative_diff = relative_diff(Tex)
         flux_relative_diff = relative_diff(fluxes)
+        print(Tex_relative_diff,flux_relative_diff)
         if Tex_relative_diff > 0.1 or flux_relative_diff > 0.1:
             print(f'{test_case["data_filename"]}, {test_case["coll_partner"]}')
             print(f'coll dens = {coll_density/constants.centi**-3:.2g} cm-3, '

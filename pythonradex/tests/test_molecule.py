@@ -120,7 +120,7 @@ def test_tau():
         for mol in emitting_molecules:
             level_population = rng.random(mol.n_levels)
             level_population /= np.sum(level_population)
-            tau_nu0 = mol.get_tau_nu0(N=N,level_population=level_population)
+            tau_nu0 = mol.get_tau_nu0_lines(N=N,level_population=level_population)
             expected_tau_nu0 = []
             for i,rad_trans in enumerate(mol.rad_transitions):
                 n_up = rad_trans.up.number
@@ -139,7 +139,7 @@ def test_tau_LTE():
     for N in N_values:
         for mol in emitting_molecules:
             level_population = mol.LTE_level_pop(T=T)
-            tau_nu0_LTE = mol.get_tau_nu0_LTE(N=N,T=T)
+            tau_nu0_LTE = mol.get_tau_nu0_lines_LTE(N=N,T=T)
             expected_tau_nu0 = []
             for i,rad_trans in enumerate(mol.rad_transitions):
                 n_up = rad_trans.up.number

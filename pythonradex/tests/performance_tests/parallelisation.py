@@ -37,8 +37,8 @@ def generate_new_cloud():
     return radiative_transfer.Cloud(
                     datafilepath='/home/gianni/science/LAMDA_database_files/co.dat',
                     geometry='uniform sphere',line_profile_type='Gaussian',
-                    width_v=1*constants.kilo,iteration_mode='ALI',
-                    use_NG_acceleration=True,average_beta_over_line_profile=False)
+                    width_v=1*constants.kilo,use_NG_acceleration=True,
+                    treat_line_overlap=False)
 
 ext_background = helpers.generate_CMB_background(z=0)
 collider = 'para-H2'
@@ -54,9 +54,10 @@ print(f'n_processes: {n_processes}')
 
 #need to do a first calculation to compile everything
 cloud = generate_new_cloud()
-cloud.set_parameters(
+cloud.update_parameters(
       ext_background=ext_background,Tkin=20,
-      collider_densities={collider:1e4/constants.centi**3},N=1e13/constants.centi**2)
+      collider_densities={collider:1e4/constants.centi**3},N=1e13/constants.centi**2,
+      T_dust=0,tau_dust=0)
 cloud.solve_radiative_transfer()
 
 print('running without multiprocessing')
@@ -65,9 +66,9 @@ cloud = generate_new_cloud()
 for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                              Tkin_values):
     collider_densities = {collider:coll_dens}
-    cloud.set_parameters(
+    cloud.update_parameters(
          ext_background=ext_background,Tkin=Tkin,
-         collider_densities=collider_densities,N=N)
+         collider_densities=collider_densities,N=N,T_dust=0,tau_dust=0)
     cloud.solve_radiative_transfer()
 end = time.time()
 time_without_multiprocessing = end-start
@@ -84,9 +85,9 @@ for chunksize in chunk_sizes:
         def wrapper(params):
             N,coll_dens,Tkin = params
             collider_densities = {collider:coll_dens}
-            cloud.set_parameters(
+            cloud.update_parameters(
                   ext_background=ext_background,Tkin=Tkin,
-                  collider_densities=collider_densities,N=N)
+                  collider_densities=collider_densities,N=N,T_dust=0,tau_dust=0)
             cloud.solve_radiative_transfer()
         if __name__ == '__main__':
             p = Pool(n_proc)

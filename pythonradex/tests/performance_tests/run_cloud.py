@@ -10,7 +10,7 @@ Created on Mon May 20 09:55:42 2024
 
 import sys
 sys.path.append('/home/gianni/science/projects/code/pythonradex')
-from pythonradex import radiative_transfer,helpers
+from pythonradex import radiative_transfer
 import os
 from scipy import constants
 import time
@@ -25,13 +25,12 @@ data_folder = '/home/gianni/science/LAMDA_database_files'
 datafilepath = os.path.join(data_folder,data_filename)
 
 geometry = 'uniform sphere'
-ext_background = helpers.zero_background
-Ntot = 1e16/constants.centi**2
+ext_background = 0
+N = 1e16/constants.centi**2
 line_profile_type = 'Gaussian'
 width_v = 1*constants.kilo
-iteration_mode = 'ALI'
 use_NG_acceleration = True
-average_beta_over_line_profile = False
+treat_line_overlap = False
 niter = 5
 #I choose different Tkin for each iteration to force setting up the
 #rate equations for each iteration
@@ -41,9 +40,8 @@ start = time.time()
 cloud = radiative_transfer.Cloud(
                     datafilepath=datafilepath,geometry=geometry,
                     line_profile_type=line_profile_type,width_v=width_v,
-                    iteration_mode=iteration_mode,
                     use_NG_acceleration=use_NG_acceleration,
-                    average_beta_over_line_profile=average_beta_over_line_profile)
+                    treat_line_overlap=treat_line_overlap)
 end = time.time()
 print(f'setup time: {end-start:.3g}')
 
@@ -51,9 +49,9 @@ for i in range(niter):
     tot_time = 0
     print(f'iteration {i+1}')
     start = time.time()
-    cloud.set_parameters(
+    cloud.update_parameters(
               ext_background=ext_background,Tkin=Tkin_values[i],
-              collider_densities=collider_densities,Ntot=Ntot)
+              collider_densities=collider_densities,N=N,T_dust=0,tau_dust=0)
     end = time.time()
     tot_time += end-start
     print(f'setup params: {end-start:.3g}')
@@ -63,7 +61,7 @@ for i in range(niter):
     tot_time += end-start
     print(f'solve time: {end-start:.3g}')
     start = time.time()
-    cloud.compute_line_fluxes(solid_angle=1)
+    cloud.fluxes_of_individual_transitions(solid_angle=1,transitions=None)
     end = time.time()
     tot_time += end-start
     print(f'flux time: {end-start:.3g}')
