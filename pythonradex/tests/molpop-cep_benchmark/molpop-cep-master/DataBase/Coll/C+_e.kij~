@@ -1,0 +1,12 @@
+Collision rate coefficients for C+-H2_ortho collisions.
+Reference: Leiden 
+
+>
+
+Number of temperature columns =9
+
+   I   J                        TEMPERATURE (K)
+
+             10.0   20.0   50.0  100.0  316.2 1000.0 2000.0 10000. 20000.
+
+   2   1     4.4e-10     4.6e-10     4.9e-10     5.1e-10      5.6e-10    5.7e-10

@@ -1,0 +1,27 @@
+          *** MOLPOP-CEP; version of Mar 18, 2019 ***
+
+* CO with collision rates from Yang et al 2010
+* These lines are echoed in the output because they start with a '*'
+*
+      Solution method is Slab (Capriotti) escape probability 
+      Molecule data file --- DataBase/CO.molecule                                                                                                            
+      Number of levels = 20
+
+        Collision information:
+    1.  Relative weight of collision partner =  3.00
+        Collision rates from data file DataBase/Coll/Yang_CO_H2o.kij
+
+    2.  Relative weight of collision partner =  1.00
+        Collision rates from data file DataBase/Coll/Yang_CO_H2p.kij
+
+      Tgas =  100.0 K
+      n_tot =  1.00E+04 cm-3
+
+      Molecule --- CO
+      Dust absorption effects included:
+        Dust properties from file DataBase/Standard_ISM.dat
+        Dust optical depth at V is  1.00E-21 times column (in cm^-2) of H nuclei
+        n_CO/n_tot =  1.00E-04
+        using entered linewidth of  1.0 km/s
+      No considerations of Line Overlap
+      No maser saturation effects

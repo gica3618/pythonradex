@@ -4,7 +4,7 @@ Theory
 Basic radiative transfer
 -------------------------------
 
-We briefly discuss basic theory of radiative transfer that is relevant for ``pyhonradex``. A more detailed discussion can for example be found in [Rybicki04]_.
+We briefly discuss basic theory of radiative transfer that is relevant for ``pyhonradex``. A more detailed discussion can for example be found in [Rybicki04]_ or [Rybicki91]_.
 
 The radiation field in every point of space can be described by the specific intensity :math:`I_{\nu}`, defined as the energy radiated per unit of time, surface, frequency and solid angle, i.e., :math:`I_{\nu}` has units of W/m\ :sup:`2`\ /sr/Hz. The differential equation describing the change of the specific intensity along a spatial coordinate :math:`s` is given by
 
@@ -16,11 +16,32 @@ Here, :math:`\alpha_\nu` is the absorption coefficient in m\ :sup:`-1`. It descr
 .. math::
     \frac{\mathrm{d}I_\nu}{\mathrm{d}\tau_\nu} = -I_\nu + S_\nu
 
-with the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. In general, the goal of radiative transfer is to solve this equation. For example, for a uniform medium (the emission and absorption coefficients are the same everywhere) as assumed for ``pythonradex``, the solution reads :math:`I_\nu=I_\nu(0)e^{-\tau_\nu}+S_\nu(1-e^{-\tau_\nu})`.
+with the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Our basic goal is to solve this equation. For example, for a uniform medium (the emission and absorption coefficients are the same everywhere) the solution reads :math:`I_\nu=I_\nu(0)e^{-\tau_\nu}+S_\nu(1-e^{-\tau_\nu})`. Thus, we need to know the emission coefficient (or the source function) and absorption coefficient (or the optical depth).
+
+For emission from a gas, this implies that we need to know the fractional population of the energy levels. Indeed, the absorption coefficient of an emission line arising from a transition between levels :math:`l` and :math:`l'` (where :math:`E_l>E_{l'}`) is given by [Rybicki04]_
+
+.. math::
+    \alpha_{ll'} = \frac{h\nu}{4\pi}(n_{l'}B_{l'l}-n_lB_{ll'})\phi_{ll'}(\nu)
+
+where :math:`h` is the Planck constant, :math:`n_x` the number density of molecules in level :math:`x`, :math:`B_{l'l}` and :math:`B_{ll'}` are the Einstein coefficients for absorption and stimulated emission respectively,  and :math:`\phi` is the normalised line profile (i.e. :math:`\int\phi(\nu)\mathrm{d}\nu=1` and :math:`\phi` describes how the energy is distributed over frequency), for example a Gaussian. Note that :math:`n_x=f_xn` where :math:`n` is the total number density of the molecule and :math:`f_x` the fractional level population. Furthermore, the emission coefficient for an emission line is given by 
+
+.. math::
+    j_{ll'} = \frac{h\nu}{4\pi}n_lA_{ll'}\phi_{ll'}(\nu)
+
+with :math:`A_{ll'}` the Einstein coefficient for spontaneous emission.
+
+In the more general case considerd by ``pyhonradex`` where lines can overlap and there is dust mixed with the gas, the absorption and emission coefficients are given by
+
+.. math::
+    \alpha = \Sum_
+
+    j = 
+
+Now, how can we determine the fractional level population? The idea is to impose *statistical equilibrium* (SE). We assume that the rate of processes that populats a level equals the rate of processes that depopulates a level. 
 
 Gas emission
 --------------
-Next, let's consider radiation from a gas. An atom can spontaneously emit a photon when it transits from an upper to a lower energy level. The transition rate is given by the Einstein coefficient for spontaneous emission, :math:`A_{21}`, in units of s\ :sup:`-1`. Thus, we can write the emission coefficient of the gas as
+Next, let's consider radiation from a gas. An atom can spontaneously emit a photon when it transits from an upper to a lower energy level. The transition rate is given by the Einstein coefficient for spontaneous emission, :math:`A_{21}`, in units of s\ :sup:`-1`. Thus, we can write the emission coefficient of this transition as
 
 .. math::
     j_\nu = \frac{h\nu_0}{4\pi}n_2A_\mathrm{21}\phi_\nu
@@ -63,7 +84,7 @@ We can now write down the equations of statistical equilibrium (SE) that determi
 
 where :math:`x_k=\frac{n_k}{n}` is the fractional population of level :math:`k`. In the above equation, the positive terms populate the level, while the negative terms depopulate the level.
 
-The level populations can be computed by solving this linear system of equations. But there is a problem: we see that to solve for the level populations, we need to know the radiation field :math:`\bar{J}`. This is a fundamental issue in radiative transfer: to compute the radiation field, we need to know the level population. But in order to compute the level population, we need to know the radiation field.
+The level populations can be determined by solving this linear system of equations. But there is a problem: to solve for the level populations, we need to know the radiation field :math:`\bar{J}`, which itself depends on the level populations.
 
 Escape probability
 ---------------------

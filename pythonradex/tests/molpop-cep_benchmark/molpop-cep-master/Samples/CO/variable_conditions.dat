@@ -1,0 +1,13 @@
+Sample file with a slab with variable physical conditions
+
+>
+
+Number of zones = 5
+
+Width          n          T       Abundance     Linewidth    n(o-H2)/n  n(p-H2)/n
+[cm]       [cm^(-3)]     [K]                      [km/s]
+2.d15        1.d4       100.d0      1.d-4          1.d0         0.75       0.25
+2.d15        1.d4       110.d0      1.d-4          1.d0         0.75       0.25
+2.d15        1.d4       120.d0      1.d-4          1.d0         0.75       0.25
+2.d15        1.d4       110.d0      1.d-4          1.d0         0.75       0.25
+2.d15        1.d4       100.d0      1.d-4          1.d0         0.75       0.25

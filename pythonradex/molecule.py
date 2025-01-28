@@ -31,23 +31,25 @@ class Molecule():
     
     '''
 
-    def __init__(self,datafilepath,read_frequencies=False,partition_function=None):
+    def __init__(self,datafilepath,partition_function=None):
         """Constructs a new instance of the Molecule class using a LAMDA datafile
         
         Args:
             datafilepath (:obj:`str`): The filepath to the LAMDA file.
-            read_frequencies (:obj:`bool`): Whether to read the frequencies of the
-                radiative transitions from the file or not. If False, calculates the
-                frequencies from the level energies given in the file. Setting this to
-                True can be useful since frequencies are sometimes given with more
-                significant digits than level energies. However, the LAMDA format does not
-                force a file to contain the frequencies, so they might not be present.
             partition_function (func): A user-supplied partition function of one argument
                 (temperature). Defaults to None. If equal to None, the partition function
                 will be calculated by using the data from the provided LAMDA file.
         """
-        data = LAMDA_file.read(datafilepath=datafilepath,
-                               read_frequencies=read_frequencies)
+        try:
+            #reading frequencies can be useful since frequencies are sometimes
+            #given with more significant digits than level energies. However,
+            #the LAMDA format does not orce a file to contain the frequencies,
+            #so they might not be present.
+            data = LAMDA_file.read(datafilepath=datafilepath,
+                                   read_frequencies=True)
+        except:
+            data = LAMDA_file.read(datafilepath=datafilepath,
+                                   read_frequencies=False)
         self.levels = data['levels']
         self.rad_transitions = data['radiative transitions']
         self.coll_transitions = data['collisional transitions'] 
@@ -142,7 +144,6 @@ class EmittingMolecule(Molecule):
                 will be calculated by using the data from the provided LAMDA file.
         """
         Molecule.__init__(self,datafilepath=datafilepath,
-                          read_frequencies=read_frequencies,
                           partition_function=partition_function)
         self.width_v = width_v
         self.line_profile_type = line_profile_type

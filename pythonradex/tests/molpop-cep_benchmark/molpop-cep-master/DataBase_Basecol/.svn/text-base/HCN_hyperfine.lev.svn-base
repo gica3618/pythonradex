@@ -1,0 +1,20 @@
+no title defined
+source database : cdms
+N : rotational quantum number
+F : total angular momentum (including nuclear spins) F= J (or N) + total nuclear spin
+  N     g   Energy in cm^{-1}
+>
+  1     3        0.000000e+00                                            'N = 0  F = 1  '
+  2     3        2.956400e+00                                            'N = 1  F = 1  '
+  3     5        2.956400e+00                                            'N = 1  F = 2  '
+  4     1        2.956500e+00                                            'N = 1  F = 0  '
+  5     5        8.869200e+00                                            'N = 2  F = 2  '
+  6     7        8.869200e+00                                            'N = 2  F = 3  '
+  7     3        8.869300e+00                                            'N = 2  F = 1  '
+  8     7        1.773820e+01                                            'N = 3  F = 3  '
+  9     9        1.773830e+01                                            'N = 3  F = 4  '
+ 10     5        1.773830e+01                                            'N = 3  F = 2  '
+ 11     9        2.956320e+01                                            'N = 4  F = 4  '
+ 12    11        2.956330e+01                                            'N = 4  F = 5  '
+ 13     7        2.956330e+01                                            'N = 4  F = 3  '
+

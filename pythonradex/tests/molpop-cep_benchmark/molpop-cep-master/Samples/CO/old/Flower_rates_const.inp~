@@ -1,0 +1,354 @@
+* CO with collision rates from Flower, 2001, J.Phys.B.,2731  
+* These lines are echoed in the output because they start with a '*'
+* Instructions for data input are found at the end of the input file		
+		Method (LVG, slab, CEP-NEWTON, CEP-NAG or CEP-ALI) = CEP-NEWTON
+		Data directory = DataBase
+      Molecule = CO
+      Number of energy levels = 11
+      vib_max =  0
+      File listing physical conditions = none
+      Gas Temperature = 100k      
+      n = 1.0e4 
+      Molecular abundance (n_mol/n) = 1.0e-4
+      Velocity = 1 km/sec (linewidth for slab)
+      dlogV/dlogr = 1.0 (in effect only for LVG)
+      overlap = off      
+      Include maser saturation = no      
+      Number of collision partners = 2
+               weight / column for CEP = 1
+        collision rates option= table
+                     data file = CO_H2o.kij
+            calculation option = sqrt(T)
+                scaling factor = 1.0
+               weight / column for CEP = 1
+        collision rates option = table
+                     data file = CO_H2p.kij
+            calculation option = sqrt(T)
+                scaling factor = 1.0
+
+      Optional External Radiation:
+      diluted blackbody fields:                                       
+             W = 0.0     
+%             T_bb = 500 K      
+%             Illumination from (left/right/both/internal) = left
+%             W = 0
+
+      Dust radiation (add a line with tau equal to 0 if several dust components are desired):
+             Dust tau at visual = 3.
+             Dust temperature = 100 K
+             Illumination from (left/right/both/internal) = internal
+             Dust tau at visual = 0.
+             
+     Radiation from file = none
+%             Luminosity = 1.E4 Lo  
+%             Distance from source = 1.E15 cm
+%             Illumination from (left/right/both/internal) = internal
+	 Accuracy in solution of the equations               = 1.0e-3
+    Maximum number of iterations to solve               = 50
+    
+    Solution strategy = increasing 
+       start with all optical depths less than tau_m = 1
+       Number of printings per decade                       = 4
+       Maximum number of dimension steps allowed per decade = 20
+       Total number of steps allowed to reach any limit     = 100
+       stop when dimension exceeds R_m   = 1.0E20 cm
+       or H2 column exceeds        N_col = 1.E20 cm^-2
+    Precision in grid CEP convergence (0 to ignore convergence) = 0
+    
+    Output mu for intensity = 1.0
+    
+
+  PRINT CONTROL PARAMATERS
+
+      Printing of molecular data (on or off):
+
+      Print energy level data      = off
+        statistical weights g_i    = on
+        energy in cm^{-1}          = on
+        energy in GHz              = on
+        energy in K                = on
+        quantum numbers            = on
+      Print transition data        = on
+        wavelength in micron       = on
+        energy in GHz              = on
+        energy in K                = on
+        Einstein coefficients A_ij = on
+        collision rates C_ij       = on
+      Stop after printing molecular data = off
+
+      Messages from NEWTON (off or on) = off
+      Messages from step-size selector (off or on) = off
+      Printing output for initial guess (off or on) = off
+      print detailed populations (off or on) = on
+
+      information on each step (off or on)= on
+      print detailed populations (off or on) = off
+      Number of cooling lines to print = 15
+    
+      the number of transitions (-1 for all transitions) = 5
+       i =  2      j = 1
+		 i =  3      j = 2
+		 i =  4      j = 3
+		 i =  5      j = 4
+       i =  8      j = 7
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Instructions for Entering Input
+
+1. The first line in this file must be of the form
+
+      Gas Temperature = 50k,100k -1
+
+   The code will then loop over the entered temperatures
+
+2. Decide whether to have a PLOT file created. This file has the extension .plot
+   and will contain output for the specific transitions selected at the
+   end of the data input
+                                                        
+3. MOLECULAR species and number of energy levels                                                
+  
+      Molecule - current species are H2O_ortho, H2O_para, OH, SiO, CO
+             
+      Maximum number of energy levels
+        ortho H2O    48
+        para  H2O    48
+        OH           32 (only 24 if using Offer collision rates)
+        SiO         100 (J = 0--19 for v = 0--4) 
+        CO          depends on choice of cross sections 
+Depending on the temperature, you may wish to specify a smaller number than 
+the maximum possible. There's no point in carrying levels with extremely small 
+population. They only make the numerics difficult without adding any physical 
+meaning
+
+4. n_H2 - Molecular hydrogen density (molecules/cm-3) 
+ 
+5. n_mol/n_H2 - Fractional abundance relative to H2
+
+6. Decide whether to include the effects of line overlap.
+
+7. Escape probability is either LVG or slab. 
+
+For LVG, the velocity is the local expansion velocity in the Sobolev 
+approximation and dlogV/dlogR its logarithmic derivative. The velocity must 
+exceed the thermal speed in this case. The dimension R is the local radius .
+
+For slab, the velocity is the microturbulent Doppler Width. The linewidth 
+used in the calculations will be the larger of the entered Doppler Width or 
+the thermal Doppler Width.  dlogV/dlogR is ignored in the slab model(but it
+still must be entered). The dimension R is the slab thickness. Escape probability 
+calculation is based on KROLIK AND MCKEE, AP. J. SUPP. 37, P459 (1978). The
+calculated optical depth is now evaluated at line center.
+
+8. Maser radiation affects level populations if Maser Saturation is included.
+
+9. Maser filament aspect ratio must be >= 1. If it is one, then maser geometry 
+is neglected. A value >1 corresponds to filamentary maser. Maser tau is 
+multiplied by aspect and beaming angle is found from eq 3.26 Elitzur et 
+al.,ApJ,367,333,1991.
+
+
+10.  Collisional data - First entry is the number of collision partners.
+
+Collision data for each collision partner contains five lines. All five must 
+be specified, although some may be ignored.
+
+      1st line contains a relative weight for the collision partner; will
+          be translated to a fractional abundance relative to H2
+      2nd line - one of the following options for the rate coefficients: 
+          "table" 
+          "semi-analytic" 
+          "analytic"
+      3rd line - one of the following data file names (ignored for "analytic"):
+      "table"
+              'H2Oo_H2.kij'  for ortho H2O -- H2
+              'H2Op_H2.kij'  for para  H2O -- H2 
+              'OH_H2o.kij'   for       OH  -- H2 ortho 
+              'OH_H2p.kij'   for       OH  -- H2 para
+          "semi-analytic"
+              'SiO_H2.kij'   for "SiO_rovib"
+              'CO_H2.kij'    for "CO_ab_initio"
+      4th line contains calculation options as follows:
+          for "table" the extrapolation law beyond tabulated temperatures 
+              "sqrt(T)"  continuation from the table's extreme T
+              "const" -- uses same rate as the table's extreme T
+          for "semi-analytic" currently available options are
+              "SiO_rovib"       for SiO--H2 (used with 'SiO_H2.kij';
+                                    Bieniek & Green 1983, ApJ 265, L29)
+              "CO_ab_initio"    for CO--H2  (used with 'CO_H2.kij';
+                                    McKee et al 1982, ApJ 259, 647)  
+          for "analytic" currently available options are
+              "hard_sphere"     for any molecule
+              "surprisal"       for OH--H2 and CO--H2 (Procaccia & Levine  
+                                    1975, J. Chem. Phys., 63, 4261)
+              "close_coupling"  for CO--H2 (analytic formula by de Jong, Chu 
+                                    & Dalgarno 1975, ApJ 199, 69)
+      5th line specifies an optional scaling factor from nominal x-section; in
+               effect only for "hard_sphere" and "surprisal"; ignored otherwise
+
+EXAMPLE - following uses OH Offer collisions with H2 where ortho:para = 3:1
+ 
+      Number of collision partners = 2
+      
+                        weight = 3
+        collision rates option = table
+                     data file = OH_H2o.kij
+            calculation option = sqrt(T)
+                scaling factor = 1.0
+
+                        weight = 1
+        collision rates option = table
+                     data file = OH_H2p.kij
+            calculation option = sqrt(T)
+                scaling factor = 1.0
+
+
+
+11. External Radiation: The 3K cosmic background is always included. Optionally, 
+    other components can be added
+
+  A.  Additional diluted blackbody fields. Each field is defined through its 
+      coefficient W and temperature T_bb. The list ends when W = 0. If the very 
+      first entry has W = 0, nothing is added.  Example, a 500 K black body
+      diluted to 1% of the Planck function:
+
+             W = 0.01; T_bb = 500 K
+             W = 0   ; T_bb = 500 K
+
+  B. Radiation by single-temperature dust calculated according to eq. 1 of 
+     Lockett et al., 1999, ApJ, 511, 235. Enter the visual dust optical depth 
+     and its temperature. Enter as many components as you wish and end the 
+     list with tau = 0. Example, 100 K dust with tau(V) = 1:
+
+             Dust tau at visual = 1.0  temperature   = 100 K
+             Dust tau at visual = 0.   temperature   = 100 K
+
+
+   C. Radiation from a DUSTY output file. Enter the name of the file containing 
+      the desired SED. This spectral shape will be scaled to the bolometric flux
+      of the input luminosity at the input distance. Example:
+
+          Radiation from DUSTY file = Sample.stb
+             Luminosity = 1.E4 Lo  
+             distance from source = 1.E15 cm
+
+      You bypass this option with:
+
+          Radiation from DUSTY file = none
+             Luminosity = 1.E4 Lo  
+             Distance from source = 1.E15 cm
+
+On a UNIX system, make sure 'none' is entered in lower case. Luminosity and 
+distance must be entered even though they are meaningless in this case
+
+NUMERICS
+
+Solution strategy -- choose one and comment out the other as in the example 
+below: 
+  "increasing" -- start from optically thin solution for zero tau
+     by solving the linear rate equations. Then find R such that all
+     optical depths are smaller than the input tau_m. Solve for that based
+     on the linear solution. Increase R until it exceeds the input R_m or the
+     column exceeds the input N_col, whichever comes first
+  "decreasing" -- start from thermal equilibrium level populations.
+     Then find R such that all optical depths are larger 
+     than the input tau_m. Solve for that based on the thermal populations. 
+     Decrease R until it is smaller then the input R_m or the column is 
+     less then the input N_col, whichever comes first.
+
+Example:
+    Solution strategy = increasing
+       start with all optical depths less than tau_m = 1
+       stop when dimension exceeds R_m   = 1.E15 cm
+       or H2 column exceeds        N_col = 1.E23 cm^-2
+             
+%    Solution strategy = decreasing
+%       start with all optical depths more than tau_m = 1.e3
+%       stop when dimension less than R_m = 1.E15 cm
+%       or H2 column less then      N_col = 1.E20 cm^-2
+     
+The following entries control the numerics. To achieve solution, the code may 
+take small steps in increasing R and you place a limit on how small they can 
+become through the maximum number of (logarithmic) dimension steps allowed per 
+decade. Just to be sure the code does not disappear into an infinite loop, you 
+also specify a limit on the global number of R steps allowed. Irrespective of 
+the number of R steps, the number of outputs the code will produce per decade 
+is what you specify in the input. Then enter the accuracy demanded in the 
+solution of the non-linear level population equations. Finally enter the total
+number of iterations allowed in the Newton solution of the level equations.
+
+Example:     
+    Number of printings per decade                       = 5
+    Maximum number of dimension steps allowed per decade = 20
+    Total number of steps allowed to reach any limit     = 200
+    Accuracy in NEWTON subroutine                        = 1.0e-4
+    Maximum number of iterations in Newton               = 50
+
+PRINT CONTROL PARAMETERS
+
+You control output by turning printing switches on and off. First, you can 
+produce a printing of the level properties and the transitions. There are two 
+master switches, one for the level the other for the transitions. Turning 
+either of them on, you control their effect by selecting the info you want 
+out. The following example will produce a listing of wavelength and collision 
+rate for all the transitions and then will stop without solving anything, so 
+you can keep a separate file of this molecular data:
+
+      Printing of molecular data (on or off):
+
+      Print energy level data      = off
+        statistical weights g_i    = on
+        energy in cm^{-1}          = on
+        energy in GHz              = on
+        energy in K                = on
+        quantum numbers            = on
+      Print transition data        = off
+        wavelength in micron       = on
+        energy in GHz              = off
+        energy in K                = off
+        Einstein coefficients A_ij = off
+        collision rates C_ij       = on
+      Stop after printing molecular data = off
+
+
+Next you control the amount of output the program produces during the run. In 
+the following example, all messages and preliminaries are off: 
+
+      Messages from NEWTON (off or on) = off
+      Messages from step-size selector (off or on) = off
+      Printing output for initial guess (off or on) = off
+
+If you wish detailed output as the run progresses turn the following flag on: 
+
+      information on each step (off or on)= on
+
+This will produce output on every printing step. In that case you can select 
+among the output components with the next two input entries. To get level 
+populations turn on the next flag:
+      
+      print detailed populations (off or on) = on
+
+You can output the top thermal emitting lines during each printing step by 
+entering a number other than 0 in the following (note, there are no more then 
+NxN transitions among N levels!):
+
+      Number of cooling lines to print = 15
+
+In addition, the code will output information on all inverted lines, if any 
+exist. This output will include the optical depth, excitation temperature and 
+inversion efficiency. 
+
+Finally, you can select some specific transitions for special output that will 
+be listed at the end of the run in summary form. These are also the transitions 
+that will be sent to the PLOT file. Enter a number different from 0 (up to 10) 
+for the number of transitions and then enter a pair of level identifier numbers 
+for each transition.  The following example selects a summary output for a 
+couple of transitions, which happen to be strong masers when the run is for 
+ortho H2O (15-14 is the 22GHz line in that case):
+
+       Number of transitions for summary and plot= 2 
+      
+       i =  8      j =  7    
+       i = 15      j = 14
+
+The listing will be different at the R's where the transition is inverted and 
+where it is thermal. 

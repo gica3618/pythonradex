@@ -1,0 +1,117 @@
+Instructions for data input are found at the end of the input file
+
+The input is a free format, except that all input parameters must be entered
+in the right order and preceded by an equal sign. Everything after a '%' is
+ignored, similar to a Latex comment. Lines that start with a '*' will be
+echoed in the output, and can be used to produce comments.
+
+Keywords are case insensitive. Input file names should have proper case
+because unix systems are case sensitive.
+__________________________________________________________________
+
+* CEP solution for constant physical conditions
+  Lines starting with a '*' are echoed in output file
+*
+
+* Solution Method of Radiative Transfer (LVG / LVGPP / slab / CEP) 	= CEP
+     	dlogV/dlogr 			= 1.0 (in effect only for LVG and LVGPP)
+
+	Data directory 			= DataBase
+	Molecule data file 		= O
+    	Number of energy levels 	= 3
+    	rot_correction 			= off
+
+*    Number of collision partners = 2
+     This number MUST equal the number of “weight/column” entries below
+      weight / column for CEP = 1.0
+                    data file = O_H2o.kij
+           calculation option = sqrt(T)
+      weight / column for CEP = 1.0
+                    data file = O_H2p.kij
+           calculation option = sqrt(T)
+%      weight / column for CEP = 1.0
+%                    data file = O_H.kij
+%           calculation option = sqrt(T)
+%      weight / column for CEP = 1.0
+%                    data file = O_e.kij
+%           calculation option = sqrt(T)
+
+    File listing physical conditions 	= none
+    Gas Temperature 			= 100 K
+    n 						= 1.0e2 cm-3
+
+    Dust properties file 			= DataBase/Standard_ISM.dat
+    Dust abundance 				= 0. relative to standard ISM abundance; when not 0, dust absorption effects are included
+
+    Molecular abundance 			= 1.d-4
+    linewidth 					= 1 km/sec
+    Line overlap (on/off) 			= off ; when ON, will use above linweidth
+    Maser saturation (on/off) 		= off
+
+
+  OPTIONAL EXTERNAL RADIATION:
+  T_cmb = 2.725 K
+    diluted blackbody fields:
+       W 								= 0.0
+%     T_bb 								= 500 K
+%	Illumination from (left/right/both/internal) 	= left
+
+
+    Dust radiation
+           	Dust tau at visual 						= 0.
+%           	Dust temperature 						= 100 K
+%           	Illumination from (left/right/both/internal) 	= internal
+
+	Radiation from file 							= none
+
+  NUMERICS CONTROLS:
+    Solution strategy (increasing/decreasing)            		= increasing
+    start with every tau smaller/greater than tau_m      		= 1
+    stop when molecular column density reaches Nmol_m    		= 1.E20 cm-2/kms
+    Number of printings per decade                       		= 4
+    Max # of dimension steps allowed per decade          		= 20
+    Total number of steps allowed to reach Nmol_m        		= 100
+	  Accuracy in solution of the equations    			= 1.0e-4
+    Max # of iterations allowed to reach solution        		= 400
+
+  NUMERICS CONTROLS RELEVANT ONLY FOR CEP:
+    CEP solution method (NEWTON/ALI) 					= NEWTON
+    Precision in grid CEP convergence (0 to ignore convergence) 	= 0
+    Initial # of zones (relevant iff no file w/ phys. conds.) 	= 20
+    Angle of output intensity mu 						= 1.0
+    vmax profile = 4.0
+
+  PRINT CONTROL PARAMATERS
+      Printing of molecular data (on or off):
+
+      Print energy level data      		= on
+        statistical weights g_i    		= on
+        energy in cm^{-1}          		= on
+        energy in GHz              		= on
+        energy in K                		= on
+        quantum numbers            		= on
+      Print transition data        		= on
+        wavelength in micron       		= on
+        energy in GHz              		= on
+        energy in K                		= on
+        Einstein coefficients A_ij 		= on
+        collision rates C_ij       		= on
+      Stop after printing molecular data 	= off
+
+      Messages from NEWTON (off or on) 		= off
+      Messages from step-size selector  	= off
+      Printing output for initial guess 	= on
+
+      information on each step (off or on)   	= on
+      print detailed populations (off or on) 	= off
+
+      Select transitions for detailed output:
+      the number of transitions (-1 for all transitions) = -1
+  	maser pump parameters (off or on) 	= on
+
+
+
+
+
+
+

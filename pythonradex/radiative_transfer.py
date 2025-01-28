@@ -4,7 +4,6 @@ from pythonradex import helpers,escape_probability,atomic_transition,flux,rate_e
 from pythonradex.molecule import EmittingMolecule
 import warnings
 import numba as nb
-import itertools
 import numbers
 
 
@@ -177,11 +176,13 @@ class Cloud():
                 of the dust is a black body at temperature T_dust. A single number
                 is interpreted as a constant temperature for all frequencies.
                 Can only be used with static geometries (i.e. not with LVG geometries).
-                Defaults to None (i.e. do not update).
+                Defaults to None (i.e. do not update). For a model without dust,
+                put this parameter to 0.
             tau_dust (func, number or None): optical depth of the dust as a function of
                 frequency. A single number is interpreted as a constant optical
                 depth for all frequencies. Can only be used with static geometries
                 (i.e. not with LVG geometries). Defaults to None (i.e. do not update).
+                For a model without dust, put this parameter to 0.
                 
         '''
         #why do I put this into a seperate method rather than __init__? The reason

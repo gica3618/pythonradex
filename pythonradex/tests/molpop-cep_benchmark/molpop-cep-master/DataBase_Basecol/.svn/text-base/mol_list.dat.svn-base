@@ -1,0 +1,31 @@
+This file contains the MOLPOP molecular list. A molecule whose mol_name is, e.g., XYZ should have a data file XYZ.lev with listing of N_lev energy levels,
+ and XYZ.aij tabulating their A-coefficients. mol_mass is the mass number.  When adding another molecule make sure to terminate every data line with CR. 
+
+                      mol_name          N_lev       mol_mass
+>
+          'H2O_ortho_rotation'             49          18.01
+                 'CS_rotation'             31          43.97
+               'HCO+_rotation'             21             29
+                'OCS_rotation'             29          59.97
+               'HCl_hyperfine'             28          35.97
+                'SiO_rotation'             33          43.97
+                 'CO_rotation'             36          27.99
+                 'HF_rotation'              8             20
+          'H2CO_para_rotation'             41          30.01
+         'H2CO_ortho_rotation'             40          30.01
+               'HCS+_rotation'             11          44.98
+                'SO2_rotation'             50          63.96
+                'HDO_rotation'             34          19.01
+           'H2O_para_rotation'             50          18.01
+                     'SO_fine'             91          47.97
+               'HC3N_rotation'             24          51.01
+               'N2H+_rotation'              7          29.01
+         'SiC2_ortho_rotation'             40          51.97
+       'c-C3H2_ortho_rotation'             47          38.01
+        'c-C3H2_para_rotation'             48          38.01
+                'SiS_rotation'             26          59.95
+                'HCN_rotation'             30          27.01
+              'N2H+_hyperfine'             37          29.01
+          'NH3_ortho_rotation'             22          17.02
+           'NH3_para_rotation'             24          17.02
+               'HCN_hyperfine'             13          27.01

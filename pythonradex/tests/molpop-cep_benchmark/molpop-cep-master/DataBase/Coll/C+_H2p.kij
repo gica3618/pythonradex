@@ -1,0 +1,12 @@
+Collision rate coefficients for C+-H2_para collisions.
+Reference: Leiden 
+
+>
+
+Number of temperature columns =6 
+
+   I   J                        TEMPERATURE (K)
+
+             10.0         20.0        50.0        100.0        200.0     250.0           
+
+   2   1     3e-10        3.4e-10     3.9e-10     4.3e-10      4.6e-10    4.7e-10
