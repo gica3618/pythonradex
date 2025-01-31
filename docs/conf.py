@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'pythonradex'
-copyright = '2024, Gianni Cataldi'
+copyright = '2025, Gianni Cataldi'
 author = 'Gianni Cataldi'
 
 # The full version, including alpha/beta/rc tags

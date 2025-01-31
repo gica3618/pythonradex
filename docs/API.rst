@@ -8,7 +8,7 @@ The ``Cloud`` class
 The core of ``pyhonradex`` is the ``Cloud`` class which is used to solve the radiative transfer.
 
 .. autoclass:: pythonradex.radiative_transfer.Cloud
-    :members: __init__, set_parameters, solve_radiative_transfer, fluxes, tau_nu, spectrum, print_results 
+    :members: __init__, update_parameters, solve_radiative_transfer, fluxes_of_individual_transitions, tau_nu, spectrum, model_grid, print_results 
 
 .. _read_LAMDA_API:
 
@@ -42,7 +42,7 @@ Representation of molecular levels and transitions
     :members: __init__, LTE_level_pop
 
 .. autoclass:: pythonradex.molecule.EmittingMolecule
-    :members: __init__, get_tau_nu0, get_tau_nu0_LTE, get_Tex
+    :members: __init__, get_tau_nu0_lines, get_tau_nu0_lines_LTE, get_Tex
 
 .. _line_profiles_API:
 
@@ -63,4 +63,4 @@ Convenience functions
 The ``helpers`` module provides a number of convenience functions.
 
 .. automodule:: pythonradex.helpers
-    :members: B_nu,generate_CMB_background,zero_background,FWHM2sigma
+    :members: B_nu,generate_CMB_background,FWHM2sigma

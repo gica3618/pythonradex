@@ -16,112 +16,102 @@ Here, :math:`\alpha_\nu` is the absorption coefficient in m\ :sup:`-1`. It descr
 .. math::
     \frac{\mathrm{d}I_\nu}{\mathrm{d}\tau_\nu} = -I_\nu + S_\nu
 
-with the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Our basic goal is to solve this equation. For example, for a uniform medium (the emission and absorption coefficients are the same everywhere) the solution reads :math:`I_\nu=I_\nu(0)e^{-\tau_\nu}+S_\nu(1-e^{-\tau_\nu})`. Thus, we need to know the emission coefficient (or the source function) and absorption coefficient (or the optical depth).
+with the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Our basic goal is to solve this equation. For example, for a uniform medium (the emission and absorption coefficients do not depend on position) the solution reads :math:`I_\nu=I_\nu(0)e^{-\tau_\nu}+S_\nu(1-e^{-\tau_\nu})`. In summary, we need to know the emission coefficient and the absorption coefficient to solve the radiative transfer.
 
-For emission from a gas, this implies that we need to know the fractional population of the energy levels. Indeed, the absorption coefficient of an emission line arising from a transition between levels :math:`l` and :math:`l'` (where :math:`E_l>E_{l'}`) is given by [Rybicki04]_
+Now considering a gas, the absorption coefficient for a transition between energy levels :math:`l` and :math:`l'` (where :math:`E_l>E_{l'}`, hereafter indicated by :math:`l\succ l'`) of a molecule is given by [Rybicki04]_
 
 .. math::
     \alpha_{ll'} = \frac{h\nu}{4\pi}(n_{l'}B_{l'l}-n_lB_{ll'})\phi_{ll'}(\nu)
 
-where :math:`h` is the Planck constant, :math:`n_x` the number density of molecules in level :math:`x`, :math:`B_{l'l}` and :math:`B_{ll'}` are the Einstein coefficients for absorption and stimulated emission respectively,  and :math:`\phi` is the normalised line profile (i.e. :math:`\int\phi(\nu)\mathrm{d}\nu=1` and :math:`\phi` describes how the energy is distributed over frequency), for example a Gaussian. Note that :math:`n_x=f_xn` where :math:`n` is the total number density of the molecule and :math:`f_x` the fractional level population. Furthermore, the emission coefficient for an emission line is given by 
+Here :math:`h` is the Planck constant, :math:`n_l` the number density of molecules in energy level :math:`l`, :math:`B_{l'l}` and :math:`B_{ll'}` are the Einstein coefficients for absorption and stimulated emission respectively,  and :math:`\phi` is the normalised line profile (i.e. :math:`\int\phi(\nu)\mathrm{d}\nu=1` and :math:`\phi` describes how the energy is distributed over frequency).
+
+The emission coefficient is given by (where again :math:`l\succ l'`)
 
 .. math::
     j_{ll'} = \frac{h\nu}{4\pi}n_lA_{ll'}\phi_{ll'}(\nu)
 
 with :math:`A_{ll'}` the Einstein coefficient for spontaneous emission.
 
-In the more general case considerd by ``pyhonradex`` where lines can overlap and there is dust mixed with the gas, the absorption and emission coefficients are given by
+The total absorption and emission coefficients are simply given by the sum over all transitions, plus contributions from the dust continuum (:math:`\alpha_c` and :math:`j_c`):
 
 .. math::
-    \alpha = \Sum_
+    \alpha_\nu = \sum_{l\succ l'}\alpha_{ll'}(\nu) + \alpha_c(\nu)
 
-    j = 
+    j_\nu = \sum_{l\succ l'}j_{ll'}(\nu) + j_c(\nu)
 
-Now, how can we determine the fractional level population? The idea is to impose *statistical equilibrium* (SE). We assume that the rate of processes that populats a level equals the rate of processes that depopulates a level. 
-
-Gas emission
---------------
-Next, let's consider radiation from a gas. An atom can spontaneously emit a photon when it transits from an upper to a lower energy level. The transition rate is given by the Einstein coefficient for spontaneous emission, :math:`A_{21}`, in units of s\ :sup:`-1`. Thus, we can write the emission coefficient of this transition as
+We see that we need to know the fractional level population to calculate :math:`\alpha_\nu` and :math:`j_\nu`, which are needed to solve the radiative transfer. How can we do that? There are two kinds processes that can excite or de-excite an molecular level: radiative processes (emission or absorption of photons) or collisions. If the density of colliders (e.g. H\ :sub:`2`\  or electrons) is high enough (or if the emission is highly optically thick), the energy levels become thermalised and we are in local thermodynamic equilibrium (LTE). In this case, the level population is simply given by the Boltzmann distribution:
 
 .. math::
-    j_\nu = \frac{h\nu_0}{4\pi}n_2A_\mathrm{21}\phi_\nu
+    n_l = n\frac{e^{-E_l/(kT_\mathrm{kin})}}{Q}
 
-where :math:`h` is the Planck constant, :math:`\nu_0` is the central frequency of the transition, :math:`n_2` is the number density of atoms in the upper level of the transition and :math:`\phi_\nu` is the normalised line profile (i.e. :math:`\int\phi_\nu\mathrm{d}\nu=1` and :math:`\phi_\nu` describes how the energy is distributed over frequency), for example a Gaussian. Photons can also be absorbed with a transition from a lower to an upper energy level. This process is parametrised by the Einstein :math:`B_{12}` coefficient. Defining the mean intensity :math:`J_\nu` as the follwing mean over solid angle:
-
-.. math::
-    J_\nu = \frac{1}{4\pi}\int I_\nu \mathrm{d}\Omega
-
-and :math:`\bar{J}=\int J_\nu\phi_\nu\mathrm{d}\nu` the mean over the line profile, the transition rate for absorption is :math:`B_{12}\bar{J}`, i.e. the transition rate is proportional to the flux of incoming photons. There is a third process, called stimulated emission, that results in the *emission* of a photon (and a transition from an upper to a lower level) when the atom interacts with an incoming photon. The rate for stimulated emission is :math:`B_{21}\bar{J}`. The absorption coefficient can be then be written [Rybicki04]_
+where :math:`Q=\sum_{l'} e^{-E_{l'}/(kT_\mathrm{kin})}` is the partition function, :math:`T_\mathrm{kin}` is the kinetic temperature of the gas, and :math:`n` is the number density of the molecule. Thus, in the LTE case, the radiative transfer can be solved easily. In the more general non-LTE case, the level population is not known a priori and needs to be calculated. In that case, the level population is often characterised by an excitation temperature :math:`T_\mathrm{ex}` defined by
 
 .. math::
-    \alpha_\nu = \frac{h\nu_0}{4\pi}(n_1B_{12}-n_2B_{21})\phi_\nu
+    \frac{n_l}{n_{l'}} = \frac{g_l}{g_{l'}}e^{-\Delta E/(kT_\mathrm{ex})}
 
-with :math:`n_1` the number density of atoms in the lower level. Thus, stimulated emission is treated as 'negative absorption'.
+where :math:`g` is the statistical weight and :math:`\Delta E` the energy difference between levels :math:`l` and :math:`l'`.
 
-Therefore, in order to compute the emission and absorption coefficients and solve the radiative transfer equation, we need to know the level population, i.e. the fraction of atoms occupying the different energy levels. Actually, using relations between the Einstein coefficients [Rybicki04]_, it can easily be shown that the source function can be written as
-
-.. math::
-    :name: eq:source_function
-
-    S_\nu=\frac{A_{21}n_2}{n_1B_{12}-n_2B_{21}}=B_\nu(T_\mathrm{ex})
-
-where :math:`B_\nu(T)` is the blackbody radiation field (Planck's law) and :math:`T_\mathrm{ex}` is the excitation temperature, defined as
+Now, how can we calculate the level populations if LTE does not apply? We assume *statistical equilibrium* (SE). In other words, we assume that the rate of processes that populates a level equals the rate of processes that depopulates a level:
 
 .. math::
-    \frac{n_2}{n_1}=\frac{g_2}{g_1}\exp\left(-\frac{h\nu_0}{kT_\mathrm{ex}}\right)
+    \sum_{l'}n_{l'}(C_{l'l}+R_{l'l}) = \sum_{l'}n_l(C_{ll'}+R_{ll'})
 
-with :math:`k` the Boltzmann constant and :math:`g_1` and :math:`g_2` the statistical weights of the lower and upper level respectively. The excitation temperature is thus the temperatue we need to plug into the Boltzmann equation to get the observed level ratio. In LTE, the kinetic temperature equals the excitation temperature, and the levels are indeed populated according to the Boltzmann distribution. But in non-LTE, this is not true, and the excitation temperature is different from the kinetic temperature.
+Here :math:`C_{l'l}` and :math:`R_{l'l}` are the rates per volume of collisional and radiative transitions respectively, from level :math:`l'` to level :math:`l`. Thus, the left-hand side is the total rate of transitions into level :math:`l`, while the right-hand side is the total rate of transitions out of level :math:`l`. By writing down the statistical equilibrium for each level and solving the system of equations, the level populations can be calculated and the radiative transfer solved.
 
-In summary, we need to know the level populations (i.e. the excitation temperature) in order to compute the radiation field. To do this, we first need to consider another process that can populate and depopulate the energy levels of an atom: collisions, for example with hydrogen or electrons. The rate of collision-induced transitions between two levels :math:`i` and :math:`j` is given by :math:`C_{ij}=K_{ij}(T_\mathrm{kin})n_\mathrm{col}` where :math:`K_{ij}(T_\mathrm{kin})` is the collision rate coefficient in m\ :sup:`3`\ s\ :sup:`-1` and :math:`n_\mathrm{col}` is the number density of the collision partner. The collision rate coefficient in general depends on the kinetic temperature of the collision partner. If several collision partners are present, the total rate is simply the sum of the individual rates.
-
-We can now write down the equations of statistical equilibrium (SE) that determine the level population. In SE, we assume that processes that populate a level are balanced by processes that depopulate it. Thus, for every level :math:`i`, we write
+However, there is a problem: while the collisional rates :math:`C_{l'l}` are known, the radiative rates depend, as one might expect, on the radiation field. If :math:`E_l>E_{l'}`, we have
 
 .. math::
-    :name: eq:SE
+    R_{ll'} = A_{ll'} + B_{ll'}\bar{J}
 
-    \frac{\mathrm{d}x_i}{\mathrm{d}t} = \sum_{j>i}(x_jA_{ji}+(x_jB_{ji}-x_iB_{ij})\bar{J}_{ji}) - \sum_{j<i}(x_iA_{ij}+(x_iB_{ij}-x_jB_{ji})\bar{J}_{ij}) + \sum_{j\neq i}(x_jC_{ji}-x_iC_{ij}) = 0
+while if :math:`E_l<E_{l'}`
 
+.. math::
+    R_{ll'} = B_{ll'}\bar{J}
 
-where :math:`x_k=\frac{n_k}{n}` is the fractional population of level :math:`k`. In the above equation, the positive terms populate the level, while the negative terms depopulate the level.
+Here, :math:`\bar{J}` is the radiation field averaged over frequency and solid angle: :math:`\bar{J}=\frac{1}{4\pi}\int I_\nu\phi_{ll'}(\nu)\mathrm{d}\Omega\mathrm{d}\nu`. Thus, in order to solve the SE equation, we need to know the radiation field, which is what we were after in the first place... In order to solve this chicken and egg problem, we need to adopt an iterative technique.
 
-The level populations can be determined by solving this linear system of equations. But there is a problem: to solve for the level populations, we need to know the radiation field :math:`\bar{J}`, which itself depends on the level populations.
+Accelerated Lambda Iteration (ALI)
+----------------------------------------------
+For the following discussion, we introduce the Lamda Operator, which essentially is a way of writing down the formal solution of the radiative transfer:
+
+.. math::
+    I_\nu = \Lambda_\nu[S_\nu]
+
+So, the Lambda operator computes the radiation field :math:`I_\nu` for a given source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`, the latter being completely determined by the level population (and the known contribution from the dust continuum). The simplest iteration scheme (the so-called Lambda Iteration scheme) is very straightforward: one starts with an initial guess for the level population and solves the radiative transfer (as formalised by the above equation). The solution :math:`I_\nu` is then inserted into the statistical equilibrium equations, resulting in an updated level population. This procedure is repeated until convergence is established.
+
+However, the Lambda iteration scheme can suffer from extremely slow convergence in optically thick systems (see e.g. the lecture notes by Dullemond_ or [Rybicki91]_). An alternative scheme, known as Accelerated Lambda Iterations (ALI), provides much better convergence. The idea is to introduce an approximate Lambda operator :math:`\Lambda^*` and to write
+
+.. math::
+    I_\nu = \Lambda^*_\nu[S_\nu] + (\Lambda_\nu-\Lambda^*_\nu)[S_\nu^\dagger]
+
+where the :math:`\dagger` indicates quantities from the previous iteration. This is inserted into the equations of statistical equilibrium, which can then be solved for an updated level population (and thus updated :math:`S_\nu`). See for example [Rybicki91]_ or [Hubeny03]_ for more details about ALI.
+
+The ALI method by Rybicki & Hummer (1992)
+----------------------------------------------------
+``pythonradex`` implements a variation of the ALI scheme presented by [Rybicki92]_. The method is capable of treating overlapping lines and full continuum. In contrast, ``RADEX`` can only treat non-overlapping lines without continuum.
+
+``pythonradex`` implements the "Full preconditioning strategy" presented in section 2.3 of [Rybicki92]_. Instead of a Lambda operator, the method presented in [Rybicki92]_ uses a Psi operator that acts on the emission coefficient:
+
+.. math::
+    I_\nu = \Psi[j_\nu]
+
+The approximate iteration scheme is then based on :math:`I_\nu=\Psi^*_\nu[j_\nu] + (\Psi_\nu-\Psi^*_\nu)[j_\nu^\dagger]`, which is inserted into the equations of statistical equilibrium.
 
 Escape probability
----------------------
-
-One way to solve this problem is to use an escape probability method to decouple the computation of the level population from the computation of the radiation field. We consider the probability :math:`\beta` of a newly created photon to escape the cloud. This probability depends on the geometry of the cloud and the optical depth. If the cloud is completely optically thick (:math:`\beta\approx 0`), we expect the radiation field to equal the source function. Thus, we write :math:`J_\nu=(1-\beta(\tau_\nu))S_\nu=(1-\beta(\tau_\nu))B_\nu(T_\mathrm{ex})`. If we plug the corresponding expression for :math:`\bar{J}` into the SE equations, they become independent of the radiation field and can be solved, because :math:`\tau_\nu` and :math:`T_\mathrm{ex}` only depend on the level population.
-
-In practice, an iterative approach is used to solve the SE equations: one makes a first guess of the level populations and computes the corresponding escape probability, which is used to compute a new solution of the SE equations. This is repeated until convergence. Finally, the converged level population is used to compute the emitted flux and the radiative transfer problem is solved.
-
-An external radiation field :math:`I_\mathrm{ext}` can also contribute to the excitation of the atoms. This is easily incorporated in the calculation by adding a term :math:`\beta I_\mathrm{ext}` to :math:`J_\nu`.
-
-As mentioned above, the espace probability depends on the geometry of the emitting region. Please see :doc:`geometry` for details about the geometries available in ``pyhonradex``.
-
-
-Iteration schemes
--------------------------
-
-Standard LAMDA Iteration (LI)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-As mentioned above, the equations of statistical equilibrium (:ref:`Eq. 2 <eq:SE>`) are solved iteratively. An initial guess of the level population (and thus excitation temperatures and optical depths) allows us to compute
+-----------------------------
+We still need to specify the formal solution of the radiative transfer we adopt via the operator :math:`\Psi_\nu`. Same as ``RADEX``, we use an escape probability method. We consider the probability :math:`\beta` of a newly created photon to escape the cloud. This probability depends on the geometry of the cloud and the absorption coefficient (or optical depth). If the cloud is completely optically thick (:math:`\beta\approx 0`), we expect the radiation field to equal the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Thus, we write 
 
 .. math::
-    :name: eq:Jbar
+    I_\nu = \Psi[j_\nu] = \beta(\alpha_\nu^\dagger) I_\mathrm{ext} + (1-\beta(\alpha_\nu^\dagger))\frac{j_\nu}{\alpha_\nu^\dagger}
 
-    \bar{J} = \beta(\tau) I_\mathrm{ext}+(1-\beta(\tau))B_\nu(T_{ex})
+Here :math:`I_\mathrm{ext}` is an external radiation field that irradiates the cloud from the outside (for example the CMB). If the cloud is completely optically thick, external radiation cannot penetrate the cloud and the corresponding term vanishes. 
 
-With :math:`\bar{J}` known, the statistical equilibrium can be solved to obtain an updated level population. Iteration is continued until convergence is reached. This scheme is referred to as LAMDA Iteration (LI; see the lectures notes of Dullemond_). It has the issue that convergence can be very slow, in particular for optically thick emission.
-
-Accelerated LAMDA Iteration (ALI)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The LI scheme can be modified to accelerate convergence. The modified scheme is known as Accelerated Lambda Iteration (ALI). Details can be found in [Rybicki91]_ and the lectures notes of Dullemond_, sections 4.4 and 7.8--7.10. In our case, the ALI scheme is found by expressing :math:`B_\nu(T_{ex})` in :ref:`Eq. 3 <eq:Jbar>` in terms of the *new* level population, rather than calculating it from the old population. By using :ref:`Eq. 1 <eq:source_function>`, the equations of statistical equilibrium when using ALI become
+For the approximate Psi operator, we choose
 
 .. math::
-    \frac{\mathrm{d}x_i}{\mathrm{d}t} = \sum_{j>i}(x_jA_{ji}\beta+(x_jB_{ji}-x_iB_{ij})\beta I_\mathrm{ext}) - \sum_{j<i}(x_iA_{ij}\beta+(x_iB_{ij}-x_jB_{ji})\beta I_\mathrm{ext}) + \sum_{j\neq i}(x_jC_{ji}-x_iC_{ij}) = 0
+    \Psi^*_\nu[j_\nu] = (1-\beta(\alpha_\nu^\dagger))\frac{j_\nu}{\alpha_\nu^\dagger}
 
-``pyhonradex`` allows the user to choose between LI and ALI, but ALI is strongly recommended.
+Please see :ref:`this section <geometry>` for a list of all geometries available in ``pythonradex`` with the corresponding formulas for the escape probability.
 
 Ng-acceleration
 ------------------------

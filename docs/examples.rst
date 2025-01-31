@@ -2,7 +2,12 @@ Examples
 =============
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   notebooks/test_notebook
-   notebooks/test_notebook2
+   notebooks/get_started
+   notebooks/grid_search
+   notebooks/optically_thick_spectrum
+   notebooks/overlapping_lines
+   notebooks/LVG_geometry
+   notebooks/continuum_effects
+   notebooks/reading_LAMDA_files

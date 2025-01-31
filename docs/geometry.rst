@@ -1,7 +1,9 @@
-Cloud geometry
-===============
+.. _geometry:
 
-The calculations of the escape probability and the emerging flux depend on the adopted geometry. Below we give an overview of the geometries available in ``pyhonradex``. For all geometries, we assume a homogeneous medium (i.e. constant number density).
+Escape probability and line width for different geometries
+====================================================================
+
+The calculations of the escape probability and the emerging flux depend on the adopted geometry. Below we give an overview of the geometries available in ``pyhonradex``. For all geometries, we assume a homogeneous medium (i.e. constant number density). For convenience, the escape probabilities are expresses as functions of optical depth :math:`\tau_\nu` rather than the absorption coefficient :math:`\alpha_\nu`.
 
 Uniform sphere
 ----------------------

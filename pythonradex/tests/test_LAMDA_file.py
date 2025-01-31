@@ -9,6 +9,7 @@ from pythonradex import LAMDA_file
 import os
 from scipy import constants
 import numpy as np
+import pytest
 
 here = os.path.dirname(os.path.abspath(__file__))
 data_folder = os.path.join(here,'LAMDA_files')
@@ -94,3 +95,11 @@ def test_quantum_number_reading():
             assert data['quantum numbers'] == []
         for l,level in enumerate(lamda_data_nu0_qn_read[i]['levels']):
             assert lamda_data_nu0_qn_read[i]['quantum numbers'][l] == str(l)
+
+def test_freq_reading_sanity_check():
+    datafilepath = os.path.join(data_folder,'c_wrong_frequencies.dat')
+    #the following should work:
+    LAMDA_file.read(datafilepath=datafilepath,read_frequencies=False)
+    with pytest.raises(AssertionError):
+        LAMDA_file.read(datafilepath=datafilepath,read_frequencies=True)
+    

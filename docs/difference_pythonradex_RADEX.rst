@@ -1,9 +1,17 @@
 Differences between ``pythonradex`` and ``RADEX``
 ------------------------------------------------------
 
+Overlapping lines and continuum
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``pythonradex`` is able to handle excitation effects of overlapping lines (i.e. lines that are so close in frequency that photons emitted from one line can be absorbed by another line). ``pythonradex`` is also able to include effects of an internal radiation field specified by the user (typically arising from dust that is mixed with the gas). Both of these effects are not included in ``RADEX``.
+
+Programming language and performance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+While ``RADEX`` is written in Fortran, ``pythonradex`` is written in pure python. ortran is generally much faster than python. Still, in the typical use case of calculating several models over a grid of parameters (e.g. column density, temperature), ``pythonradex`` outperforms RADEX by a factor of at least 3. This is achieved by an architecture that avoids unnecessary or repeating calculations as much as possible and just-in-time compilation using the `numba <https://numba.readthedocs.io>`_ package.
+
 Different output
 ^^^^^^^^^^^^^^^^^^^^^^
-There is a difference between the outputs of ``RADEX`` and ``pythonradex``. The ``RADEX`` output :math:`T_R` (or the corresponding flux outputs) is intended to be directly compared to telescope data. To be more specifc, from the computed optical depth and excitation temperature, ``RADEX`` first computes :math:`I_\mathrm{tot} = B_\nu(T_\mathrm{ex})(1-e^{-\tau}) + I_\mathrm{bg}e^{-\tau}`, i.e. the total intensity at the line centre that is recorded at the telescope, where :math:`I_\mathrm{bg}` is the background radiation. This is the sum of the radiation from the gas (first term) and the background radiation attenuated by the gas (second term). From this, the observer will subtract the background (or, in other words, the continuum), giving :math:`I_\mathrm{measured} = I_\mathrm{tot} - I_\mathrm{bg} = (B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau})`. The ``RADEX`` output :math:`T_R` is the Rayleigh-Jeans temperature corresponding to :math:`I_\mathrm{measured}`. On the other hand, ``pythonradex`` computes the line flux directly, i.e. the output corresponds simply to the flux emitted by the gas.
+There is a difference between the outputs of ``RADEX`` and ``pythonradex``. The ``RADEX`` output :math:`T_R` (or the corresponding flux outputs) is intended to be directly compared to telescope data. To be more specific, from the computed optical depth and excitation temperature, ``RADEX`` first computes :math:`I_\mathrm{tot} = B_\nu(T_\mathrm{ex})(1-e^{-\tau}) + I_\mathrm{bg}e^{-\tau}`, i.e. the total intensity at the line centre that is recorded at the telescope, where :math:`I_\mathrm{bg}` is the background radiation. This is the sum of the radiation from the gas (first term) and the background radiation attenuated by the gas (second term). From this, the observer will subtract the background, giving :math:`I_\mathrm{measured} = I_\mathrm{tot} - I_\mathrm{bg} = (B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau})`. The ``RADEX`` output :math:`T_R` is the Rayleigh-Jeans temperature corresponding to :math:`I_\mathrm{measured}`. On the other hand, ``pythonradex`` computes the line flux directly, i.e. the output corresponds simply to the flux emitted by the gas.
 
 .. _sphere_flux_difference:
 
@@ -14,7 +22,7 @@ For a given excitation temperature :math:`T_{ex}` and optical depth :math:`\tau_
 .. math::
     I_\nu = B_\nu(T_{ex})(1-e^{-\tau_\nu})
 
-for all geometries. However, this expression is only valid for slab geometries, but not for spherical geometries ("uniform sphere" and "LVG sphere"). On the other hand, ``pythonradex`` uses the correct formulae for spherical geometries. This can for example be demonstrated by considering the optically thin limit. In this limit, each photon escapes from the cloud. The total flux (in [W/m\ :sup:`2`]) is then simply given by
+for all geometries. However, this expression is only valid for slab geometries, but not for spherical geometries ("uniform sphere" and "LVG sphere"). On the other hand, ``pythonradex`` uses the correct formulae for spherical geometries (see the section :ref:`geometry` for more details). This can for example be demonstrated by considering the optically thin limit. In this limit, each photon escapes from the cloud. The total flux (in [W/m\ :sup:`2`]) is then simply given by
 
 .. math::
     F_\mathrm{thin} = V_\mathrm{sphere}nx_2A_{21}\Delta E \frac{1}{4\pi d^2}

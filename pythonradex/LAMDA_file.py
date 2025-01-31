@@ -83,7 +83,11 @@ def read(datafilepath,read_frequencies,read_quantum_numbers=False):
             low = next(level for level in levels if level.number==radtransdata[2]-1)
             rad_trans_kwargs = {'up':up,'low':low,'A21':radtransdata[3]}
             if read_frequencies:
-                rad_trans_kwargs['nu0'] = radtransdata[4]*constants.giga
+                nu0 = radtransdata[4]*constants.giga
+                Delta_E = up.E-low.E
+                assert np.isclose(nu0,Delta_E/constants.h,atol=0,rtol=1e-3),\
+                     'read frequency is inconsistent with level energies'
+                rad_trans_kwargs['nu0'] = nu0
             rad_trans = atomic_transition.RadiativeTransition(**rad_trans_kwargs) 
             rad_transitions.append(rad_trans)
             continue

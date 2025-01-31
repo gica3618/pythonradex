@@ -45,6 +45,7 @@ def allowed_param_combination(geometry,line_profile_type,treat_line_overlap):
 
 #HCl has overlapping lines, let's filter the warning
 @pytest.mark.filterwarnings("ignore:some lines are overlapping")
+@pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
 def test_LTE():
     max_taus = []
     for filename,geo,lp,ng,treat_overlap in itertools.product(

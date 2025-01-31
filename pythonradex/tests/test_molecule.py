@@ -7,91 +7,68 @@ Created on Mon Nov 13 15:35:53 2017
 import os
 from pythonradex import molecule,atomic_transition,LAMDA_file,helpers
 import numpy as np
+import itertools
 from scipy import constants
 
 here = os.path.dirname(os.path.abspath(__file__))
-lamda_filepath = os.path.join(here,'LAMDA_files/co.dat')
-
-test_data = LAMDA_file.read(datafilepath=lamda_filepath,read_frequencies=False)
+lamda_folder = os.path.join(here,'LAMDA_files')
+lamda_filepaths = {'with_freq':os.path.join(lamda_folder,'co.dat'),
+                   'no_freq':os.path.join(lamda_folder,'co_no_frequencies.dat')}
+test_data = {label:LAMDA_file.read(datafilepath=lamda_filepaths[label],read_frequencies=rf)
+             for label,rf in zip(('with_freq','no_freq'),(True,False))}
+             
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
 
-molecule_lamda = molecule.Molecule(
-                                datafilepath=lamda_filepath,read_frequencies=False)
-molecule_lamda_frequencies = molecule.Molecule(
-                                datafilepath=lamda_filepath,read_frequencies=True)
+molecules = {ID:molecule.Molecule(datafilepath=df) for ID,df in lamda_filepaths.items()}
+emitting_molecules = {ID:molecule.EmittingMolecule(
+                           datafilepath=df,line_profile_type=line_profile_type,
+                           width_v=width_v)
+                      for ID,df in lamda_filepaths.items()}
 
-emitting_molecule_lamda = molecule.EmittingMolecule(
-                           datafilepath=lamda_filepath,
-                           line_profile_type=line_profile_type,width_v=width_v,
-                           read_frequencies=False)
-emitting_molecule_lamda_frequencies = molecule.EmittingMolecule(
-                                        datafilepath=lamda_filepath,
-                                        line_profile_type=line_profile_type,
-                                        width_v=width_v,read_frequencies=True)
-
-test_molecules_no_freq = [molecule_lamda,emitting_molecule_lamda]
-test_molecules_freq = [molecule_lamda_frequencies,emitting_molecule_lamda_frequencies]
-test_molecules = test_molecules_no_freq+test_molecules_freq
-emitting_molecules = [emitting_molecule_lamda,
-                      emitting_molecule_lamda_frequencies]
+test_molecules_no_freq = [molecules['no_freq'],emitting_molecules['no_freq']]
+test_molecules_with_freq = [molecules['with_freq'],emitting_molecules['with_freq']]
+test_molecules = {'no_freq':test_molecules_no_freq,'with_freq':test_molecules_with_freq}
 
 def test_Molecule_levels():
-    for i,level in enumerate(test_data['levels']):
-        for mol in test_molecules:
-            for attribute in ('g','E','number'):
-                assert getattr(level,attribute)\
-                                  == getattr(mol.levels[i],attribute)
+    for ID,td in test_data.items():
+        for i,level in enumerate(td['levels']):
+            for mol in test_molecules[ID]:
+                for attribute in ('g','E','number'):
+                    assert getattr(level,attribute)\
+                                      == getattr(mol.levels[i],attribute)
 
 def test_Molecule_rad_transitions():
-    for i,rad_trans in enumerate(test_data['radiative transitions']):
-        for mol in test_molecules:
-            for attribute in ('Delta_E','A21'):
-                assert getattr(rad_trans,attribute)\
-                                  == getattr(mol.rad_transitions[i],attribute)
-        #following attributes depend on nu0, so change if nu0 is taken from the LAMDA file
-        for attribute in ('B12','nu0','B21'):
-            for mol in test_molecules_no_freq:
-                assert getattr(rad_trans,attribute)\
-                             == getattr(mol.rad_transitions[i],attribute)
-            for mol in test_molecules_freq:
-                assert np.isclose(a=getattr(rad_trans,attribute),
-                                  b=getattr(mol.rad_transitions[i],attribute),
-                                  atol=0,rtol=1e-4)
+    for ID,td in test_data.items():
+        for i,rad_trans in enumerate(td['radiative transitions']):
+            for mol in test_molecules[ID]:
+                for attribute in ('Delta_E','A21','B12','nu0','B21'):
+                    assert getattr(rad_trans,attribute)\
+                                   == getattr(mol.rad_transitions[i],attribute)
 
 def test_Molecule_coll_transitions():
-    colliders = sorted(test_data['collisional transitions'].keys())
-    for mol in test_molecules:
-        assert colliders == sorted(mol.coll_transitions.keys())
-    for collider,coll_transitions in test_data['collisional transitions'].items():
-        for i,coll_trans in enumerate(coll_transitions):
-            for mol in test_molecules:
-                for attribute in ('K21_data','Tkin_data'):
-                    assert np.all(getattr(coll_trans,attribute)\
-                                      == getattr(mol.coll_transitions[collider][i],
-                                                 attribute))
-
-# def test_level_transitions():
-#     test_mol = molecule.EmittingMolecule(
-#                    datafilepath=os.path.join(here,'LAMDA_files/cn.dat'),
-#                                             line_profile_type=line_profile_type,
-#                                             width_v=width_v,read_frequencies=True)
-#     assert test_mol.downward_rad_transitions[0] == []
-#     assert test_mol.downward_rad_transitions[1] == [0,]
-#     assert test_mol.downward_rad_transitions[3] == [2,3]
-#     assert test_mol.level_transitions[0] == [0,1]
-#     assert test_mol.level_transitions[1] == [0,3]
-#     assert test_mol.level_transitions[2] == [1,2,4]
+    for ID,td in test_data.items():
+        colliders = sorted(td['collisional transitions'].keys())
+        for mol in test_molecules[ID]:
+            assert colliders == sorted(mol.coll_transitions.keys())
+    for ID,td in test_data.items():
+        for collider,coll_transitions in td['collisional transitions'].items():
+            for i,coll_trans in enumerate(coll_transitions):
+                for mol in test_molecules[ID]:
+                    for attribute in ('K21_data','Tkin_data'):
+                        assert np.all(getattr(coll_trans,attribute)\
+                                          == getattr(mol.coll_transitions[collider][i],
+                                                     attribute))
 
 def test_setting_partition_function():
-    test_mol = molecule.Molecule(
-                        datafilepath=lamda_filepath,
-                        partition_function=lambda x: -10)
-    assert test_mol.Z(100) == -10
+    for fp in lamda_filepaths.values():
+        test_mol = molecule.Molecule(datafilepath=fp,
+                                     partition_function=lambda x: -10)
+        assert test_mol.Z(100) == -10
 
 def test_partition_func():
     T = 50
-    for mol in test_molecules:
+    for mol in itertools.chain.from_iterable(test_molecules.values()):
         Q = 0
         for level in mol.levels:
             Q += level.g*np.exp(-level.E/(constants.k*T))
@@ -99,7 +76,7 @@ def test_partition_func():
 
 def test_LTE_level_pop():
     T = 30
-    for mol in test_molecules:
+    for mol in itertools.chain.from_iterable(test_molecules.values()):
         LTE_level_pop = mol.LTE_level_pop(T=T)
         assert np.isclose(np.sum(LTE_level_pop),1)
         Q = mol.Z(T=T)
@@ -108,7 +85,7 @@ def test_LTE_level_pop():
             assert expected_pop == LTE_level_pop[i]
 
 def test_get_transition_number():
-    for mol in test_molecules:
+    for mol in itertools.chain.from_iterable(test_molecules.values()):
         rad_trans_number = mol.get_rad_transition_number('11-10')
         assert rad_trans_number == 10
 
@@ -117,7 +94,7 @@ rng = np.random.default_rng(seed=0)
 def test_tau():
     N_values = np.array((1e12,1e14,1e16,1e18))/constants.centi**2
     for N in N_values:
-        for mol in emitting_molecules:
+        for mol in emitting_molecules.values():
             level_population = rng.random(mol.n_levels)
             level_population /= np.sum(level_population)
             tau_nu0 = mol.get_tau_nu0_lines(N=N,level_population=level_population)
@@ -128,8 +105,10 @@ def test_tau():
                 n_low = rad_trans.low.number
                 N1 = N*level_population[n_low]
                 t = atomic_transition.fast_tau_nu(
-                         A21=rad_trans.A21,phi_nu=rad_trans.line_profile.phi_nu(rad_trans.nu0),
-                         g_low=rad_trans.low.g,g_up=rad_trans.up.g,N1=N1,N2=N2,nu=rad_trans.nu0)
+                         A21=rad_trans.A21,phi_nu=rad_trans.line_profile.phi_nu(
+                                         rad_trans.nu0),
+                         g_low=rad_trans.low.g,g_up=rad_trans.up.g,N1=N1,N2=N2,
+                         nu=rad_trans.nu0)
                 expected_tau_nu0.append(t)
             assert np.all(expected_tau_nu0==tau_nu0)
 
@@ -137,7 +116,7 @@ def test_tau_LTE():
     N_values = np.array((1e12,1e14,1e16,1e18))/constants.centi**2
     T = 123
     for N in N_values:
-        for mol in emitting_molecules:
+        for mol in emitting_molecules.values():
             level_population = mol.LTE_level_pop(T=T)
             tau_nu0_LTE = mol.get_tau_nu0_lines_LTE(N=N,T=T)
             expected_tau_nu0 = []
@@ -154,14 +133,14 @@ def test_tau_LTE():
     
 def test_LTE_Tex():
     T = 123
-    for mol in emitting_molecules:
+    for mol in emitting_molecules.values():
         LTE_level_pop = mol.LTE_level_pop(T=T)
         Tex = mol.get_Tex(level_population=LTE_level_pop)
         assert np.allclose(a=T,b=Tex,atol=0,rtol=1e-10)
 
 def test_get_tau_line_nu():
     N = 1e15/constants.centi**2
-    for mol in emitting_molecules:
+    for mol in emitting_molecules.values():
         level_pop = mol.LTE_level_pop(T=214)
         tau_line_funcs = [mol.get_tau_line_nu(line_index=i,level_population=level_pop,N=N)
                           for i in range(mol.n_rad_transitions)]
@@ -173,7 +152,7 @@ def test_get_tau_line_nu():
             assert np.all(expected_tau==tau_line_funcs[i](nu))
 
 def test_Tex():
-    for mol in emitting_molecules:
+    for mol in emitting_molecules.values():
         level_population = rng.random(mol.n_levels)
         level_population /= np.sum(level_population)
         Tex = mol.get_Tex(level_population=level_population)
@@ -300,8 +279,7 @@ class TestTotalQuantities():
                           N=self.N_CO,tau_dust=tau_dust)(nu)
             x1 = level_population[line.low.number]
             x2 = level_population[line.up.number]
-            expected_tau_tot = line.tau_nu(N1=self.N_CO*x1,N2=self.N_CO*x2,nu=nu)\
-                                + tau_d
+            expected_tau_tot = tau_line + tau_d
             assert np.all(tau_tot==expected_tau_tot)
 
     def test_with_overlap(self):

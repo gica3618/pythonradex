@@ -466,9 +466,6 @@ class Cloud():
         assert np.all(n_coll_values==n_coll_values[0]),\
                'please provide the same number of collider densities for each collider'
         n_coll_values = n_coll_values[0]
-        # ordered_colliders = list(collider_densities_values.keys())
-        # ordered_collider_density_values = [collider_densities_values[coll] for coll
-        #                                    in ordered_colliders]
         #set T_dust and tau_dust, other values are not important because they are
         #going to change in the loop
         initial_ext_bg = list(ext_backgrounds.values())[0]

@@ -22,11 +22,13 @@ Welcome to the ``pyhonradex`` documentation!
    difference_pythonradex_RADEX
    faq
    API
+   citation
+   
 
 
 Acknowledgement
 =================
-I would like to thank Simon Bruderer for his helpful clarifications about the ALI method.
+I would like to thank Simon Bruderer for his helpful clarifications about the ALI method. I also thank Andrés Asensio Ramos for helpful discussions about the LVG geometry.
 
 
 Bibliography
@@ -40,11 +42,15 @@ Bibliography
 
 .. [Goldreich74] Goldreich, P., & Kwan, J. 1974, Astrophysical Journal, 189, 441
 
+.. [Hubeny03] Hubeny, I. 2003, Accelerated Lambda Iteration: An Overview. Stellar Atmosphere Modeling 288, 17
+
 .. [Ng74] Ng, K.-C. 1974, Journal of Chemical Physics, 61, 2680
 
 .. [Osterbrock74] Osterbrock, D. E. 1974, *Astrophysics of Gaseous Nebulae*, ISBN 0-716-70348-3, W. H. Freeman
 
-.. [Rybicki91] Rybicki, G. B., & Hummer, D. G. 1991, Astronomy and Astrophysics, 245, 171 
+.. [Rybicki91] Rybicki, G. B., & Hummer, D. G. 1991, Astronomy and Astrophysics, 245, 171
+
+.. [Rybicki92] Rybicki, G. B., & Hummer, D. G. 1992, Astronomy and Astrophysics, 262, 209
 
 .. [Rybicki04] Rybicki, G. B., & Lightman, A.P. 2004, *Radiative Processes in Astrophysics*, ISBN 0-471-82759-2, Wiley-VCH
 
