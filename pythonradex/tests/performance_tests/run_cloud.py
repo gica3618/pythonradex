@@ -29,7 +29,7 @@ ext_background = 0
 N = 1e16/constants.centi**2
 line_profile_type = 'Gaussian'
 width_v = 1*constants.kilo
-use_NG_acceleration = True
+use_Ng_acceleration = True
 treat_line_overlap = False
 niter = 5
 #I choose different Tkin for each iteration to force setting up the
@@ -40,7 +40,7 @@ start = time.time()
 cloud = radiative_transfer.Cloud(
                     datafilepath=datafilepath,geometry=geometry,
                     line_profile_type=line_profile_type,width_v=width_v,
-                    use_NG_acceleration=use_NG_acceleration,
+                    use_Ng_acceleration=use_Ng_acceleration,
                     treat_line_overlap=treat_line_overlap)
 end = time.time()
 print(f'setup time: {end-start:.3g}')

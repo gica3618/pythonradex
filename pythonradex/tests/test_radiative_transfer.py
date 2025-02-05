@@ -51,7 +51,7 @@ def general_cloud_iterator(specie,width_v):
         cld = radiative_transfer.Cloud(
                               datafilepath=datafilepath[specie],geometry=geo,
                               line_profile_type=lp,width_v=width_v,
-                              use_NG_acceleration=use_ng,
+                              use_Ng_acceleration=use_ng,
                               treat_line_overlap=treat_overlap)
         yield cld
 
@@ -66,7 +66,7 @@ class TestInitialisation():
                     radiative_transfer.Cloud(
                                       datafilepath=datafilepath['CO'],geometry=geo,
                                       line_profile_type=lp,width_v=width_v,
-                                      use_NG_acceleration=use_ng,
+                                      use_Ng_acceleration=use_ng,
                                       treat_line_overlap=treat_overlap)
 
     def test_LVG_cannot_treat_overlap(self):
@@ -77,7 +77,7 @@ class TestInitialisation():
                                           datafilepath=datafilepath['HCl'],
                                           geometry=geo,line_profile_type=lp,
                                           width_v=10*constants.kilo,
-                                          use_NG_acceleration=use_ng,
+                                          use_Ng_acceleration=use_ng,
                                           treat_line_overlap=True)    
 
     def test_warning_overlapping_lines(self):
@@ -87,7 +87,7 @@ class TestInitialisation():
                                       datafilepath=datafilepath['HCl'],
                                       geometry=geo,line_profile_type=lp,
                                       width_v=10*constants.kilo,
-                                      use_NG_acceleration=use_ng,
+                                      use_Ng_acceleration=use_ng,
                                       treat_line_overlap=False)
     
     def test_LVG_needs_rectangular(self):
@@ -96,7 +96,7 @@ class TestInitialisation():
                 radiative_transfer.Cloud(
                                   datafilepath=datafilepath['CO'],geometry=geo,
                                   line_profile_type='Gaussian',width_v=1*constants.kilo,
-                                  use_NG_acceleration=True)
+                                  use_Ng_acceleration=True)
 
 
 class TestUpdateParameters():
@@ -122,7 +122,7 @@ class TestUpdateParameters():
         cloud = radiative_transfer.Cloud(
                           datafilepath=datafilepath['CO'],geometry='uniform sphere',
                           line_profile_type='Gaussian',width_v=1*constants.kilo,
-                          use_NG_acceleration=True)
+                          use_Ng_acceleration=True)
         cloud.update_parameters(N=1e14,Tkin=20,collider_densities={'para-H2':1},
                                 ext_background=0,T_dust=T_dust_old,tau_dust=1)
         old_params = self.copy_cloud_parameters(cloud)
@@ -365,7 +365,7 @@ class TestUpdateParameters():
                                      collider_cases,T_dust_cases,tau_dust_cases)
         cloud_kwargs = {'datafilepath':datafilepath['CO'],'geometry':'uniform sphere',
                         'line_profile_type':'rectangular','width_v':1*constants.kilo,
-                        'use_NG_acceleration':True,'treat_line_overlap':False}
+                        'use_Ng_acceleration':True,'treat_line_overlap':False}
         cloud_to_modify = radiative_transfer.Cloud(**cloud_kwargs)
         def generate_cloud_and_set_params(params):
             cloud = radiative_transfer.Cloud(**cloud_kwargs)
@@ -407,7 +407,7 @@ def test_ng_acceleration():
                       'tau_dust':0}
             level_pops = []
             for ng in (True,False):
-                cloud = radiative_transfer.Cloud(use_NG_acceleration=ng,**cloud_kwargs)
+                cloud = radiative_transfer.Cloud(use_Ng_acceleration=ng,**cloud_kwargs)
                 cloud.update_parameters(**params)
                 cloud.solve_radiative_transfer()
                 level_pops.append(cloud.level_pop)
@@ -436,7 +436,7 @@ class TestModelGrid():
     cloud = radiative_transfer.Cloud(
                           datafilepath=datafilepath['CO'],geometry='uniform sphere',
                           line_profile_type='rectangular',width_v=1.4*constants.kilo,
-                          use_NG_acceleration=True,treat_line_overlap=False)
+                          use_Ng_acceleration=True,treat_line_overlap=False)
     ext_backgrounds = {'CMB':helpers.generate_CMB_background(z=2),
                        'zero':0}
     N_values = np.array((1e14,1e16))/constants.centi**2
@@ -558,7 +558,7 @@ def test_line_profile_averaging():
         cld = radiative_transfer.Cloud(
                           datafilepath=datafilepath['CO'],geometry='uniform sphere',
                           line_profile_type='rectangular',width_v=1*constants.kilo,
-                          use_NG_acceleration=True,
+                          use_Ng_acceleration=True,
                           treat_line_overlap=treat_line_overlap)
         cld.update_parameters(ext_background=helpers.generate_CMB_background(),
                               N=1e14/constants.centi**2,Tkin=33.33,

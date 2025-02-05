@@ -5,6 +5,7 @@ Examples
    :maxdepth: 1
 
    notebooks/get_started
+   notebooks/simple_example
    notebooks/grid_search
    notebooks/optically_thick_spectrum
    notebooks/overlapping_lines

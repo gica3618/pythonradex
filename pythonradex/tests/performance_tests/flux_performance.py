@@ -18,7 +18,7 @@ import time
 geometry = 'uniform sphere'
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
-use_NG_acceleration = True
+use_Ng_acceleration = True
 ext_background = helpers.generate_CMB_background(z=0)
 Tkin = 49
 datafilepath = '/home/gianni/science/LAMDA_database_files/co.dat'
@@ -29,7 +29,7 @@ start = time.time()
 cloud = radiative_transfer.Cloud(
                     datafilepath=datafilepath,geometry=geometry,
                     line_profile_type=line_profile_type,width_v=width_v,
-                    use_NG_acceleration=use_NG_acceleration)
+                    use_Ng_acceleration=use_Ng_acceleration)
 cloud.update_parameters(ext_background=ext_background,N=N,
                         Tkin=Tkin,collider_densities=collider_densities,
                         T_dust=0,tau_dust=0)

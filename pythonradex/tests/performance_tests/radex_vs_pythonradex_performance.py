@@ -61,7 +61,7 @@ for collider in colliders:
 geometry = 'uniform sphere' #verify that the RADEX you are using was compiled with this geometry
 line_profile_type = 'rectangular' #actually, RADEX assumed rectangular, but than converts it Gaussian for the line flux
 width_v = 1*constants.kilo
-use_NG_acceleration = True
+use_Ng_acceleration = True
 treat_line_overlap = False
 remove_cache = True
 
@@ -94,7 +94,7 @@ for i,n in enumerate(n_elements):
 
     cloud_kwargs = {'datafilepath':datafilepath,'geometry':geometry,
                     'line_profile_type':line_profile_type,'width_v':width_v,
-                    'use_NG_acceleration':use_NG_acceleration,
+                    'use_Ng_acceleration':use_Ng_acceleration,
                     'treat_line_overlap':treat_line_overlap,
                     'warn_negative_tau':False}
 

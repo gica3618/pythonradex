@@ -56,7 +56,7 @@ for test_case in test_cases:
                                                  test_case['Tkin_values']):
         cloud_kwargs = {'datafilepath':os.path.join(data_folder,test_case['data_filename']),
                         'geometry':geometry,'line_profile_type':line_profile_type,
-                        'width_v':width_v,'use_NG_acceleration':True}
+                        'width_v':width_v,'use_Ng_acceleration':True}
         cloud_params = {'ext_background':ext_background,'Tkin':Tkin,
                         'collider_densities':{test_case['coll_partner']:coll_density},
                         'N':N,'T_dust':2*Tkin,'tau_dust':1}

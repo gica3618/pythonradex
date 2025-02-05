@@ -113,7 +113,7 @@ def test_vs_RADEX():
                 cloud = radiative_transfer.Cloud(
                            datafilepath=datafilepath,geometry=geo,
                            line_profile_type=line_profile_type,width_v=width_v,
-                           use_NG_acceleration=False,
+                           use_Ng_acceleration=False,
                            treat_line_overlap=False,test_mode=True)
                 cloud.update_parameters(
                        ext_background=ext_background,N=N,Tkin=Tkin,

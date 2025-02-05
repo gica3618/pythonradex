@@ -59,7 +59,7 @@ def test_LTE():
         cloud = radiative_transfer.Cloud(
                             datafilepath=datafilepath,geometry=geo,
                             line_profile_type=lp,width_v=width_v,
-                            use_NG_acceleration=ng,treat_line_overlap=treat_overlap)
+                            use_Ng_acceleration=ng,treat_line_overlap=treat_overlap)
         cloud_params = {'Tkin':Tkin,'ext_background':ext_background,
                         'collider_densities':collider_densities[specie],
                         'T_dust':0,'tau_dust':0}

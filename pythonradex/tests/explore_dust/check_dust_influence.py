@@ -20,7 +20,7 @@ datafilepath = '../LAMDA_files/co.dat'
 geometry = 'uniform sphere'
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
-use_NG_acceleration = True
+use_Ng_acceleration = True
 treat_line_overlap_values = (False,True)
 ext_background = 0
 N = 1e14/constants.centi**2
@@ -48,7 +48,7 @@ for treat_overlap in treat_line_overlap_values:
                               datafilepath=datafilepath,geometry=geometry,
                               line_profile_type=line_profile_type,
                               width_v=width_v,
-                              use_NG_acceleration=use_NG_acceleration,
+                              use_Ng_acceleration=use_Ng_acceleration,
                               treat_line_overlap=treat_overlap)
         cld.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
                               collider_densities=collider_densities,**dust_p)

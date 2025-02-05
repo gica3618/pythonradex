@@ -35,7 +35,7 @@ class Test_Overlapping():
                               datafilepath=self.datafilepath,geometry=geometry,
                               line_profile_type=line_profile_type,
                               width_v=1000*constants.kilo,
-                              use_NG_acceleration=True,
+                              use_Ng_acceleration=True,
                               treat_line_overlap=treat_line_overlap)
         cld.update_parameters(ext_background=0,N=N,Tkin=self.Tkin,
                               collider_densities=coll_dens,T_dust=0,tau_dust=0)

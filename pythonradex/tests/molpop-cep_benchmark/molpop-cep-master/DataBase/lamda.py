@@ -111,13 +111,21 @@ class molpop():
 			pointer += 1
 			
 			collisionDescription = data[pointer]
+			print(collisionDescription)
 			whichCollision = data[pointer].replace(" - ","-").split()
+			print(whichCollision)
 			
-			temp = whichCollision[1].split('-')
-			
-			fileName = molName+'_'+temp[1]+"_lamda.kij"
-			
-			print("Collisions with "+temp[1]+" -> "+'Coll/'+fileName)
+			try:
+				temp = whichCollision[1].split('-')
+				fileName = molName+'_'+temp[1]+"_lamda.kij"
+				print("Collisions with "+temp[1]+" -> "+'Coll/'+fileName)
+			except IndexError:
+				print('warning: using hacked coll partner determination!')
+				assert '1 H2 = HCN-pH2 collision data Hernandez Vera et al. (2017)'\
+                                in collisionDescription
+				temp = 'H2'
+				fileName = molName+'_'+temp+"_lamda.kij"
+				print("Collisions with "+temp+" -> "+'Coll/'+fileName)
 			
 			f = open('Coll/'+fileName, "w")
 			

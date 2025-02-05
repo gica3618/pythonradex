@@ -37,7 +37,7 @@ def generate_new_cloud():
     return radiative_transfer.Cloud(
                     datafilepath='/home/gianni/science/LAMDA_database_files/co.dat',
                     geometry='uniform sphere',line_profile_type='Gaussian',
-                    width_v=1*constants.kilo,use_NG_acceleration=True,
+                    width_v=1*constants.kilo,use_Ng_acceleration=True,
                     treat_line_overlap=False)
 
 ext_background = helpers.generate_CMB_background(z=0)

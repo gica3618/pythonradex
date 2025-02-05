@@ -29,7 +29,7 @@ def generate_cloud(datafilename,geometry,line_profile_type,width_v,
     cld = radiative_transfer.Cloud(
                           datafilepath=datafilepath,geometry=geometry,
                           line_profile_type=line_profile_type,
-                          width_v=width_v,use_NG_acceleration=True,
+                          width_v=width_v,use_Ng_acceleration=True,
                           treat_line_overlap=treat_line_overlap)
     cld.update_parameters(ext_background=0,N=N,Tkin=Tkin,
                           collider_densities=collider_densities,T_dust=T_dust,

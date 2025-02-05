@@ -41,7 +41,7 @@ for N in N_values:
         cloud = radiative_transfer.Cloud(
                     datafilepath=datafilepath,geometry=geometry,
                     line_profile_type=line_profile_type,width_v=width_v,
-                    warn_negative_tau=False,use_NG_acceleration=ng)
+                    warn_negative_tau=False,use_Ng_acceleration=ng)
         cloud.update_parameters(
                      ext_background=ext_background,Tkin=Tkin,N=N,
                      collider_densities=collider_densities,T_dust=0,

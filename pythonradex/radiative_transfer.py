@@ -45,7 +45,7 @@ class Cloud():
                      'rectangular':atomic_transition.RectangularLineProfile}
 
     def __init__(self,datafilepath,geometry,line_profile_type,width_v,
-                 use_NG_acceleration=True,treat_line_overlap=False,
+                 use_Ng_acceleration=True,treat_line_overlap=False,
                  warn_negative_tau=True,verbose=False,test_mode=False):
         '''Initialises a new instance of the Cloud class.
 
@@ -72,7 +72,7 @@ class Cloud():
                 R the radius of the sphere), we can also say width_v=dv/dr*2*R. For
                 "LVG slab", width_v=dv/dz*Z where Z is the depth of the slab and dv/dz
                 the constant velocity gradient of the slab.
-            use_NG_acceleration (:obj:`bool`): Whether to use Ng acceleration. Defaults
+            use_Ng_acceleration (:obj:`bool`): Whether to use Ng acceleration. Defaults
                 to True.
             treat_line_overlap (:obj:`bool`): Whether to treat the overlap of emission
                 lines by averaging over the line profile. If False, all calculations
@@ -120,7 +120,7 @@ class Cloud():
         #velocity at the surface of a LVG sphere
         self.V_LVG_sphere = self.emitting_molecule.width_v/2
         self.geometry = self.geometries[geometry]()
-        self.use_NG_acceleration = use_NG_acceleration
+        self.use_Ng_acceleration = use_Ng_acceleration
         self.warn_negative_tau = warn_negative_tau
         self.verbose = verbose
         self.Einstein_kwargs = {'B12':self.emitting_molecule.B12,
@@ -159,7 +159,7 @@ class Cloud():
 
         Args:
             ext_background (func, number or None): A function taking the
-                frequency in Hz as input nd returning the background radiation
+                frequency in Hz as input and returning the background radiation
                 field in [W/m\ :sup:`2`/Hz/sr]. A single number is interpreted as
                 a constant value for all frequencies. Defaults to None
                 (i.e. do not update).
@@ -307,7 +307,7 @@ class Cloud():
                 old_level_pops.pop(0)
             level_pop = self.underrelaxation*new_level_pop\
                                     + (1-self.underrelaxation)*level_pop
-            if self.use_NG_acceleration\
+            if self.use_Ng_acceleration\
                          and counter > self.min_iter_before_ng_acceleration\
                          and counter%self.ng_acceleration_interval == 0:
                 level_pop = self.ng_accelerate(level_pop=level_pop,
@@ -406,9 +406,12 @@ class Cloud():
             Tkin_values and collider_densities_values.
 
         Args:
-            ext_backgrounds (:obj:`dict`): A dictionary of functions, one entry for
-                each background that should be used. The keys of the dictionary are used
-                in the output to identify which background was used
+            ext_backgrounds (:obj:`dict`): A dictionary, one entry for
+                each background that should be used. Each entry can be a function
+                of frequency, or a single number (interpreted as a radiation field
+                independent of frequency). The units are W/m2/Hz/sr. The keys
+                of the dictionary are used in the output to identify which
+                background was used.
             N_values (:obj:`list` or numpy.ndarray): The list of column densities to
                 compute models for, in [m\ :sup:`-2`].
             Tkin_values (:obj:`list` or numpy.ndarray): The list of kinetic temperatures
@@ -431,22 +434,23 @@ class Cloud():
                 for all frequencies. Defaults to 0 (i.e. no internal dust
                 radiation field).
             solid_angle (:obj:`float`): The solid angle of the source in [sr].
-                Defaults to None. Compulsory if 'fluxes_of_individual_transitions' or 'spectrum'
-                are requested.
-            transitions (:obj:`list`): The indices of the
-                transitions for which to calculate Tex, tau_nu and fluxes. If None, then
+                Defaults to None. Compulsory if 'fluxes_of_individual_transitions'
+                or 'spectrum' are requested.
+            transitions (:obj:`list`): The indices of the transitions for which
+                to calculate Tex, tau_nu and fluxes. If None, then
                 values for all transitions are calculated. Defaults to None. The
                 indices are relative to the list of transitions in the LAMDA file,
                 starting with 0.
             nu (numpy.ndarray): The frequencies in [Hz]. Compulsory if 'tau_nu'
-                or 'spectrum' is requested.
+                or 'spectrum' is requested. Defaults to None.
 
         Returns:
-            dict: dictionary with fields 'ext_background','N','Tkin' and 'collider_densities'
-                to identify the input parameters of the model, as well as any requested
-                output. Units of outputs: 'level_pop': no units; 'Tex': [K];
-                'tau_nu0': no units;'fluxes_of_individual_transitions': [W/m\ :sup:`2`]; 'tau_nu': no units;
-                'spectrum': [W/m\ :sup:`2`/Hz]
+            dict: dictionary with fields 'ext_background','N','Tkin' and
+                'collider_densities' to identify the input parameters of the model,
+                as well as any requested output. Units of outputs:
+                'level_pop': no units; 'Tex': [K]; 'tau_nu0': no units;
+                'fluxes_of_individual_transitions': [W/m\ :sup:`2`];
+                'tau_nu': no units; 'spectrum': [W/m\ :sup:`2`/Hz]
         '''
         #it is expensive to update Tkin and collider densities, so those should be in
         #the outermost loops
@@ -485,27 +489,33 @@ class Cloud():
                 for ext_background_name,ext_background in ext_backgrounds.items():
                     self.update_parameters(ext_background=ext_background)
                     for N in N_values:
-                        self.update_parameters(N=N)
-                        self.solve_radiative_transfer()
                         output = {'ext_background':ext_background_name,'N':N,
                                   'Tkin':Tkin,'collider_densities':collider_densities}
-                        if 'level_pop' in requested_output:
-                            output['level_pop'] = self.level_pop
-                        if 'Tex' in requested_output:
-                            output['Tex'] = self.Tex[transitions]
-                        if 'tau_nu0_individual_transitions' in requested_output:
-                            output['tau_nu0_individual_transitions']\
-                                       = self.tau_nu0_individual_transitions[transitions]
-                        if 'fluxes_of_individual_transitions' in requested_output:
-                            output['fluxes_of_individual_transitions']\
-                                   = self.fluxes_of_individual_transitions(
-                                         solid_angle=solid_angle,transitions=transitions)
-                        if 'tau_nu' in requested_output:
-                            output['tau_nu'] = self.tau_nu(nu=nu)
-                        if 'spectrum' in requested_output:
-                            output['spectrum'] = self.spectrum(
-                                                    solid_angle=solid_angle,nu=nu)
-                        yield output
+                        try:
+                            self.update_parameters(N=N)
+                            self.solve_radiative_transfer()
+                            if 'level_pop' in requested_output:
+                                output['level_pop'] = self.level_pop
+                            if 'Tex' in requested_output:
+                                output['Tex'] = self.Tex[transitions]
+                            if 'tau_nu0_individual_transitions' in requested_output:
+                                output['tau_nu0_individual_transitions']\
+                                           = self.tau_nu0_individual_transitions[transitions]
+                            if 'fluxes_of_individual_transitions' in requested_output:
+                                output['fluxes_of_individual_transitions']\
+                                       = self.fluxes_of_individual_transitions(
+                                             solid_angle=solid_angle,transitions=transitions)
+                            if 'tau_nu' in requested_output:
+                                output['tau_nu'] = self.tau_nu(nu=nu)
+                            if 'spectrum' in requested_output:
+                                output['spectrum'] = self.spectrum(
+                                                        solid_angle=solid_angle,nu=nu)
+                            yield output
+                        except:
+                            print('something went wrong')
+                            print('could not calculate model for following parameters:')
+                            print(output)
+                            raise
 
     def print_results(self):
         '''Prints the results from the radiative transfer computation.'''
