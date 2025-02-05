@@ -11,7 +11,7 @@ __________________________________________________________________
 
 
 
-* OH without overlap treatment
+* OH without overlap treatment, with modified atomic data
 * 
 
 		Solution Method of Radiative Transfer (LVG / LVGPP / slab / CEP) = slab
@@ -42,7 +42,7 @@ __________________________________________________________________
     Molecular abundance = 1.d-4     
     linewidth = 1.081 km/sec 
 
-    Line overlap (on/off) = on ;when ON, will use above linweidth
+    Line overlap (on/off) = off ;when ON, will use above linweidth
      
     Maser saturation (on/off) = off      
 

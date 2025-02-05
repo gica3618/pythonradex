@@ -1,6 +1,6 @@
           *** MOLPOP-CEP; version of Mar 18, 2019 ***
 
-* OH without overlap treatment
+* OH without overlap treatment, with modified atomic data
 *
       Solution method is Slab (Capriotti) escape probability 
       Molecule data file --- DataBase/OH_modified.molecule                                                                                                   
