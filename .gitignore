@@ -113,3 +113,6 @@ documents
 pythonradex/tests/benchmarking_vs_RADEX_and_LIME/*.fits
 **/radex.out
 .pytest_cache
+pythonradex/tests/molpop-cep_benchmark/molpop-cep-master/Gianni_models/*.out
+pythonradex/tests/performance_tests/radex_test_performance.out
+virtenv_pytest_instructions.txt
