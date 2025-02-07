@@ -105,14 +105,14 @@ virt_env/
 # mypy
 .mypy_cache/
 
-# RADEX test models
-/pythonradex/tests/RADEX_test_cases/*.out
-/pythonradex/tests/RADEX_test_cases/radex.in
+# Gianni stuff
+src/pythonradex/tests/RADEX_test_cases/*.out
+src/pythonradex/tests/RADEX_test_cases/radex.in
 TODO.txt
 documents
-pythonradex/tests/benchmarking_vs_RADEX_and_LIME/*.fits
+src/pythonradex/tests/benchmarking_vs_RADEX_and_LIME/*.fits
 **/radex.out
 .pytest_cache
-pythonradex/tests/molpop-cep_benchmark/molpop-cep-master/Gianni_models/*.out
-pythonradex/tests/performance_tests/radex_test_performance.out
+src/pythonradex/tests/molpop-cep_benchmark/molpop-cep-master/Gianni_models/*.out
+src/pythonradex/tests/performance_tests/radex_test_performance.out
 virtenv_pytest_instructions.txt

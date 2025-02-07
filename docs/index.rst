@@ -28,7 +28,7 @@ Welcome to the ``pyhonradex`` documentation!
 
 Acknowledgement
 =================
-I would like to thank Simon Bruderer for his helpful clarifications about the ALI method. I also thank Andrés Asensio Ramos for helpful discussions about the LVG geometry.
+I would like to thank Simon Bruderer for his helpful clarifications about the ALI method. I also thank Andrés Asensio Ramos for helpful discussions about the LVG geometry and help with the `MOLPOP-CEP` code that was used to benchmark `pythonradex`.
 
 
 Bibliography
