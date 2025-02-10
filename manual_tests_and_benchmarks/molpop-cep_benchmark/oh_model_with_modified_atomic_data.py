@@ -18,12 +18,13 @@ Created on Tue Jan 28 12:08:41 2025
 
 from scipy import constants
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer,helpers
 
 ref_transitions = [4,6]
 
-datafilepath = '../../tests/LAMDA_files/oh@hfs_modified.dat'
+datafilepath = general.datafilepath('oh@hfs_modified.dat')
 width_v = 1.8*constants.kilo
 N = 2e11/constants.centi**2
 #N = 1e14/constants.centi**2

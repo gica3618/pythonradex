@@ -9,7 +9,8 @@ Created on Tue Jun  4 08:08:28 2024
 import itertools
 from scipy import constants
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer,helpers
 import numpy as np
 import time
@@ -23,7 +24,7 @@ collider = 'para-H2'
 ext_background = helpers.generate_CMB_background(z=0)
 
 cloud = radiative_transfer.Cloud(
-                datafilepath='../../tests/LAMDA_files/co.dat',
+                datafilepath=general.datafilepath('co.dat'),
                 geometry='uniform sphere',line_profile_type='Gaussian',
                 width_v=1*constants.kilo,use_Ng_acceleration=True,
                 treat_line_overlap=False,warn_negative_tau=False)

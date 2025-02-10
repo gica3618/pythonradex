@@ -9,14 +9,15 @@ Created on Fri Aug  9 16:17:18 2024
 #check if/how the dust influences the level populations
 
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer
 from scipy import constants
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-datafilepath = '../../tests/LAMDA_files/co.dat'
+datafilepath = general.datafilepath('co.dat')
 geometry = 'uniform sphere'
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo

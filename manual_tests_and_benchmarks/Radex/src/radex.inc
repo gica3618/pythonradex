@@ -21,8 +21,7 @@ C     files ("radat") and escape probability formula ("method")
 
       character*120 outfile,molfile,radat,specref,logfile
       character*20 version
-      parameter(radat   = '/home/gianni/science/projects/code/'//
-     & 'pythonradex/tests/LAMDA_files/')
+      parameter(radat   = '../../tests/LAMDA_files/')
       parameter(version = '30nov2011')
 
 c     names of output file & data file & molecule
@@ -32,9 +31,9 @@ c     names of output file & data file & molecule
 
 c     Escape probability method (uncomment your choice)
       integer method
-      parameter (method = 1)  ! uniform sphere
+c      parameter (method = 1)  ! uniform sphere
 c      parameter (method = 2)  ! expanding sphere (LVG)
-c      parameter (method = 3)  ! plane parallel slab (shock)
+      parameter (method = 3)  ! plane parallel slab (shock)
 
 c     No user editing needed beyond this point
 

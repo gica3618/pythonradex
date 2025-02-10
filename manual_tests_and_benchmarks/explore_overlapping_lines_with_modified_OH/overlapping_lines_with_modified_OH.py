@@ -13,14 +13,15 @@ Created on Tue Jan 28 18:24:25 2025
 #is via photons from the overlapping line
 
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer,helpers,molecule
 from scipy import constants
 
 ref_transitions = [4,6]
 line_profile_type = 'rectangular'
 
-datafilepath = '../../tests/LAMDA_files/oh@hfs_modified.dat'
+datafilepath = general.datafilepath('oh@hfs_modified.dat')
 
 cloud_kwargs = {'datafilepath':datafilepath,'geometry':'uniform slab',
                 'line_profile_type':line_profile_type,'warn_negative_tau':False}

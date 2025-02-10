@@ -9,9 +9,9 @@ Created on Wed May 15 11:06:20 2024
 #test also how large the impact of ng acceleration is
 
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer,helpers
-import os
 from scipy import constants
 import timeit
 import numpy as np
@@ -23,7 +23,7 @@ collider_densities = {'para-H2':1e4/constants.centi**3}
 
 
 data_folder = '../../tests/LAMDA_files'
-datafilepath = os.path.join(data_folder,data_filename)
+datafilepath = general.datafilepath(data_filename)
 geometry = 'uniform sphere'
 ext_background = helpers.generate_CMB_background(z=0)
 #ext_background = helpers.zero_background

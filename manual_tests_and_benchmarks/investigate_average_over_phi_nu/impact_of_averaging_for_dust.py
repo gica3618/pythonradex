@@ -10,11 +10,11 @@ Created on Mon Aug  5 17:26:43 2024
 #the line profile. check here how much the results are different
 
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer
 from scipy import constants
 import numpy as np
-import os
 import itertools
 
 trans_index = 0
@@ -49,12 +49,11 @@ def relative_diff(x):
     return float(np.abs(np.diff(x)/x[0]))
 
 ext_background = 0
-data_folder = '../../tests/LAMDA_files'
 for test_case in test_cases:
     for coll_density,N,Tkin in itertools.product(test_case['coll_partner_densities'],
                                                  test_case['N_values'],
                                                  test_case['Tkin_values']):
-        cloud_kwargs = {'datafilepath':os.path.join(data_folder,test_case['data_filename']),
+        cloud_kwargs = {'datafilepath':general.datafilepath(test_case['data_filename']),
                         'geometry':geometry,'line_profile_type':line_profile_type,
                         'width_v':width_v,'use_Ng_acceleration':True}
         cloud_params = {'ext_background':ext_background,'Tkin':Tkin,

@@ -10,7 +10,8 @@ Created on Wed Jul  3 18:46:27 2024
 #formula where basically A21 is replaced by A21*beta (see Elitzur92, formula 2.6.4)
 
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import molecule,atomic_transition,escape_probability,\
              escape_probability_functions,helpers
 from scipy import constants
@@ -18,7 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-datafilepath = '../../tests/LAMDA_files/co.dat'
+datafilepath = general.datafilepath('co.dat')
 line_profile_type = 'rectangular' #this has to be rectangular for the LVG sphere!
 width_v = 1*constants.kilo
 T = 50
@@ -29,8 +30,7 @@ d = 1*constants.parsec
 n_values = np.logspace(-1,5,100)/constants.centi**3
 
 mol = molecule.EmittingMolecule(
-            datafilepath=datafilepath, line_profile_type=line_profile_type,
-            width_v=width_v)
+            datafilepath=datafilepath,line_profile_type=line_profile_type,width_v=width_v)
 level_pop = mol.LTE_level_pop(T=T)
 trans = mol.rad_transitions[trans_index]
 width_nu = width_v/constants.c*trans.nu0

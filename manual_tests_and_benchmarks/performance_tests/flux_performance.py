@@ -8,7 +8,8 @@ Created on Mon May 20 17:02:57 2024
 
 from scipy import constants
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer,helpers
 import time
 
@@ -21,7 +22,7 @@ width_v = 1*constants.kilo
 use_Ng_acceleration = True
 ext_background = helpers.generate_CMB_background(z=0)
 Tkin = 49
-datafilepath = '../../tests/LAMDA_files/co.dat'
+datafilepath = general.datafilepath('co.dat')
 N = 1e17/constants.centi**2
 collider_densities = {'para-H2':1e3/constants.centi**3}
 

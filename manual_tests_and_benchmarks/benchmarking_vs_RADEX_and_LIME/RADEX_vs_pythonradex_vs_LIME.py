@@ -14,24 +14,19 @@ Created on Wed Sep  4 19:03:24 2019
 #the flux formula is not correct, i.e. isotropic flux density is assumed, which is not
 #true
 
-#### IMPORTANT ####
-#remember to re-compile RADEX used by RADEX_wrapper if general geometry (sphere vs slab)
-#is changed
-
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
+sys.path.append('../lime')
+import pyLime
 from pythonradex import radiative_transfer, helpers
-import os
 from scipy import constants
-sys.path.append('/home/gianni/science/projects/code/RADEX_wrapper')
+sys.path.append('../RADEX_wrapper')
 import radex_wrapper
 import numpy as np
-sys.path.append('/home/gianni/science/projects/code/Lime')
-import pyLime
 import matplotlib.pyplot as plt
 import itertools
 
-folderpath = '../../tests/LAMDA_files'
 filename = 'co.dat'
 Tkin = 100
 coll_partner_density_cases = {'LTE':{'ortho-H2':1e8/constants.centi**3},
@@ -46,7 +41,7 @@ nu0 = 345.7959899*constants.giga
 trans_number = 2
 width_v = 1*constants.kilo
 distance = 10*constants.parsec
-filepath = os.path.join(folderpath,filename)
+filepath = general.datafilepath(filename)
 width_nu = width_v/constants.c*nu0
 epsilon_nu = 1*constants.giga
 freq_interval = radex_wrapper.Interval(min=nu0-epsilon_nu,max=nu0+epsilon_nu)
@@ -94,6 +89,9 @@ def density(N):
     return N/(2*r)
 ################################################################
 '''
+
+radex_wrapper_geo = {'sphere':'static sphere',
+                     'slab':'LVG slab'}
 
 T = np.ones((x.size,y.size,z.size))*Tkin
 axes = {'x':x,'y':y,'z':z}
@@ -155,7 +153,7 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
                      data_filename=filename,frequency_interval=freq_interval,
                      Tkin=Tkin,coll_partner_densities=coll_partner_densities,
                      T_background=T_background,column_density=N,Delta_v=width_v)
-    wrapper = radex_wrapper.RadexWrapper()
+    wrapper = radex_wrapper.RadexWrapper(geometry=radex_wrapper_geo[general_geometry])
     results = wrapper.compute(radex_input)
     RADEX_intensity = (helpers.B_nu(nu=nu0,T=results['Tex'])-ext_background(nu0))\
                       * (1-np.exp(-results['tau']))

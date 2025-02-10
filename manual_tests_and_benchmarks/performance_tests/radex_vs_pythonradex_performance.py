@@ -7,7 +7,8 @@ Created on Fri Sep  1 10:04:47 2023
 """
 
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer,helpers
 from scipy import constants
 import os
@@ -28,7 +29,8 @@ n_elements = [5,7,10,15] #for Tkin, collider and N
 vary_only_N = False
 
 
-geometry = 'uniform sphere' #verify that the RADEX you are using was compiled with this geometry
+geometry = 'uniform sphere'
+radex_executable = '../Radex/bin/radex_static_sphere'
 
 # data_filename = 'co.dat'
 # colliders = ['para-H2','ortho-H2']
@@ -43,15 +45,15 @@ geometry = 'uniform sphere' #verify that the RADEX you are using was compiled wi
 # log_N_limits = 10+4,14+4
 # Tmin,Tmax = 20,250
 
-data_filename = 'so@lique.dat'
-colliders = ['H2',]
-log_N_limits = 10+4,12+4
-Tmin,Tmax = 60,250
-
-# data_filename = 'c.dat'
-# colliders = ['para-H2','ortho-H2']
-# log_N_limits = 12+4,18+4
+# data_filename = 'so@lique.dat'
+# colliders = ['H2',]
+# log_N_limits = 10+4,12+4
 # Tmin,Tmax = 60,250
+
+data_filename = 'c.dat'
+colliders = ['para-H2','ortho-H2']
+log_N_limits = 12+4,18+4
+Tmin,Tmax = 60,250
 
 
 # #ATTENTION: if no H2 is given, RADEX just puts 1e5 cm-3 by default! WTF!
@@ -67,19 +69,17 @@ treat_line_overlap = False
 remove_cache = True
 
 
-data_folder = '../../tests/LAMDA_files'
-datafilepath = os.path.join(data_folder,data_filename)
+datafilepath = os.path.join(general.lamda_data_folder,data_filename)
 radex_input_file = 'radex_test_preformance.inp'
-radex_executable = '../Radex/bin/radex'
 
 pythonradex_times = np.empty(len(n_elements))
 pythonradex_grid_times = np.empty_like(pythonradex_times)
 RADEX_times = np.empty_like(pythonradex_times)
 
 def remove_pythonradex_cache():
-    cache_folder = '/home/gianni/science/projects/code/pythonradex/pythonradex/__pycache__'
+    cache_folder = '../../src/pythonradex/__pycache__'
     if os.path.exists(cache_folder):
-        print('removing python cache')
+        print(f'removing python cache ({cache_folder})')
         shutil.rmtree(cache_folder)
 
 for i,n in enumerate(n_elements):

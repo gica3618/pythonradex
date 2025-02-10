@@ -15,9 +15,10 @@ Created on Tue May 28 17:10:58 2024
 import numpy as np
 from scipy import constants
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import molecule,atomic_transition,escape_probability,helpers
-sys.path.append('/home/gianni/science/projects/code/RADEX_wrapper')
+sys.path.append('../RADEX_wrapper')
 import radex_wrapper
 
 r = 1*constants.au
@@ -32,11 +33,10 @@ coll_partner_densities = {'para-H2':1e9/constants.centi**3}
 frequency_interval = radex_wrapper.Interval(min=200*constants.giga,
                                             max=240*constants.giga)
 
-datafilepath = '../../tests/LAMDA_files/co.dat'
+datafilepath = general.datafilepath('co.dat')
 
 mol = molecule.EmittingMolecule(
-            datafilepath=datafilepath, line_profile_type=line_profile_type,
-            width_v=width_v)
+            datafilepath=datafilepath,line_profile_type=line_profile_type,width_v=width_v)
 level_pop = mol.LTE_level_pop(T=Tex)
 trans = mol.rad_transitions[trans_index]
 N1 = n*level_pop[trans.low.number]*2*r
@@ -57,10 +57,10 @@ uniform_sphere = escape_probability.UniformSphere()
 source_func = helpers.B_nu(nu=nu,T=Tex)
 flux_kwargs = {'tau_nu':tau_nu,'source_function':source_func,'solid_angle':solid_angle}
 flux_pythonradex = uniform_sphere.compute_flux_nu(**flux_kwargs)
-flux_pythonradex = np.trapz(flux_pythonradex,nu)
+flux_pythonradex = np.trapezoid(flux_pythonradex,nu)
 flux_0D = escape_probability.Flux1D()
 flux_RADEX = flux_0D.compute_flux_nu(**flux_kwargs)
-flux_RADEX = np.trapz(flux_RADEX,nu)
+flux_RADEX = np.trapezoid(flux_RADEX,nu)
 
 radex_input = radex_wrapper.RadexInput(
                      data_filename=datafilepath,
@@ -68,7 +68,7 @@ radex_input = radex_wrapper.RadexInput(
                      coll_partner_densities=coll_partner_densities,
                      T_background=0,column_density=n*2*r,
                      Delta_v=width_v)
-radex_wrap = radex_wrapper.RadexWrapper()
+radex_wrap = radex_wrapper.RadexWrapper(geometry='static sphere')
 radex_wrap.compute(radex_input)
 output = radex_wrap.compute(radex_input)
 #turns out to calculate the flux from the antenna temperature, RADEX simply

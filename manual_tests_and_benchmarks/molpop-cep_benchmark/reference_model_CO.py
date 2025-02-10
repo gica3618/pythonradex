@@ -6,7 +6,8 @@ Created on Mon Jan 27 20:35:49 2025
 @author: gianni
 """
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer,helpers
 import numpy as np
 from scipy import constants
@@ -18,7 +19,7 @@ ref_transitions = [1,2]
 def FWHM(Doppler_param):
     return 2*np.sqrt(np.log(2))*Doppler_param
 
-datafilepath = '../../tests/LAMDA_files/co.dat'
+datafilepath = general.datafilepath('co.dat')
 width_v = FWHM(1*constants.kilo)
 cloud = radiative_transfer.Cloud(
                       datafilepath=datafilepath,geometry='uniform slab',

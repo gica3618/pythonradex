@@ -7,11 +7,10 @@ Created on Mon May 20 09:55:42 2024
 """
 
 #check the times it takes for the different parts of pythonradex to run
-
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer
-import os
 from scipy import constants
 import time
 import numpy as np
@@ -21,8 +20,7 @@ import numpy as np
 data_filename = 'co.dat'
 collider_densities = {'para-H2':1e3/constants.centi**3,
                           'ortho-H2':1e3/constants.centi**3}
-data_folder = '../../tests/LAMDA_files'
-datafilepath = os.path.join(data_folder,data_filename)
+datafilepath = general.datafilepath(data_filename)
 
 geometry = 'uniform sphere'
 ext_background = 0

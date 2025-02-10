@@ -8,8 +8,6 @@ Created on Wed Jul  3 12:03:21 2024
 
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
-sys.path.append('../../src')
 from pythonradex import escape_probability_functions as epf
 
 tau_grid = np.logspace(-3,3,100)

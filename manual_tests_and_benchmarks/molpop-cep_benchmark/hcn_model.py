@@ -10,14 +10,15 @@ Created on Tue Feb  4 11:34:46 2025
 
 from scipy import constants
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer,helpers
 
 ref_transitions = [3,4,5,6,7,8]
 molpop_cep_Tex = {'treat overlap False':[6.29,5.51,6.78,9.36,4.94,5.24],
                   'treat overlap True':[10,10.4,10.6,10.6,6.64,6.88]}
 
-datafilepath = '../../tests/LAMDA_files/hcn@hfs.dat'
+datafilepath = general.datafilepath('hcn@hfs.dat')
 width_v = 2.5*constants.kilo
 N = 3.74E+14/constants.centi**2
 Tkin = 25

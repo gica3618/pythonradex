@@ -1,11 +1,13 @@
-so@lique.dat
+c.dat
 radex_test_performance.out
 0 0
 250.0
-1
-H2
+2
+p-H2
+100000.0
+o-H2
 100000.0
 2.73
-1000000000000.0
+1e+18
 1.0
 0

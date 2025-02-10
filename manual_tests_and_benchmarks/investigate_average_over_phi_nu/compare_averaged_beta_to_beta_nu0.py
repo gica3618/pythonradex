@@ -8,8 +8,6 @@ Created on Fri May 24 11:23:14 2024
 
 from scipy import constants
 import numpy as np
-import sys
-sys.path.append('../../src')
 from pythonradex import escape_probability,atomic_transition
 import matplotlib.pyplot as plt
 

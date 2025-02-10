@@ -14,7 +14,8 @@ Created on Sat Jun  1 20:41:03 2024
 #near a factor 8, maybe a factor 2 at most...
 
 import sys
-sys.path.append('../../src')
+sys.path.append('..')
+import general
 from pythonradex import radiative_transfer,helpers
 from multiprocessing import Pool
 from concurrent.futures import ProcessPoolExecutor
@@ -35,7 +36,7 @@ chunk_sizes = [100,]
 
 def generate_new_cloud():
     return radiative_transfer.Cloud(
-                    datafilepath='../../tests/LAMDA_files/co.dat',
+                    datafilepath=general.datafilepath('co.dat'),
                     geometry='uniform sphere',line_profile_type='Gaussian',
                     width_v=1*constants.kilo,use_Ng_acceleration=True,
                     treat_line_overlap=False)
