@@ -98,8 +98,8 @@ class TestLineProfile():
     
     def test_normalisation(self):
         for profile in self.profiles.values():
-            integrated_line_profile = np.trapz(profile.phi_nu(self.test_nu),self.test_nu)
-            integrated_line_profile_v = np.trapz(profile.phi_v(self.test_v),self.test_v)
+            integrated_line_profile = np.trapezoid(profile.phi_nu(self.test_nu),self.test_nu)
+            integrated_line_profile_v = np.trapezoid(profile.phi_v(self.test_v),self.test_v)
             for intg_prof in (integrated_line_profile,integrated_line_profile_v):
                  assert np.isclose(intg_prof,1,rtol=3e-2,atol=0)
 
@@ -147,7 +147,7 @@ class TestLineProfile():
     #         #test that the array covers the relevant parts of the line profile:
     #         phi = profile.phi_nu(nu=coarse_nu_array)
     #         assert np.max(phi) > 100*np.min(phi)
-    #         assert np.isclose(np.trapz(phi,coarse_nu_array),1,atol=0,rtol=5e-2)
+    #         assert np.isclose(np.trapezoid(phi,coarse_nu_array),1,atol=0,rtol=5e-2)
 
     # def test_phi_arrays(self):
     #     for profile in self.profiles.values():
@@ -165,9 +165,9 @@ class TestLineProfile():
             fine_nu_grid = np.linspace(self.nu0-grid_width*self.width_nu,
                                        self.nu0+grid_width*self.width_nu,n_grid_elements)
             for profile in self.profiles.values():
-                expected_average = np.trapz(func(fine_nu_grid)*profile.phi_nu(fine_nu_grid),
+                expected_average = np.trapezoid(func(fine_nu_grid)*profile.phi_nu(fine_nu_grid),
                                             fine_nu_grid)
-                expected_average /= np.trapz(profile.phi_nu(fine_nu_grid),fine_nu_grid)
+                expected_average /= np.trapezoid(profile.phi_nu(fine_nu_grid),fine_nu_grid)
                 average = profile.average_over_phi_nu(func)
                 assert np.isclose(a=expected_average,b=average,atol=0,rtol=rtol)
         
@@ -185,18 +185,18 @@ class TestLineProfile():
 
         # fine_nu_grid = np.linspace(self.nu0-4*self.width_nu,self.nu0+4*self.width_nu,100)
         # for profile in self.profiles.values():
-        #     expected_average = np.trapz(quadratic(fine_nu_grid)*profile.phi_nu(fine_nu_grid),
+        #     expected_average = np.trapezoid(quadratic(fine_nu_grid)*profile.phi_nu(fine_nu_grid),
         #                                 fine_nu_grid)
-        #     expected_average /= np.trapz(profile.phi_nu(fine_nu_grid),fine_nu_grid)
+        #     expected_average /= np.trapezoid(profile.phi_nu(fine_nu_grid),fine_nu_grid)
         #     average = profile.average_over_phi_nu(quadratic)
         #     assert np.isclose(a=expected_average,b=average,atol=0,rtol=1e-2)
         
 
         # fine_nu_grid = np.linspace(self.nu0-7*self.width_nu,self.nu0+7*self.width_nu,500)
         # for profile in self.profiles.values():
-        #     expected_average = np.trapz(nasty(fine_nu_grid)*profile.phi_nu(fine_nu_grid),
+        #     expected_average = np.trapezoid(nasty(fine_nu_grid)*profile.phi_nu(fine_nu_grid),
         #                                 fine_nu_grid)
-        #     expected_average /= np.trapz(profile.phi_nu(fine_nu_grid),fine_nu_grid)
+        #     expected_average /= np.trapezoid(profile.phi_nu(fine_nu_grid),fine_nu_grid)
         #     average = profile.average_over_phi_nu(nasty)
         #     assert np.isclose(a=expected_average,b=average,atol=0,rtol=1e-2)
 

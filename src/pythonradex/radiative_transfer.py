@@ -5,6 +5,7 @@ from pythonradex.molecule import EmittingMolecule
 import warnings
 import numba as nb
 import numbers
+import traceback
 
 
 class Cloud():
@@ -450,7 +451,9 @@ class Cloud():
                 as well as any requested output. Units of outputs:
                 'level_pop': no units; 'Tex': [K]; 'tau_nu0': no units;
                 'fluxes_of_individual_transitions': [W/m\ :sup:`2`];
-                'tau_nu': no units; 'spectrum': [W/m\ :sup:`2`/Hz]
+                'tau_nu': no units; 'spectrum': [W/m\ :sup:`2`/Hz]. If the model
+                for a specific set of parameters could not be calculated, the output
+                fields are None.
         '''
         #it is expensive to update Tkin and collider densities, so those should be in
         #the outermost loops
@@ -512,10 +515,12 @@ class Cloud():
                                                         solid_angle=solid_angle,nu=nu)
                             yield output
                         except:
-                            print('something went wrong')
-                            print('could not calculate model for following parameters:')
-                            print(output)
-                            raise
+                            print('Error during calculation of model with following'
+                                  +f' parameters: {output}')
+                            traceback.print_exc()
+                            for out in requested_output:
+                                output[out] = None
+                            yield output
 
     def print_results(self):
         '''Prints the results from the radiative transfer computation.'''

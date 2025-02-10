@@ -92,8 +92,8 @@ def read_RADEX_output(filepath,molecule):
             'collider_densities':collider_densities,'flux':np.array(flux),
             'tau':np.array(tau),'Tex':np.array(Tex),'level_pop':np.array(level_pop)}
 
-LAMDA_folder = '/home/gianni/science/projects/code/pythonradex/pythonradex/tests/LAMDA_files'
-RADEX_output_folder = '/home/gianni/science/projects/code/pythonradex/pythonradex/tests/RADEX_test_cases'
+LAMDA_folder = '/home/gianni/science/projects/code/pythonradex/tests/LAMDA_files'
+RADEX_output_folder = '/home/gianni/science/projects/code/pythonradex/tests/RADEX_test_cases'
 
 @pytest.mark.filterwarnings("ignore:some lines are overlapping")
 @pytest.mark.filterwarnings("ignore:negative optical depth")

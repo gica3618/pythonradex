@@ -539,6 +539,17 @@ class TestModelGrid():
                             n_check_models += 1
             assert n_check_models == len(models)
 
+    def test_error_handling(self):
+        requested_output = ['level_pop','Tex','tau_nu0_individual_transitions']
+        kwargs = {'ext_backgrounds':{'zero':0},'N_values':[np.nan,],'Tkin_values':[120,],
+                  'collider_densities_values':{coll:[200,] for  coll in
+                                               ('para-H2','ortho-H2')}}
+        grid_with_failing_models = self.cloud.model_grid(
+                                       **kwargs,requested_output=requested_output)
+        for model in grid_with_failing_models:
+            for rout in requested_output:
+                assert model[rout] is None
+
 
 def test_print_results():
     for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
@@ -548,7 +559,6 @@ def test_print_results():
                                 T_dust=0,tau_dust=0)
         cloud.solve_radiative_transfer()
         cloud.print_results()
-
 
 def test_line_profile_averaging():
     #for a molecule with no overlapping lines, nu0 and averaging should give 

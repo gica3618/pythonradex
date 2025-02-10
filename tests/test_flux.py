@@ -77,7 +77,7 @@ class TestFastFlux():
                         flux_kwargs['nu0'] = mol.nu0[t]
                         flux_kwargs['V'] = V_LVG_sphere
                     expc_flux_nu = geo.compute_flux_nu(**flux_kwargs)
-                    expected_flux.append(np.trapz(expc_flux_nu,nu))
+                    expected_flux.append(np.trapezoid(expc_flux_nu,nu))
                 tau_nu0 = np.ones(mol.n_rad_transitions)*test_tau
                 if lp == 'Gaussian':
                     calculated_flux = flux.FluxCalculator.fast_line_fluxes_Gaussian_without_overlap(

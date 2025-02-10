@@ -69,7 +69,7 @@ def Delta_nu(Delta_v,nu0):
 
 @nb.jit(nopython=True,cache=True)
 def fast_trapz(y,x):
-    return np.trapz(y,x)
+    return np.trapezoid(y,x)
 
 @nb.jit(nopython=True,cache=True)
 def assert_all_finite(x):

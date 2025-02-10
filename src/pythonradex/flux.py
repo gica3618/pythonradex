@@ -68,7 +68,7 @@ class FluxCalculator():
             flux_nu = compute_flux_nu(tau_nu=tau_nu,
                                       source_function=source_function,
                                       solid_angle=solid_angle)
-            flux = np.trapz(flux_nu,nu)
+            flux = np.trapezoid(flux_nu,nu)
             obs_line_fluxes.append(flux)
         return np.array(obs_line_fluxes)
 
@@ -93,7 +93,7 @@ class FluxCalculator():
                                       source_function=source_function,
                                       solid_angle=solid_angle,nu=nu,nu0=nu0[i],
                                       V=V_LVG_sphere)
-            flux = np.trapz(flux_nu,nu)
+            flux = np.trapezoid(flux_nu,nu)
             obs_line_fluxes.append(flux)
         return np.array(obs_line_fluxes)
 

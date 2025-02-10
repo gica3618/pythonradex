@@ -13,6 +13,8 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
+#Gianni:
+sys.path.append(os.path.abspath('../src'))
 
 
 # -- Project information -----------------------------------------------------
@@ -61,3 +63,11 @@ html_static_path = ['_static']
 
 #Gianni additions
 autodoc_member_order = 'bysource'
+
+html_context = {
+    "display_github": True, # Integrate GitHub
+    "github_user": "gica3618", # Username
+    "github_repo": "pythonradex", # Repo name
+    "github_version": "master", # Version
+    "conf_py_path": "/docs/", # Path in the checkout to the docs root
+}

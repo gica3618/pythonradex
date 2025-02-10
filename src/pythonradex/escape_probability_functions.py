@@ -127,7 +127,7 @@ beta_LVG_sphere = generate_Taylor_beta(beta_ana=beta_analytical_LVG_sphere,
 
 def integral_term_for_uniform_slab(tau):
     mu = np.linspace(1e-5,1,200)
-    return np.trapz((1-np.exp(-tau/mu))*mu,mu)
+    return np.trapezoid((1-np.exp(-tau/mu))*mu,mu)
 
 tau_grid_for_UniformSlab = np.logspace(-5,2,1000)
 min_grid_tau = np.min(tau_grid_for_UniformSlab)
