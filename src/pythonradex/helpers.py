@@ -4,6 +4,9 @@ import numpy as np
 from scipy import constants
 import numba as nb
 
+#TODO remove unnecessary nb.jit stuff
+
+
 #@nb.jit(nopython=True,cache=True) #doesn't help
 def B21(A21,nu):
     return constants.c**2/(2*constants.h*nu**3)*A21

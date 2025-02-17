@@ -157,6 +157,17 @@ class EmittingMolecule(Molecule):
             self.has_overlapping_lines = True
         else:
             self.has_overlapping_lines = False
+        self.Tkin_data = {}
+        self.Tkin_data_limits = {}
+        for collider,coll_transitions in self.coll_transitions.items():
+            self.Tkin_data[collider] = coll_transitions[0].Tkin_data
+            assert np.all(self.Tkin_data[collider][:-1] < self.Tkin_data[collider][1:])
+            for coll_trans in coll_transitions:
+                assert np.all(coll_trans.Tkin_data==self.Tkin_data[collider])
+            self.Tkin_data_limits[collider] = np.min(self.Tkin_data[collider]),\
+                                               np.max(self.Tkin_data[collider])
+        self.compute_K_cube()
+        #TODO clean up the stuff that is no longer needed
         #collecting parameters, needed for numba-compiled functions:
         self.A21 = np.array([line.A21 for line in self.rad_transitions])
         self.B21 = np.array([line.B21 for line in self.rad_transitions])
@@ -172,28 +183,33 @@ class EmittingMolecule(Molecule):
                                              self.rad_transitions])
         self.Delta_E_rad_transitions = np.array([line.Delta_E for line in
                                                  self.rad_transitions])
-        self.ordered_colliders = sorted(self.coll_transitions.keys())
-        self.coll_trans_low_up_number = nb.typed.List([])
-        self.coll_Tkin_data = nb.typed.List([])
-        self.coll_K21_data = nb.typed.List([])
-        self.coll_gups = nb.typed.List([])
-        self.coll_glows = nb.typed.List([])
-        self.coll_DeltaEs = nb.typed.List([])
-        for collider in self.ordered_colliders:
-            transitions = self.coll_transitions[collider]
-            n_low_up = [[trans.low.number,trans.up.number] for trans in transitions]
-            self.coll_trans_low_up_number.append(np.array(n_low_up))
-            Tkin = [trans.Tkin_data for trans in transitions]
-            self.coll_Tkin_data.append(np.array(Tkin))
-            K21 = [trans.K21_data for trans in transitions]
-            self.coll_K21_data.append(np.array(K21))
-            gup = [trans.up.g for trans in transitions]
-            glow = [trans.low.g for trans in transitions]
-            self.coll_gups.append(np.array(gup))
-            self.coll_glows.append(np.array(glow))
-            DeltaE = [trans.Delta_E for trans in transitions]
-            self.coll_DeltaEs.append(np.array(DeltaE))
+        # self.ordered_colliders = sorted(self.coll_transitions.keys())
+        # self.coll_trans_low_up_number = nb.typed.List([])
+        # self.coll_Tkin_data = nb.typed.List([])
+        # self.coll_log_Tkin_data = nb.typed.List([])
+        # self.coll_K21_data = nb.typed.List([])
+        # self.coll_log_K21_data = nb.typed.List([])
+        # self.coll_gups = nb.typed.List([])
+        # self.coll_glows = nb.typed.List([])
+        # self.coll_DeltaEs = nb.typed.List([])
+        # for collider in self.ordered_colliders:
+        #     transitions = self.coll_transitions[collider]
+        #     n_low_up = [[trans.low.number,trans.up.number] for trans in transitions]
+        #     self.coll_trans_low_up_number.append(np.array(n_low_up))
+        #     Tkin = [trans.Tkin_data for trans in transitions]
+        #     self.coll_Tkin_data.append(np.array(Tkin))
+        #     self.coll_log_Tkin_data.append(np.log(Tkin))
+        #     K21 = [trans.K21_data for trans in transitions]
+        #     self.coll_K21_data.append(np.array(K21))
+        #     self.coll_log_K21_data.append(np.log(K21))
+        #     gup = [trans.up.g for trans in transitions]
+        #     glow = [trans.low.g for trans in transitions]
+        #     self.coll_gups.append(np.array(gup))
+        #     self.coll_glows.append(np.array(glow))
+        #     DeltaE = [trans.Delta_E for trans in transitions]
+        #     self.coll_DeltaEs.append(np.array(DeltaE))
 
+    #TODO can this be done without nb.jit?
     @staticmethod
     @nb.jit(nopython=True,cache=True)
     def fast_tau_nu0_lines(N,level_population,nlow_rad_transitions,nup_rad_transitions,
@@ -247,6 +263,7 @@ class EmittingMolecule(Molecule):
                 phi_nu0=self.phi_nu0,gup_rad_transitions=self.gup_rad_transitions,
                 glow_rad_transitions=self.glow_rad_transitions,nu0=self.nu0)
 
+    #TODO can this be done without nb.jit?
     @staticmethod
     @nb.jit(nopython=True,cache=True)
     def fast_Tex(level_population,nlow_rad_transitions,nup_rad_transitions,
@@ -330,3 +347,45 @@ class EmittingMolecule(Molecule):
             tau_tot += tau_dust(nu)
             return tau_tot
         return tau_tot_nu
+
+    def compute_K_cube(self):
+        self.K_cube = {collider:np.zeros((self.n_levels,self.n_levels,
+                                          self.Tkin_data[collider].size))
+                       for collider in self.coll_transitions.keys()}
+        for collider,coll_transitions in self.coll_transitions.items():
+            for i,Tkin in enumerate(self.Tkin_data[collider]):
+                for coll_trans in coll_transitions:
+                    K12,K21 = coll_trans.coeffs(Tkin=Tkin)
+                    n_low = coll_trans.low.number
+                    n_up = coll_trans.up.number
+                    #production of upper level from lower level:
+                    self.K_cube[collider][n_up,n_low,i] += K12
+                    #destruction of lower level by transitions to upper level:
+                    self.K_cube[collider][n_low,n_low,i] += -K12
+                    #production lower level from upper level:
+                    self.K_cube[collider][n_low,n_up,i] += K21
+                    #destruction of upper level by transition to lower level:
+                    self.K_cube[collider][n_up,n_up,i] += -K21
+            assert np.all(np.isfinite(self.K_cube[collider]))
+
+    def get_GammaC(self,Tkin,collider_densities):
+        GammaC = np.zeros((self.n_levels,)*2)
+        for collider,coll_dens in collider_densities.items():
+            Tlimits = self.Tkin_data_limits[collider]
+            assert Tlimits[0] <= Tkin <= Tlimits[1]
+            K_cube = self.K_cube[collider]
+            Tkin_data = self.Tkin_data[collider]
+            j = np.searchsorted(Tkin_data,Tkin,side='left')
+            if j == 0:
+                GammaC += K_cube[:,:,0]*coll_dens
+                continue
+            i = j-1
+            x0 = np.log(Tkin_data[i])
+            y0 = K_cube[:,:,i]
+            x1 = np.log(Tkin_data[j])
+            y1 = K_cube[:,:,j]
+            x = np.log(Tkin)
+            #linear interpolation:
+            interp_K = (y0*(x1-x) + y1*(x-x0)) / (x1-x0)
+            GammaC += coll_dens*interp_K
+        return GammaC

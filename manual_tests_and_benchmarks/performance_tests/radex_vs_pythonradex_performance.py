@@ -32,10 +32,10 @@ vary_only_N = False
 geometry = 'uniform sphere'
 radex_executable = '../Radex/bin/radex_static_sphere'
 
-# data_filename = 'co.dat'
-# colliders = ['para-H2','ortho-H2']
-# log_N_limits = 13+4,18+4
-# Tmin,Tmax = 20,250
+data_filename = 'co.dat'
+colliders = ['para-H2','ortho-H2']
+log_N_limits = 13+4,18+4
+Tmin,Tmax = 20,250
 #narrow range where RADEX does not throw warnings:
 # log_N_limits = 16+4,16.3+4
 # Tmin,Tmax = 50,51
@@ -50,10 +50,10 @@ radex_executable = '../Radex/bin/radex_static_sphere'
 # log_N_limits = 10+4,12+4
 # Tmin,Tmax = 60,250
 
-data_filename = 'c.dat'
-colliders = ['para-H2','ortho-H2']
-log_N_limits = 12+4,18+4
-Tmin,Tmax = 60,250
+# data_filename = 'c.dat'
+# colliders = ['para-H2','ortho-H2']
+# log_N_limits = 12+4,18+4
+# Tmin,Tmax = 60,250
 
 
 # #ATTENTION: if no H2 is given, RADEX just puts 1e5 cm-3 by default! WTF!

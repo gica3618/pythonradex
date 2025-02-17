@@ -9,6 +9,7 @@ import numba as nb
 from pythonradex import helpers,escape_probability_functions
 from scipy import constants
 
+#TODO remove unnecessary nb.jit stuff
 
 class EscapeProbabilityUniformSphere():
     

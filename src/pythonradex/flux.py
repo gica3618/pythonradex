@@ -6,6 +6,8 @@ Created on Fri Aug  2 10:32:03 2024
 @author: gianni
 """
 
+#TODO remove unnecessary nb.jit stuff
+
 import numba as nb
 from scipy import constants
 from pythonradex import helpers

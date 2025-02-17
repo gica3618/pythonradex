@@ -10,6 +10,8 @@ import numpy as np
 from scipy import constants
 import numba as nb
 
+#TODO remove unnecessary nb.jit
+
 
 @nb.jit(nopython=True,cache=True)
 def fast_tau_nu(A21,phi_nu,g_low,g_up,N1,N2,nu):
@@ -20,31 +22,37 @@ def fast_Tex(Delta_E,g_low,g_up,x1,x2):
     return np.where((x1==0) & (x2==0),0,
                     -Delta_E/(constants.k*np.log(g_low*x2/(g_up*x1))))
 
-@nb.jit(nopython=True,cache=True)
-def fast_coll_coeffs(Tkin,Tkin_data,K21_data,gup,glow,Delta_E):
-    #the following is not working because of a bug:
-    # assert np.all((Tmin <= Tkin) & (Tkin <= Tmax)),\
-    #           'Requested Tkin out of interpolation range. '\
-    #                 +f'Tkin must be within {Tmin}-{Tmax} K'
-    #instead I do a for loop:
-    Tmin,Tmax = np.min(Tkin_data),np.max(Tkin_data)
-    for T in Tkin:
-        assert Tmin <= T,f'requested T={T} is below Tmin={Tmin},'\
-                              +'i.e. outside the interpolation range'
-        assert T <= Tmax, f'requested T={T} is above Tmax={Tmax},'\
-                              +'i.e. outside the interpolation range'
-    logTkin = np.log(Tkin)
-    log_Tkin_data = np.log(Tkin_data)
-    #interpolate in log space if possible
-    if np.all(K21_data>0):
-        log_K21_data = np.log(K21_data)
-        logK21 = np.interp(logTkin,log_Tkin_data,log_K21_data)
-        K21 = np.exp(logK21)
-    else:
-        K21 = np.interp(logTkin,log_Tkin_data,K21_data)
-    #see RADEX manual for following formula
-    K12 = (gup/glow*K21*np.exp(-Delta_E/(constants.k*Tkin)))
-    return [K12,K21]
+# @nb.jit(nopython=True,cache=True)
+# def fast_coll_coeffs(Tkin,Tkin_data,log_Tkin_data,K21_data,log_K21_data,gup,
+#                      glow,Delta_E):
+#     #this function is used many times when setting up the matrix of collisional
+#     #rates, so I avoid as much as possible any calculations
+#     #note: the reason I compile this function is not to make it faster, but so
+#     #that it can be used in the compiled function that calculates the collisional
+#     #rate matrix
+#     #the following is not working because of a bug:
+#     # assert np.all((Tmin <= Tkin) & (Tkin <= Tmax)),\
+#     #           'Requested Tkin out of interpolation range. '\
+#     #                 +f'Tkin must be within {Tmin}-{Tmax} K'
+#     #instead I do a for loop:
+#     Tmin,Tmax = np.min(Tkin_data),np.max(Tkin_data)
+#     for T in Tkin:
+#         assert Tmin <= T,f'requested T={T} is below Tmin={Tmin},'\
+#                               +'i.e. outside the interpolation range'
+#         assert T <= Tmax, f'requested T={T} is above Tmax={Tmax},'\
+#                               +'i.e. outside the interpolation range'
+#     logTkin = np.log(Tkin)
+#     #log_Tkin_data = np.log(Tkin_data) #don't calculate to speed up the function
+#     #interpolate in log space if possible
+#     if np.all(K21_data>0):
+#         #log_K21_data = np.log(K21_data) #don't calculate to speed up the function
+#         logK21 = np.interp(logTkin,log_Tkin_data,log_K21_data)
+#         K21 = np.exp(logK21)
+#     else:
+#         K21 = np.interp(logTkin,log_Tkin_data,K21_data)
+#     #see RADEX manual for following formula
+#     K12 = (gup/glow*K21*np.exp(-Delta_E/(constants.k*Tkin)))
+#     return [K12,K21]
 
 
 class LineProfile():
@@ -65,9 +73,6 @@ class LineProfile():
     def initialise_phi_nu_params(self):
         raise NotImplementedError
     
-    # def initialise_coarse_nu_array(self):
-    #     raise NotImplementedError
-
     def phi_nu(self,nu):
         r'''The value of the line profile in frequency space.
         
@@ -348,6 +353,8 @@ class CollisionalTransition(Transition):
         assert np.all(K21_data >= 0)
         self.K21_data = K21_data
         self.Tkin_data = Tkin_data
+        self.Tkin_data_limits = np.min(self.Tkin_data),np.max(self.Tkin_data)
+        self.log_Tkin_data = np.log(Tkin_data)
 
     def coeffs(self,Tkin):
         r'''
@@ -355,19 +362,22 @@ class CollisionalTransition(Transition):
 
         Args:
             Tkin (float or numpy.ndarray): kinetic temperature in [K]
-        
+
         Returns:
             tuple: The collision coefficients K12 and K21 in [m\ :sup:`3`/s]
             at the requested temperature(s)
-        
+
         Raises:
             AssertionError: If Tkin is outside the available temperature range.
         '''
-        Tkin = np.atleast_1d(Tkin)
-        K12,K21 = fast_coll_coeffs(
-                         Tkin=Tkin,Tkin_data=self.Tkin_data,K21_data=self.K21_data,
-                         gup=self.up.g,glow=self.low.g,Delta_E=self.Delta_E)
-        if Tkin.size == 1:
-            return K12[0],K21[0]
-        else:
-            return K12,K21
+        #Tkin = np.atleast_1d(Tkin)
+        Tmin,Tmax = self.Tkin_data_limits
+        assert np.all(Tmin <= Tkin),\
+                             'requested temperature below minimum collider temperature'
+        assert np.all(Tkin <= Tmax),\
+                             'requested temperature above maximum collider temperature'
+        logTkin = np.log(Tkin)
+        K21 = np.interp(logTkin,self.log_Tkin_data,self.K21_data)
+        #see RADEX manual for following formula
+        K12 = (self.up.g/self.low.g*K21*np.exp(-self.Delta_E/(constants.k*Tkin)))
+        return [K12,K21]

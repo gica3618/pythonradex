@@ -10,6 +10,9 @@ import numba as nb
 import numpy as np
 from pythonradex import helpers
 
+
+#TODO remove unnecessary nb.jit stuff
+
 #It would be much more elegant to put these functions directly into the
 #classes defined in escape_probability.py. But I want to compile the beta functions
 #with numba, so I have to put these functions outside the class definitions

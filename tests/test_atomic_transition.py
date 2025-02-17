@@ -47,39 +47,39 @@ def test_fast_tau():
     atomic_transition.fast_tau_nu(A21=A21,phi_nu=phi_nu_array,g_low=g_low,
                                              g_up=g_up,N1=N1,N2=N2,nu=nu_array)
 
-def test_fast_coll_coeffs():
-    Tkin_data = np.array((20,40,100,200,300))
-    K21_data = np.array((1e-3,1e-4,2e-3,2e-4,5e-5))
-    K21_data_with_0 = K21_data.copy()
-    K21_data_with_0[1] = 0
-    gup = 2
-    glow = 3
-    Delta_E = 1e-10
-    for invalid_Tkin in (10,500):
-        with pytest.raises(AssertionError):
-            atomic_transition.fast_coll_coeffs(
-                     Tkin=np.array((invalid_Tkin,)),Tkin_data=Tkin_data,
-                     K21_data=K21_data,gup=gup,glow=glow,Delta_E=Delta_E)
-    log_Tkin_data = np.log(Tkin_data)
-    log_K21_data = np.log(K21_data)
-    test_Tkin = np.array((20,90,150,220.1))
-    log_interp_K21 = np.interp(np.log(test_Tkin),log_Tkin_data,log_K21_data)
-    log_interp_K21 = np.exp(log_interp_K21)
-    def get_K12(K21):
-        return K21*gup/glow*np.exp(-Delta_E/(constants.k*test_Tkin))
-    log_interp_K12 = get_K12(log_interp_K21)
-    K12_to_test,K21_to_test = atomic_transition.fast_coll_coeffs(
-                                 Tkin=test_Tkin,Tkin_data=Tkin_data,K21_data=K21_data,
-                                 gup=gup,glow=glow,Delta_E=Delta_E)
-    assert np.all(K12_to_test==log_interp_K12)
-    assert np.all(K21_to_test==log_interp_K21)
-    interp_K21 = np.interp(np.log(test_Tkin),log_Tkin_data,K21_data_with_0)
-    interp_K12 = get_K12(interp_K21)
-    K12_to_test_0,K21_to_test_0 = atomic_transition.fast_coll_coeffs(
-                                 Tkin=test_Tkin,Tkin_data=Tkin_data,K21_data=K21_data_with_0,
-                                 gup=gup,glow=glow,Delta_E=Delta_E)
-    assert np.all(K12_to_test_0==interp_K12)
-    assert np.all(K21_to_test_0==interp_K21)
+# def test_fast_coll_coeffs():
+#     Tkin_data = np.array((20,40,100,200,300))
+#     K21_data = np.array((1e-3,1e-4,2e-3,2e-4,5e-5))
+#     K21_data_with_0 = K21_data.copy()
+#     K21_data_with_0[1] = 0
+#     gup = 2
+#     glow = 3
+#     Delta_E = 1e-10
+#     for invalid_Tkin in (10,500):
+#         with pytest.raises(AssertionError):
+#             atomic_transition.fast_coll_coeffs(
+#                      Tkin=np.array((invalid_Tkin,)),Tkin_data=Tkin_data,
+#                      K21_data=K21_data,gup=gup,glow=glow,Delta_E=Delta_E)
+#     log_Tkin_data = np.log(Tkin_data)
+#     log_K21_data = np.log(K21_data)
+#     test_Tkin = np.array((20,90,150,220.1))
+#     log_interp_K21 = np.interp(np.log(test_Tkin),log_Tkin_data,log_K21_data)
+#     log_interp_K21 = np.exp(log_interp_K21)
+#     def get_K12(K21):
+#         return K21*gup/glow*np.exp(-Delta_E/(constants.k*test_Tkin))
+#     log_interp_K12 = get_K12(log_interp_K21)
+#     K12_to_test,K21_to_test = atomic_transition.fast_coll_coeffs(
+#                                  Tkin=test_Tkin,Tkin_data=Tkin_data,K21_data=K21_data,
+#                                  gup=gup,glow=glow,Delta_E=Delta_E)
+#     assert np.all(K12_to_test==log_interp_K12)
+#     assert np.all(K21_to_test==log_interp_K21)
+#     interp_K21 = np.interp(np.log(test_Tkin),log_Tkin_data,K21_data_with_0)
+#     interp_K12 = get_K12(interp_K21)
+#     K12_to_test_0,K21_to_test_0 = atomic_transition.fast_coll_coeffs(
+#                                  Tkin=test_Tkin,Tkin_data=Tkin_data,K21_data=K21_data_with_0,
+#                                  gup=gup,glow=glow,Delta_E=Delta_E)
+#     assert np.all(K12_to_test_0==interp_K12)
+#     assert np.all(K21_to_test_0==interp_K21)
 
 
 class TestLineProfile():
@@ -138,22 +138,6 @@ class TestLineProfile():
         for profile in self.profiles.values():
             assert profile.phi_nu0 == profile.phi_nu(nu=profile.nu0)
 
-    # def test_coarse_nu_array(self):
-    #     for profile in self.profiles.values():
-    #         coarse_nu_array = profile.coarse_nu_array
-    #         assert np.all(np.diff(coarse_nu_array)>0)
-    #         assert np.min(coarse_nu_array) < profile.nu0 - profile.width_nu/2
-    #         assert np.max(coarse_nu_array) > profile.nu0 + profile.width_nu/2
-    #         #test that the array covers the relevant parts of the line profile:
-    #         phi = profile.phi_nu(nu=coarse_nu_array)
-    #         assert np.max(phi) > 100*np.min(phi)
-    #         assert np.isclose(np.trapezoid(phi,coarse_nu_array),1,atol=0,rtol=5e-2)
-
-    # def test_phi_arrays(self):
-    #     for profile in self.profiles.values():
-    #         assert np.all(profile.coarse_phi_nu_array
-    #                       == profile.phi_nu(profile.coarse_nu_array))
-
     def test_phi_nu_averaging(self):
         def unity(nu):
             return 1
@@ -183,22 +167,6 @@ class TestLineProfile():
         test_func(func=Gaussian,grid_width=4,n_grid_elements=100,rtol=1e-2)
         test_func(func=nasty,grid_width=7,n_grid_elements=600,rtol=7e-2)
 
-        # fine_nu_grid = np.linspace(self.nu0-4*self.width_nu,self.nu0+4*self.width_nu,100)
-        # for profile in self.profiles.values():
-        #     expected_average = np.trapezoid(quadratic(fine_nu_grid)*profile.phi_nu(fine_nu_grid),
-        #                                 fine_nu_grid)
-        #     expected_average /= np.trapezoid(profile.phi_nu(fine_nu_grid),fine_nu_grid)
-        #     average = profile.average_over_phi_nu(quadratic)
-        #     assert np.isclose(a=expected_average,b=average,atol=0,rtol=1e-2)
-        
-
-        # fine_nu_grid = np.linspace(self.nu0-7*self.width_nu,self.nu0+7*self.width_nu,500)
-        # for profile in self.profiles.values():
-        #     expected_average = np.trapezoid(nasty(fine_nu_grid)*profile.phi_nu(fine_nu_grid),
-        #                                 fine_nu_grid)
-        #     expected_average /= np.trapezoid(profile.phi_nu(fine_nu_grid),fine_nu_grid)
-        #     average = profile.average_over_phi_nu(nasty)
-        #     assert np.isclose(a=expected_average,b=average,atol=0,rtol=1e-2)
 
 class TestLevel():
 
@@ -230,6 +198,7 @@ class TestTransition():
                                                           up=up,low=low,A21=A21)
     width_v = 1*constants.kilo
     Tkin_data = np.array((1,2,3,4,5))
+    log_Tkin_data = np.log(Tkin_data)
     test_emission_line = atomic_transition.EmissionLine(
                               up=up,low=low,A21=A21,line_profile_type=line_profile_type,
                               width_v=width_v)
@@ -309,11 +278,28 @@ class TestTransition():
             coll_trans = atomic_transition.CollisionalTransition(
                                up=self.up,low=self.low,K21_data=K21_data,
                                Tkin_data=self.Tkin_data)
-            Tkin = 3
-            expected_K12,expected_K21 = atomic_transition.fast_coll_coeffs(
-                                            Tkin=np.array((Tkin,)),Tkin_data=coll_trans.Tkin_data,
-                                            K21_data=coll_trans.K21_data,gup=coll_trans.up.g,
-                                            glow=coll_trans.low.g,Delta_E=coll_trans.Delta_E)
+            def get_K12(K21,Tkin):
+                return K21*coll_trans.up.g/coll_trans.low.g\
+                          *np.exp(-coll_trans.Delta_E/(constants.k*Tkin))
+            test_Tkin = [3.56,np.array((1,4.56))]
+            for Tkin in test_Tkin:
+                expected_K21 = np.interp(np.log(Tkin),self.log_Tkin_data,K21_data)
+                expected_K12 = get_K12(K21=expected_K21,Tkin=Tkin)
+                K12,K21 = coll_trans.coeffs(Tkin=Tkin)
+                assert np.all(K12 == expected_K12)
+                assert np.all(K21 == expected_K21)
+            #test also with absolute values:
+            Tkin = np.array([1,4])
             K12,K21 = coll_trans.coeffs(Tkin=Tkin)
-            assert K12 == expected_K12[0]
-            assert K21 == expected_K21[0]
+            assert np.all(K21 == K21_data[[0,3]])
+            assert np.all(K12 == get_K12(K21=K21,Tkin=Tkin))
+
+    def test_coll_coeff_invalid_T(self):
+        K21_data = np.array((2,1,0,0,3))
+        coll_trans = atomic_transition.CollisionalTransition(
+                           up=self.up,low=self.low,K21_data=K21_data,
+                           Tkin_data=self.Tkin_data)
+        invalid_Tkin = [0.5,300,self.Tkin_data+2]
+        for Tkin in invalid_Tkin:
+            with pytest.raises(AssertionError):
+                coll_trans.coeffs(Tkin)

@@ -10,6 +10,9 @@ import numba as nb
 import numpy as np
 from pythonradex import atomic_transition,helpers
 import numbers
+import time
+
+#TODO remove unnecessary nb.jit
 
 
 class RateEquations():
@@ -39,39 +42,17 @@ class RateEquations():
     def set_N(self,N):
         self.N = N
 
-    def collider_is_requested(self,collider):
-        return collider in self.collider_densities
-
-    def get_collider_selection(self):
-        collider_selection = [self.collider_is_requested(collider) for collider
-                              in self.molecule.ordered_colliders]
-        return nb.typed.List(collider_selection)
-
-    def get_collider_densities_list(self):
-        collider_densities_list = nb.typed.List([])
-        #important to iterate over ordered_colliders, not collider_densities.items()
-        for collider in self.molecule.ordered_colliders:
-            if self.collider_is_requested(collider):
-                #need to convert to float, otherwise numba can get confused
-                collider_densities_list.append(float(self.collider_densities[collider]))
-            else:
-                collider_densities_list.append(np.inf)
-        return collider_densities_list
-
     def set_collision_rates(self,Tkin,collider_densities):
+        #start_set = time.time()
         self.Tkin = Tkin
         self.collider_densities = collider_densities
-        collider_selection = self.get_collider_selection()
-        collider_densities_list = self.get_collider_densities_list()
-        self.GammaC = self.construct_GammaC(
-                    Tkin=np.atleast_1d(self.Tkin),
-                    collider_selection=collider_selection,
-                    collider_densities_list=collider_densities_list,
-                    n_levels=self.molecule.n_levels,
-                    coll_trans_low_up_number=self.molecule.coll_trans_low_up_number,
-                    Tkin_data = self.molecule.coll_Tkin_data,
-                    K21_data=self.molecule.coll_K21_data,gups=self.molecule.coll_gups,
-                    glows=self.molecule.coll_glows,DeltaEs=self.molecule.coll_DeltaEs)
+        #start_GammaC = time.time()
+        self.GammaC = self.molecule.get_GammaC(
+                              Tkin=self.Tkin,collider_densities=collider_densities)
+        #end_GammaC = time.time()
+        #print(f'GammaC: {end_GammaC-start_GammaC}')
+        #end_set = time.time()
+        #print(f'set coll rates: {end_set-start_set:.3g}')
 
     @staticmethod
     def generate_constant_func(const_value):
@@ -87,49 +68,71 @@ class RateEquations():
             setattr(self,func_name,argument)
 
     def set_ext_background(self,ext_background):
+        # start = time.time()
         self.assign_func_nu(func_name='ext_background',argument=ext_background)
         if not self.treat_line_overlap:
-            self.Iext_nu0 = np.array([self.ext_background(nu0) for nu0 in
-                                      self.molecule.nu0])
+            if isinstance(ext_background,numbers.Number):
+                #faster than evaluating the function at each nu0
+                self.Iext_nu0 = np.full(shape=self.molecule.nu0.shape,
+                                        fill_value=ext_background)
+            else:
+                self.Iext_nu0 = np.array([self.ext_background(nu0) for nu0 in
+                                          self.molecule.nu0])
+        # end = time.time()
+        # print(f'set ext bg: {end-start:.3g}')
 
     def set_dust(self,T_dust,tau_dust):
+        # start = time.time()
         for func_name,func in {'T_dust':T_dust,'tau_dust':tau_dust}.items():
             self.assign_func_nu(func_name=func_name,argument=func)
         if not self.treat_line_overlap:
-            self.tau_dust_nu0 = np.array([self.tau_dust(nu0) for nu0 in
-                                          self.molecule.nu0])
-            self.S_dust_nu0 = np.array([self.S_dust(nu=nu0) for nu0 in
-                                        self.molecule.nu0])
+            # start_nu0 = time.time()
+            if isinstance(tau_dust,numbers.Number):
+                #fast:
+                self.tau_dust_nu0 = np.full(shape=self.molecule.nu0.shape,
+                                            fill_value=tau_dust)
+            else:
+                # self.tau_dust_nu0 = np.array([self.tau_dust(nu0) for nu0 in
+                #                               self.molecule.nu0])
+                self.tau_dust_nu0 = self.tau_dust(self.molecule.nu0)
+            self.S_dust_nu0 = self.S_dust(nu=self.molecule.nu0)
+            # end_nu0 = time.time()
+            # print(f'dust nu0: {end_nu0-start_nu0:.3g}')
+        # end = time.time()
+        # print(f'set dust: {end-start:.3g}')
 
-    @staticmethod
-    @nb.jit(nopython=True,cache=True)
-    def construct_GammaC(
-              Tkin,collider_selection,collider_densities_list,n_levels,
-              coll_trans_low_up_number,Tkin_data,K21_data,gups,glows,DeltaEs):
-        '''pre-calculate the matrix with the collsional rates, so that it can
-        easily be added during solving the radiative transfer'''
-        GammaC = np.zeros((n_levels,n_levels))
-        for i in range(len(collider_selection)):
-            if not collider_selection[i]:
-                continue
-            coll_density = collider_densities_list[i]
-            n_transitions = len(DeltaEs[i])
-            for j in range(n_transitions):
-                K12,K21 = atomic_transition.fast_coll_coeffs(
-                             Tkin=Tkin,Tkin_data=Tkin_data[i][j],
-                             K21_data=K21_data[i][j],gup=gups[i][j],glow=glows[i][j],
-                             Delta_E=DeltaEs[i][j])
-                #K12 and K21 are 1D arrays because Tkin is a 1D array
-                K12 = K12[0]
-                K21 = K21[0]
-                n_low = coll_trans_low_up_number[i][j,0]
-                n_up = coll_trans_low_up_number[i][j,1]
-                GammaC[n_up,n_low] += K12*coll_density
-                GammaC[n_low,n_low] += -K12*coll_density
-                GammaC[n_low,n_up] += K21*coll_density
-                GammaC[n_up,n_up] += -K21*coll_density
-        assert np.all(np.isfinite(GammaC))
-        return GammaC
+    # @staticmethod
+    # @nb.jit(nopython=True,cache=True)
+    # def construct_GammaC(
+    #           Tkin,collider_selection,collider_densities_list,n_levels,
+    #           coll_trans_low_up_number,Tkin_data,log_Tkin_data,K21_data,
+    #           log_K21_data,gups,glows,
+    #           DeltaEs):
+    #     '''pre-calculate the matrix with the collsional rates, so that it can
+    #     easily be added during solving the radiative transfer'''
+    #     GammaC = np.zeros((n_levels,n_levels))
+    #     for i in range(len(collider_selection)):
+    #         if not collider_selection[i]:
+    #             continue
+    #         coll_density = collider_densities_list[i]
+    #         n_transitions = len(DeltaEs[i])
+    #         for j in range(n_transitions):
+    #             K12,K21 = atomic_transition.fast_coll_coeffs(
+    #                          Tkin=Tkin,Tkin_data=Tkin_data[i][j],
+    #                          log_Tkin_data=log_Tkin_data[i][j],
+    #                          K21_data=K21_data[i][j],log_K21_data=log_K21_data[i][j],
+    #                          gup=gups[i][j],glow=glows[i][j],Delta_E=DeltaEs[i][j])
+    #             #K12 and K21 are 1D arrays because Tkin is a 1D array
+    #             K12 = K12[0]
+    #             K21 = K21[0]
+    #             n_low = coll_trans_low_up_number[i][j,0]
+    #             n_up = coll_trans_low_up_number[i][j,1]
+    #             GammaC[n_up,n_low] += K12*coll_density
+    #             GammaC[n_low,n_low] += -K12*coll_density
+    #             GammaC[n_low,n_up] += K21*coll_density
+    #             GammaC[n_up,n_up] += -K21*coll_density
+    #     assert np.all(np.isfinite(GammaC))
+    #     return GammaC
 
     def S_dust(self,nu):
         T = np.atleast_1d(self.T_dust(nu))
@@ -240,6 +243,7 @@ class RateEquations():
         return term
 
     def GammaR_nu0(self,level_population):
+        # start = time.time()
         tau_line_nu0 = self.tau_line_nu0(
                            level_population=level_population,
                            nlow_rad_transitions=self.molecule.nlow_rad_transitions,
@@ -250,27 +254,47 @@ class RateEquations():
                            glow_rad_transitions=self.molecule.glow_rad_transitions,
                            nu0=self.molecule.nu0)
         tau_tot_nu0 = tau_line_nu0 + self.tau_dust_nu0
+        # end = time.time()
+        # print(f'tau: {end-start:.3g}')
+        # start = time.time()
         beta_nu0 = self.geometry.beta(tau_tot_nu0)
+        # end = time.time()
+        # print(f'beta: {end-start:.3g}')
         n_levels = self.molecule.n_levels
         trans_low_number = self.molecule.nlow_rad_transitions
         trans_up_number = self.molecule.nup_rad_transitions
+        # start = time.time()
         Ieff_nu0 = self.Ieff_nu0(
                       n_levels=n_levels,Iext_nu0=self.Iext_nu0,beta_nu0=beta_nu0,
                       S_dust_nu0=self.S_dust_nu0,trans_low_number=trans_low_number,
                       trans_up_number=trans_up_number,tau_dust_nu0=self.tau_dust_nu0,
                       tau_tot_nu0=tau_tot_nu0)
+        # end = time.time()
+        # print(f'Ieff: {end-start:.3g}')
+        # start = time.time()
         mixed_term_nu0  = self.mixed_term_nu0(
                              n_levels=n_levels,beta_nu0=beta_nu0,
                              trans_low_number=trans_low_number,
                              trans_up_number=trans_up_number,
                              tau_tot_nu0=tau_tot_nu0,tau_line_nu0=tau_line_nu0,
                              A21=self.molecule.A21)
+        # end = time.time()
+        # print(f'mixed term: {end-start:.3g}')
         #GammaR_ll' = U_l'l+... i.e. indices are interchanged, so I have to transpose
         #see eq. 2.19 in Rybicki & Hummer (1992)
         #note that the factor h*nu/4pi is already taken into account in all terms
+        # start = time.time()
         GammaR = np.transpose(self.U_nu0+self.V_nu0*Ieff_nu0-mixed_term_nu0)
+        # end = time.time()
+        # print(f'transpose: {end-start:.3g}')
+        # start = time.time()
         diag = self.get_diagonal_GammaR(GammaR=GammaR)
+        # end = time.time()
+        # print(f'compute diag: {end-start:.3g}')
+        # start = time.time()
         np.fill_diagonal(a=GammaR,val=diag)
+        # end = time.time()
+        # print(f'fill diagonal: {end-start:.3g}')
         return GammaR
 
     @staticmethod
@@ -377,9 +401,15 @@ class RateEquations():
                   +'density and/or low collider density'
 
     def solve(self,level_population):
+        # start = time.time()
         Gamma = self.GammaR(level_population=level_population) + self.GammaC
         Gamma = self.apply_normalisation_condition(
                                          Gamma=Gamma,n_levels=self.molecule.n_levels)
+        # end = time.time()
+        # print(f'Gamma: {end-start:.3g}')
+        # start = time.time()
         fractional_population = self.fast_solve(Gamma=Gamma,b=self.b)
         self.assert_frac_pop_positive(fractional_population=fractional_population)
+        # end = time.time()
+        # print(f'solve for frac pop: {end-start:.3g}')
         return fractional_population

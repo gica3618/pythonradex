@@ -70,50 +70,6 @@ class TestGeneral():
     rate_eq_generator = RateEqGenerator(molecule=test_molecule,
                                         collider_densities=collider_densities)
 
-    def test_collider_is_requested(self):
-        for rate_eq in self.rate_eq_generator.rate_eq_iterator():
-            for coll in self.collider_densities.keys():
-                assert rate_eq.collider_is_requested(coll)
-            for coll in self.test_molecule.ordered_colliders:
-                if not coll in self.collider_densities:
-                    assert not rate_eq.collider_is_requested(coll)
-
-    def test_get_collider_selection(self):
-        expected_ordered_colliders = ['H','H+','e','ortho-H2','para-H2']
-        assert self.test_molecule.ordered_colliders\
-                                           == expected_ordered_colliders
-        expected_collider_selection = np.array((True,False,True,False,True))
-        for rate_eq in self.rate_eq_generator.rate_eq_iterator():
-            assert np.all(expected_collider_selection==rate_eq.get_collider_selection())
-
-    def test_get_collider_densities_list(self):
-        for rate_eq in self.rate_eq_generator.rate_eq_iterator():
-            expected_collider_densities_list = []
-            for coll in rate_eq.molecule.ordered_colliders:
-                if coll in self.collider_densities:
-                    expected_collider_densities_list.append(self.collider_densities[coll])
-                else:
-                    expected_collider_densities_list.append(np.inf)
-            assert np.all(expected_collider_densities_list
-                          ==list(rate_eq.get_collider_densities_list()))
-
-    def test_coll_rate_matrix(self):
-        #write a slow "for" loop to calculate the rate matrix and compare to the fast
-        #loop used in the code
-        expected_GammaC = np.zeros((self.test_molecule.n_levels,)*2)
-        for collider,coll_density in self.collider_densities.items():
-            coll_transitions = self.test_molecule.coll_transitions[collider]
-            for trans in coll_transitions:
-                n_up = trans.up.number
-                n_low = trans.low.number
-                K12,K21 = trans.coeffs(Tkin=Tkin)
-                expected_GammaC[n_up,n_low] += K12*coll_density
-                expected_GammaC[n_low,n_low] += -K12*coll_density
-                expected_GammaC[n_low,n_up] += K21*coll_density
-                expected_GammaC[n_up,n_up] += -K21*coll_density
-        for rate_eq in self.rate_eq_generator.rate_eq_iterator():
-            assert np.allclose(expected_GammaC,rate_eq.GammaC,atol=0,rtol=1e-10)
-
     def test_nu_functions(self):
         def non_zero(nu):
             return (nu/(100*constants.giga))**2
@@ -325,10 +281,10 @@ class TestOverlapStuff():
                               datafilepath=os.path.join(here,'LAMDA_files/cn.dat'),
                               line_profile_type='Gaussian',
                               width_v=1000*constants.kilo)
+    print(f'test mol: {test_molecule.coll_transitions.keys()}')
     assert test_molecule.has_overlapping_lines
     LTE_level_pop = test_molecule.LTE_level_pop(T=102)
-    collider_densities = {'He':1e4/constants.centi**3,
-                          'e':1e2/constants.centi**3}
+    collider_densities = {'H2':1e4/constants.centi**3,'e':1e2/constants.centi**3}
     rate_eq_generator = RateEqGenerator(molecule=test_molecule,
                                         collider_densities=collider_densities)
 

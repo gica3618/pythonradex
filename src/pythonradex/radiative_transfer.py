@@ -6,6 +6,9 @@ import warnings
 import numba as nb
 import numbers
 import traceback
+import time
+
+#TODO remove unnecessary nb.jit stuff
 
 
 class Cloud():
@@ -131,7 +134,7 @@ class Cloud():
     def check_parameters(self,collider_densities,T_dust,tau_dust,ext_background):
         if collider_densities is not None:
             for collider in collider_densities.keys():
-                if collider not in self.emitting_molecule.ordered_colliders:
+                if collider not in self.emitting_molecule.coll_transitions:
                     raise ValueError(f'no data for collider "{collider}" available')
         if 'LVG' in self.geometry_name:
             if not (T_dust in (None,0) and tau_dust in (None,0)):
@@ -197,12 +200,16 @@ class Cloud():
         self.check_parameters(collider_densities=collider_densities,T_dust=T_dust,
                               tau_dust=tau_dust,ext_background=ext_background)
         if not hasattr(self,'rate_equations'):
+            params = {'N':N,'Tkin':Tkin,'collider_densities':collider_densities,
+                      'ext_background':ext_background,'T_dust':T_dust,
+                      'tau_dust':tau_dust}
+            for p_name,p in params.items():
+                assert p is not None,\
+                     f'for initial setup, all params need to be defined; {p_name} missing'
             self.rate_equations = rate_equations.RateEquations(
                                  molecule=self.emitting_molecule,
-                                 collider_densities=collider_densities,Tkin=Tkin,
                                  treat_line_overlap=self.treat_line_overlap,
-                                 ext_background=ext_background,T_dust=T_dust,
-                                 tau_dust=tau_dust,geometry=self.geometry,N=N)
+                                 geometry=self.geometry,**params)
         else:
             if N is not None:
                 #updating N should be very cheap, so I don't care if I really need
@@ -292,8 +299,15 @@ class Cloud():
                 print(f'iteration {counter}')
             if counter > self.max_iter:
                 raise RuntimeError('maximum number of iterations reached')
+            # start = time.time()
             new_level_pop = self.rate_equations.solve(level_population=level_pop)
+            # end = time.time()
+            # print(f'solve level pop: {end-start:.3g}')
+            # start = time.time()
             Tex = self.emitting_molecule.get_Tex(new_level_pop)
+            # end = time.time()
+            # print(f'Tex: {end-start:.3g}')
+            # start = time.time()
             Tex_residual = helpers.relative_difference(Tex,old_Tex)
             if self.verbose:
                 print(f'max relative Tex residual: {np.max(Tex_residual):.3g}')
@@ -302,17 +316,25 @@ class Cloud():
             residual = self.compute_residual(
                  Tex_residual=Tex_residual,tau=tau_nu0,
                  min_tau_considered_for_convergence=self.min_tau_considered_for_convergence)
+            # end = time.time()
+            # print(f'residual: {end-start:.3g}')
+            # start = time.time()
             old_Tex = Tex.copy()
             old_level_pops.append(level_pop.copy())
             if len(old_level_pops) > 3:
                 old_level_pops.pop(0)
             level_pop = self.underrelaxation*new_level_pop\
                                     + (1-self.underrelaxation)*level_pop
+            # end = time.time()
+            # print(f'next level pop: {end-start:.3g}')
             if self.use_Ng_acceleration\
                          and counter > self.min_iter_before_ng_acceleration\
                          and counter%self.ng_acceleration_interval == 0:
+                # start = time.time()
                 level_pop = self.ng_accelerate(level_pop=level_pop,
                                                old_level_pops=old_level_pops)
+                # end = time.time()
+                # print(f'ng: {end-start:.3g}')
         if self.verbose:
             print(f'converged in {counter} iterations')
         self.n_iter_convergence = counter

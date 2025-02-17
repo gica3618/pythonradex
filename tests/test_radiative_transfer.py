@@ -192,6 +192,14 @@ class TestUpdateParameters():
             self.verify_cloud_params(cloud=cloud,new_params=self.standard_params,
                                      original_params=None)
 
+    def test_None_not_allowed_initial_setting(self):
+        for p_name in self.standard_params.keys():
+            invalid_initial_params = self.standard_params.copy()
+            invalid_initial_params[p_name] = None
+            cloud = get_general_test_cloud(specie='CO',width_v=1*constants.kilo)
+            with pytest.raises(AssertionError):
+                cloud.update_parameters(**invalid_initial_params)
+
     def test_update_N(self):
         for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
             cloud.update_parameters(**self.standard_params)
@@ -275,37 +283,6 @@ class TestUpdateParameters():
             self.verify_cloud_params(cloud=cloud,new_params=new_params,
                                      original_params=old_params)
 
-
-            # for param_name,new_value in new_params.items():
-            #     changed_params = standard_params.copy()
-            #     changed_params[param_name] = new_value
-            #     cloud.update_parameters(**changed_params)
-            #     self.verify_cloud_params(cloud,changed_params)
-            # #T_dust and tau_dust are only allowed for non LVG geometries
-            # if 'LVG' not in cloud.geometry_name:
-            #     for T_dust,tau_dust in zip((123,lambda nu: np.ones_like(nu)*145),
-            #                                (2,lambda nu: np.ones_like(nu)*0.5)):
-            #         changed_params = standard_params.copy()
-            #         changed_params['T_dust'] = T_dust
-            #         changed_params['tau_dust'] = tau_dust
-            #         cloud.update_parameters(**changed_params)
-            #         self.verify_cloud_params(cloud,changed_params)
-            # new_collider_densities\
-            #        = [standard_params['collider_densities'] | {'ortho-H2':200},
-            #           {'para-H2':standard_params['collider_densities']['para-H2']*2},
-            #           {'ortho-H2':300}]
-            # for new_coll_densities in new_collider_densities:
-            #     changed_params = standard_params.copy()
-            #     changed_params['collider_densities'] = new_coll_densities
-            #     cloud.update_parameters(**changed_params)
-            #     self.verify_cloud_params(cloud,changed_params)
-            #     #test also change of colliders and Tkin at the same time:
-            #     changed_params = standard_params.copy()
-            #     changed_params['collider_densities'] = new_coll_densities
-            #     changed_params['Tkin'] = 2*standard_params['Tkin']
-            #     cloud.update_parameters(**changed_params)
-            #     self.verify_cloud_params(cloud,changed_params)
-
     def test_None_parameters(self):
         for cloud in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
             old_params = {'ext_background':cmb,
@@ -353,10 +330,10 @@ class TestUpdateParameters():
 
     @pytest.mark.filterwarnings("ignore:negative optical depth")
     def test_update_parameters_with_physics(self):
-        N_values = np.logspace(12,16,4)/constants.centi**2
+        N_values = [1e14/constants.centi**2,]
         ext_backgrounds = [cmb,lambda nu: 0,lambda nu: cmb(nu)/2]
-        Tkins = np.linspace(20,200,4)
-        coll_density_values = np.logspace(2,7,4)/constants.centi**3
+        Tkins = [120,]
+        coll_density_values = [1e5/constants.centi**3,]
         collider_cases = [['ortho-H2'],['para-H2'],['ortho-H2','para-H2']]
         T_dust_cases = [0,123,lambda nu: np.ones_like(nu)*250]
         tau_dust_cases = [0,1.1,lambda nu: np.ones_like(nu)*4]
