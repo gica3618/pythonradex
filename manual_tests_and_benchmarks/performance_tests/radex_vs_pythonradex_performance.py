@@ -22,15 +22,17 @@ import itertools
 radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
                        'He':'He'}
 ext_background = helpers.generate_CMB_background(z=0)
-n_elements = [5,7,10,15] #for Tkin, collider and N
+n_elements = [5,7,10,15,20] #for Tkin, collider and N
 #most optimistic case is if only N is varied because then rate equations don't
 #need to be re-calculated every time
 #however, seems like it doesn't really change anything...
 vary_only_N = False
 
 
-geometry = 'uniform sphere'
-radex_executable = '../Radex/bin/radex_static_sphere'
+# geometry = 'uniform sphere'
+# radex_executable = '../Radex/bin/radex_static_sphere'
+geometry = 'LVG slab'
+radex_executable = '../Radex/bin/radex_LVG_slab'
 
 data_filename = 'co.dat'
 colliders = ['para-H2','ortho-H2']
@@ -162,8 +164,10 @@ for i,n in enumerate(n_elements):
     print(f'time ratio pythonradex grid/RADEX: {pythonradex_grid_times[i]/RADEX_times[i]:.3g}')
 
 fig,ax = plt.subplots()
-ax.plot(n_elements,pythonradex_times/RADEX_times)
+ax.plot(n_elements,pythonradex_times/RADEX_times,label='normal')
+ax.plot(n_elements,pythonradex_grid_times/RADEX_times,label='grid')
 secax = ax.secondary_xaxis('top', functions=(lambda x: x**3, lambda x: x**(1/3)))
 secax.set_xlabel('total number of calculations')
 plt.xlabel('n_elements')
 plt.ylabel('pythonradex time / RADEX time')
+ax.legend(loc='best')

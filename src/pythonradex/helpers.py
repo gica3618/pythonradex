@@ -7,15 +7,15 @@ import numba as nb
 #TODO remove unnecessary nb.jit stuff
 
 
-#@nb.jit(nopython=True,cache=True) #doesn't help
+@nb.jit(nopython=True,cache=True) #doesn't help
 def B21(A21,nu):
     return constants.c**2/(2*constants.h*nu**3)*A21
 
-#@nb.jit(nopython=True,cache=True) #doesn't help
+@nb.jit(nopython=True,cache=True) #doesn't help
 def B12(A21,nu,g1,g2):
     return g2/g1*B21(A21=A21,nu=nu)
 
-@nb.jit(nopython=True,cache=True)
+@nb.jit(nopython=True,cache=True) 
 def B_nu(nu,T):
     r"""Planck function (black body)
     
@@ -43,7 +43,7 @@ def generate_CMB_background(z=0):
         return B_nu(nu=nu,T=T_CMB)
     return CMB_background
 
-@nb.jit(nopython=True,cache=True)
+@nb.jit(nopython=True,cache=True) 
 def FWHM2sigma(FWHM):
     """Convert FWHM of a Gaussian to standard deviation.
     
@@ -54,7 +54,7 @@ def FWHM2sigma(FWHM):
         float or numpy.ndarray: the standard deviation corresponding to the input FWHM"""
     return FWHM/(2*np.sqrt(2*np.log(2)))
 
-@nb.jit(nopython=True,cache=True)
+@nb.jit(nopython=True,cache=True) 
 def relative_difference(a,b):
     """Computes the elementwise relative difference between a and b.
     In general, return |a-b|/a.
@@ -69,11 +69,3 @@ def relative_difference(a,b):
 #@nb.jit(nopython=True,cache=True) #doesn't help
 def Delta_nu(Delta_v,nu0):
     return nu0 * Delta_v / constants.c
-
-@nb.jit(nopython=True,cache=True)
-def fast_trapz(y,x):
-    return np.trapezoid(y,x)
-
-@nb.jit(nopython=True,cache=True)
-def assert_all_finite(x):
-    assert np.all(np.isfinite(x))

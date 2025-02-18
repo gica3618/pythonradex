@@ -113,7 +113,7 @@ def generate_Taylor_beta(beta_ana,beta_Taylor):
         prob[negative] = beta_ana(tau_nu[negative])
         #here I just use abs(tau) to stabilize the code
         prob[unreliable] = beta_ana(np.abs(tau_nu[unreliable]))
-        helpers.assert_all_finite(prob)
+        assert np.all(np.isfinite(prob))
         return clip_prob(prob)
     return beta
 
@@ -128,6 +128,7 @@ beta_LVG_sphere = generate_Taylor_beta(beta_ana=beta_analytical_LVG_sphere,
 #see Elitzur92 (https://ui.adsabs.harvard.edu/abs/1992ASSL..170.....E/abstract,
 #Problem 2.12) for confirmation of the formulas used here
 
+@nb.jit(nopython=True,cache=True)
 def integral_term_for_uniform_slab(tau):
     mu = np.linspace(1e-5,1,200)
     return np.trapezoid((1-np.exp(-tau/mu))*mu,mu)
@@ -157,7 +158,7 @@ def beta_uniform_slab(tau_nu):
     #should be ignored for tau < -1
     int_term = interpolated_integral_term(tau=tau_nu)
     prob = np.where(tau_nu<min_grid_tau,1,int_term/tau_nu)
-    helpers.assert_all_finite(prob)
+    assert np.all(np.isfinite(prob))
     return clip_prob(prob)
 
 ######### LVG sphere as implemented by RADEX ##################

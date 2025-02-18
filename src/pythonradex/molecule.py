@@ -209,22 +209,6 @@ class EmittingMolecule(Molecule):
         #     DeltaE = [trans.Delta_E for trans in transitions]
         #     self.coll_DeltaEs.append(np.array(DeltaE))
 
-    #TODO can this be done without nb.jit?
-    @staticmethod
-    @nb.jit(nopython=True,cache=True)
-    def fast_tau_nu0_lines(N,level_population,nlow_rad_transitions,nup_rad_transitions,
-                     A21,phi_nu0,gup_rad_transitions,glow_rad_transitions,nu0):
-        n_lines = nlow_rad_transitions.size
-        tau_nu0 = np.empty(n_lines)
-        for i in range(n_lines):
-            N1 = level_population[nlow_rad_transitions[i]]*N
-            N2 = level_population[nup_rad_transitions[i]]*N
-            tau_nu0[i] = atomic_transition.fast_tau_nu(
-                             A21=A21[i],phi_nu=phi_nu0[i],
-                             g_up=gup_rad_transitions[i],g_low=glow_rad_transitions[i],
-                             N1=N1,N2=N2,nu=nu0[i])
-        return tau_nu0
-    
     def get_tau_nu0_lines(self,N,level_population):
         r'''Compute the optical depth at the rest frequency of all lines (dust
         and overlapping lines are ignored)
@@ -237,12 +221,13 @@ class EmittingMolecule(Molecule):
         Returns:
             numpy.ndarray: the optical depth at the rest frequency
         '''
-        return self.fast_tau_nu0_lines(
-                N=N,level_population=level_population,
-                nlow_rad_transitions=self.nlow_rad_transitions,
-                nup_rad_transitions=self.nup_rad_transitions,A21=self.A21,
-                phi_nu0=self.phi_nu0,gup_rad_transitions=self.gup_rad_transitions,
-                glow_rad_transitions=self.glow_rad_transitions,nu0=self.nu0)
+        N1 = level_population[self.nlow_rad_transitions]*N
+        N2 = level_population[self.nup_rad_transitions]*N
+        tau_nu0 = atomic_transition.tau_nu(
+                         A21=self.A21,phi_nu=self.phi_nu0,
+                         g_up=self.gup_rad_transitions,g_low=self.glow_rad_transitions,
+                         N1=N1,N2=N2,nu=self.nu0)
+        return tau_nu0
 
     def get_tau_nu0_lines_LTE(self,N,T):
         r'''Compute the optical depth at the rest frequency in LTE for all lines
@@ -256,27 +241,7 @@ class EmittingMolecule(Molecule):
             numpy.ndarray: the optical depth at the rest frequency assuming LTE
         '''
         level_population = self.LTE_level_pop(T=T)
-        return self.fast_tau_nu0_lines(
-                N=N,level_population=level_population,
-                nlow_rad_transitions=self.nlow_rad_transitions,
-                nup_rad_transitions=self.nup_rad_transitions,A21=self.A21,
-                phi_nu0=self.phi_nu0,gup_rad_transitions=self.gup_rad_transitions,
-                glow_rad_transitions=self.glow_rad_transitions,nu0=self.nu0)
-
-    #TODO can this be done without nb.jit?
-    @staticmethod
-    @nb.jit(nopython=True,cache=True)
-    def fast_Tex(level_population,nlow_rad_transitions,nup_rad_transitions,
-                 Delta_E_rad_transitions,gup_rad_transitions,glow_rad_transitions):
-        n_lines = nlow_rad_transitions.size
-        Tex = np.empty(n_lines)
-        for i in range(n_lines):
-            Tex[i] = atomic_transition.fast_Tex(
-                       Delta_E=Delta_E_rad_transitions[i],g_up=gup_rad_transitions[i],
-                       g_low=glow_rad_transitions[i],
-                       x1=level_population[nlow_rad_transitions[i]],
-                       x2=level_population[nup_rad_transitions[i]])
-        return Tex
+        return self.get_tau_nu0_lines(N=N,level_population=level_population)
 
     def get_Tex(self,level_population):
         r'''Compute the excitation temperature for all radiative transitions
@@ -289,13 +254,12 @@ class EmittingMolecule(Molecule):
             numpy.ndarray: the excitation temperature for each radiative transition,
                 in the order as in the LAMDA file
         '''
-        return self.fast_Tex(
-                 level_population=level_population,
-                 nlow_rad_transitions=self.nlow_rad_transitions,
-                 nup_rad_transitions=self.nup_rad_transitions,
-                 Delta_E_rad_transitions=self.Delta_E_rad_transitions,
-                 gup_rad_transitions=self.gup_rad_transitions,
-                 glow_rad_transitions=self.glow_rad_transitions)
+        Tex = atomic_transition.Tex(
+                   Delta_E=self.Delta_E_rad_transitions,g_up=self.gup_rad_transitions,
+                   g_low=self.glow_rad_transitions,
+                   x1=level_population[self.nlow_rad_transitions],
+                   x2=level_population[self.nup_rad_transitions])
+        return Tex
 
     def identify_overlapping_lines(self):
         self.overlapping_lines = []

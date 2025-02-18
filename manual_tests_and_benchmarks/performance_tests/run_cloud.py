@@ -21,8 +21,7 @@ import os
 # collider_densities = {'H2':1e3/constants.centi**3}
 data_filename = 'co.dat'
 collider_densities = {'para-H2':1e3/constants.centi**3,
-                      'ortho-H2':1e3/constants.centi**3
-                      }
+                      'ortho-H2':1e3/constants.centi**3}
 
 datafilepath = general.datafilepath(data_filename)
 geometry = 'uniform sphere'
@@ -32,7 +31,7 @@ line_profile_type = 'Gaussian'
 width_v = 1*constants.kilo
 use_Ng_acceleration = True
 treat_line_overlap = False
-niter = 15
+niter = 5
 #I choose different Tkin for each iteration to force setting up the
 #rate equations for each iteration
 Tkin_values = np.linspace(20,40,niter)

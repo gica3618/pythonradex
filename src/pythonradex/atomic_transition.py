@@ -12,47 +12,14 @@ import numba as nb
 
 #TODO remove unnecessary nb.jit
 
-
-@nb.jit(nopython=True,cache=True)
-def fast_tau_nu(A21,phi_nu,g_low,g_up,N1,N2,nu):
+@nb.jit(nopython=True,cache=True) 
+def tau_nu(A21,phi_nu,g_low,g_up,N1,N2,nu):
     return constants.c**2/(8*np.pi*nu**2)*A21*phi_nu*(g_up/g_low*N1-N2)
 
-@nb.jit(nopython=True,cache=True,error_model='numpy')
-def fast_Tex(Delta_E,g_low,g_up,x1,x2):
+@nb.jit(nopython=True,cache=True) 
+def Tex(Delta_E,g_low,g_up,x1,x2):
     return np.where((x1==0) & (x2==0),0,
                     -Delta_E/(constants.k*np.log(g_low*x2/(g_up*x1))))
-
-# @nb.jit(nopython=True,cache=True)
-# def fast_coll_coeffs(Tkin,Tkin_data,log_Tkin_data,K21_data,log_K21_data,gup,
-#                      glow,Delta_E):
-#     #this function is used many times when setting up the matrix of collisional
-#     #rates, so I avoid as much as possible any calculations
-#     #note: the reason I compile this function is not to make it faster, but so
-#     #that it can be used in the compiled function that calculates the collisional
-#     #rate matrix
-#     #the following is not working because of a bug:
-#     # assert np.all((Tmin <= Tkin) & (Tkin <= Tmax)),\
-#     #           'Requested Tkin out of interpolation range. '\
-#     #                 +f'Tkin must be within {Tmin}-{Tmax} K'
-#     #instead I do a for loop:
-#     Tmin,Tmax = np.min(Tkin_data),np.max(Tkin_data)
-#     for T in Tkin:
-#         assert Tmin <= T,f'requested T={T} is below Tmin={Tmin},'\
-#                               +'i.e. outside the interpolation range'
-#         assert T <= Tmax, f'requested T={T} is above Tmax={Tmax},'\
-#                               +'i.e. outside the interpolation range'
-#     logTkin = np.log(Tkin)
-#     #log_Tkin_data = np.log(Tkin_data) #don't calculate to speed up the function
-#     #interpolate in log space if possible
-#     if np.all(K21_data>0):
-#         #log_K21_data = np.log(K21_data) #don't calculate to speed up the function
-#         logK21 = np.interp(logTkin,log_Tkin_data,log_K21_data)
-#         K21 = np.exp(logK21)
-#     else:
-#         K21 = np.interp(logTkin,log_Tkin_data,K21_data)
-#     #see RADEX manual for following formula
-#     K12 = (gup/glow*K21*np.exp(-Delta_E/(constants.k*Tkin)))
-#     return [K12,K21]
 
 
 class LineProfile():
@@ -228,8 +195,8 @@ class Transition():
         Returns:
             numpy.ndarray: excitation temperature in [K]
         '''
-        return fast_Tex(Delta_E=self.Delta_E,g_up=self.up.g,g_low=self.low.g,
-                        x1=x1,x2=x2)
+        return Tex(Delta_E=self.Delta_E,g_up=self.up.g,g_low=self.low.g,
+                   x1=x1,x2=x2)
 
 
 class RadiativeTransition(Transition):
@@ -316,8 +283,8 @@ class EmissionLine(RadiativeTransition):
             numpy.ndarray: the optical depth at the requested frequencies
         
         '''
-        return fast_tau_nu(phi_nu=self.line_profile.phi_nu(nu),N1=N1,N2=N2,nu=nu,
-                           **self.tau_kwargs)
+        return tau_nu(phi_nu=self.line_profile.phi_nu(nu),N1=N1,N2=N2,nu=nu,
+                      **self.tau_kwargs)
 
     def tau_nu0(self,N1,N2):
         r'''Computes the optical depth at the rest frequency
@@ -332,8 +299,8 @@ class EmissionLine(RadiativeTransition):
             float or numpy.ndarray: the optical depth at the rest frequency
         
         '''
-        return fast_tau_nu(phi_nu=self.line_profile.phi_nu0,N1=N1,N2=N2,nu=self.nu0,
-                           **self.tau_kwargs)
+        return tau_nu(phi_nu=self.line_profile.phi_nu0,N1=N1,N2=N2,nu=self.nu0,
+                      **self.tau_kwargs)
 
             
 class CollisionalTransition(Transition):

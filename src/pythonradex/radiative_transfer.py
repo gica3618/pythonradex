@@ -246,9 +246,9 @@ class Cloud():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def compute_residual(Tex_residual,tau,min_tau_considered_for_convergence):
+    def compute_residual(Tex_residual,tau,min_tau):
         #same as RADEX: consider only lines above a minimum tau for convergence
-        selection = tau > min_tau_considered_for_convergence
+        selection = tau > min_tau
         n_selected = selection.sum()
         if n_selected > 0:
             return np.sum(Tex_residual[selection]) / n_selected
@@ -288,7 +288,7 @@ class Cloud():
     def solve_radiative_transfer(self):
         """Solves the radiative transfer."""
         level_pop = self.get_initial_level_pop()
-        old_level_pops = nb.typed.List([])
+        old_level_pops = []
         Tex_residual = np.ones(self.emitting_molecule.n_rad_transitions) * np.inf
         old_Tex = 0
         counter = 0
@@ -311,11 +311,17 @@ class Cloud():
             Tex_residual = helpers.relative_difference(Tex,old_Tex)
             if self.verbose:
                 print(f'max relative Tex residual: {np.max(Tex_residual):.3g}')
+            # end = time.time()
+            # print(f'Tex residual: {end-start:.3g}')
+            # start = time.time()
             tau_nu0 = self.emitting_molecule.get_tau_nu0_lines(
-                                       N=self.rate_equations.N,level_population=new_level_pop)
+                         N=self.rate_equations.N,level_population=new_level_pop)
+            # end = time.time()
+            # print(f'tau_nu0: {end-start:.3g}')
+            # start = time.time()
             residual = self.compute_residual(
-                 Tex_residual=Tex_residual,tau=tau_nu0,
-                 min_tau_considered_for_convergence=self.min_tau_considered_for_convergence)
+                             Tex_residual=Tex_residual,tau=tau_nu0,
+                             min_tau=self.min_tau_considered_for_convergence)
             # end = time.time()
             # print(f'residual: {end-start:.3g}')
             # start = time.time()

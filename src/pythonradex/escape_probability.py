@@ -40,11 +40,10 @@ class UniformSphere(EscapeProbabilityUniformSphere):
         flux_nu_Taylor = 2*np.pi*source_function*(tau_nu/3-tau_nu**2/8+tau_nu**3/30
                           -tau_nu**4/144) #from Wolfram Alpha
         flux_nu = np.where(stable_region,flux_nu,flux_nu_Taylor)
-        helpers.assert_all_finite(flux_nu)
+        assert np.all(np.isfinite(flux_nu))
         #the observed flux is (flux at sphere surface)*4*pi*r**2/(4*pi*d**2)
         #=F_surface*Omega*4/(4*pi)
         return flux_nu*solid_angle/np.pi
-
 
 @nb.jit(nopython=True,cache=True)
 def exp_tau_factor(tau_nu):
