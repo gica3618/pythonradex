@@ -26,7 +26,7 @@ def test_negative_tau():
     ext_background = helpers.generate_CMB_background()
     for geo in geometries:
         for ncoll,Tkin,width_v,N in itertools.product(ncoll_values,Tkin_values,
-                                                         width_v_values,N_values):
+                                                      width_v_values,N_values):
             collider_densities = {'ortho-H2':ncoll}
             cloud = radiative_transfer.Cloud(
                             datafilepath=os.path.join(here,'LAMDA_files/co.dat'),

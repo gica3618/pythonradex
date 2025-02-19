@@ -8,10 +8,7 @@ Created on Thu May 23 11:10:38 2024
 
 import numba as nb
 import numpy as np
-from pythonradex import helpers
 
-
-#TODO remove unnecessary nb.jit stuff
 
 #It would be much more elegant to put these functions directly into the
 #classes defined in escape_probability.py. But I want to compile the beta functions

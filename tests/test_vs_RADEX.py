@@ -23,7 +23,7 @@ ext_background = lambda nu: helpers.B_nu(nu=nu,T=RADEX_test_cases.T_background)
 #conditions:
 rtol = {'uniform sphere RADEX':5e-2,
         'LVG slab':5e-2,
-        'LVG sphere RADEX':0.2}
+        'LVG sphere RADEX':2e-1}
 frac_max_level_pop_to_consider = {'uniform sphere RADEX':1e-5,
                                   'LVG slab':1e-5,
                                   'LVG sphere RADEX':0.01}
@@ -113,7 +113,7 @@ def test_vs_RADEX():
                 cloud = radiative_transfer.Cloud(
                            datafilepath=datafilepath,geometry=geo,
                            line_profile_type=line_profile_type,width_v=width_v,
-                           use_Ng_acceleration=False,
+                           use_Ng_acceleration=True,
                            treat_line_overlap=False,test_mode=True)
                 cloud.update_parameters(
                        ext_background=ext_background,N=N,Tkin=Tkin,
@@ -149,6 +149,9 @@ def test_vs_RADEX():
                         taus.append(cloud.tau_nu0_individual_transitions[i])
                 if len(taus) > 0:
                     max_taus.append(np.max(taus))
+                print(specie)
+                print(geo)
+                print(N,Tkin,collider_densities)
                 assert np.allclose(RADEX_results['level_pop'][level_pop_selection],
                                    cloud.level_pop[level_pop_selection],atol=0,
                                    rtol=rtol[geo])

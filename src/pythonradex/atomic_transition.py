@@ -10,16 +10,20 @@ import numpy as np
 from scipy import constants
 import numba as nb
 
-#TODO remove unnecessary nb.jit
 
 @nb.jit(nopython=True,cache=True) 
 def tau_nu(A21,phi_nu,g_low,g_up,N1,N2,nu):
     return constants.c**2/(8*np.pi*nu**2)*A21*phi_nu*(g_up/g_low*N1-N2)
 
-@nb.jit(nopython=True,cache=True) 
+@nb.jit(nopython=True,cache=True,error_model='numpy')
 def Tex(Delta_E,g_low,g_up,x1,x2):
     return np.where((x1==0) & (x2==0),0,
                     -Delta_E/(constants.k*np.log(g_low*x2/(g_up*x1))))
+
+@nb.jit(nopython=True,cache=True)
+def compute_K12(K21,g_up,g_low,Delta_E,Tkin):
+    #see RADEX manual
+    return (g_up/g_low*K21*np.exp(-Delta_E/(constants.k*Tkin)))
 
 
 class LineProfile():
@@ -102,8 +106,8 @@ class GaussianLineProfile(LineProfile):
             nu = np.linspace(self.nu0-width/2*self.width_nu,
                              self.nu0+width/2*self.width_nu,n_elements)
             phi_nu = self.phi_nu(nu)
-            norm = helpers.fast_trapz(y=phi_nu,x=nu)
-            new_average = helpers.fast_trapz(y=func(nu)*phi_nu,x=nu)/norm
+            norm = np.trapezoid(y=phi_nu,x=nu)
+            new_average = np.trapezoid(y=func(nu)*phi_nu,x=nu)/norm
             residual = helpers.relative_difference(a=np.array((new_average,)),
                                                    b=np.array((old_average,)))
             old_average = new_average
@@ -137,8 +141,8 @@ class RectangularLineProfile(LineProfile):
             nu = np.linspace(self.nu0-self.width_nu/2,self.nu0+self.width_nu/2,
                              n_elements)
             phi_nu = self.phi_nu(nu)
-            norm = helpers.fast_trapz(y=phi_nu,x=nu)
-            new_average = helpers.fast_trapz(y=func(nu)*phi_nu,x=nu)/norm
+            norm = np.trapezoid(y=phi_nu,x=nu)
+            new_average = np.trapezoid(y=func(nu)*phi_nu,x=nu)/norm
             residual = helpers.relative_difference(a=np.array((new_average,)),
                                                    b=np.array((old_average,)))
             old_average = new_average
@@ -321,7 +325,6 @@ class CollisionalTransition(Transition):
         self.K21_data = K21_data
         self.Tkin_data = Tkin_data
         self.Tkin_data_limits = np.min(self.Tkin_data),np.max(self.Tkin_data)
-        self.log_Tkin_data = np.log(Tkin_data)
 
     def coeffs(self,Tkin):
         r'''
@@ -337,14 +340,12 @@ class CollisionalTransition(Transition):
         Raises:
             AssertionError: If Tkin is outside the available temperature range.
         '''
-        #Tkin = np.atleast_1d(Tkin)
         Tmin,Tmax = self.Tkin_data_limits
         assert np.all(Tmin <= Tkin),\
                              'requested temperature below minimum collider temperature'
         assert np.all(Tkin <= Tmax),\
                              'requested temperature above maximum collider temperature'
-        logTkin = np.log(Tkin)
-        K21 = np.interp(logTkin,self.log_Tkin_data,self.K21_data)
-        #see RADEX manual for following formula
-        K12 = (self.up.g/self.low.g*K21*np.exp(-self.Delta_E/(constants.k*Tkin)))
+        K21 = np.interp(Tkin,self.Tkin_data,self.K21_data)
+        K12 = compute_K12(K21=K21,g_up=self.up.g,g_low=self.low.g,Delta_E=self.Delta_E,
+                          Tkin=Tkin)
         return [K12,K21]

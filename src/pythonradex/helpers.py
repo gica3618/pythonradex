@@ -4,14 +4,12 @@ import numpy as np
 from scipy import constants
 import numba as nb
 
-#TODO remove unnecessary nb.jit stuff
 
-
-@nb.jit(nopython=True,cache=True) #doesn't help
+@nb.jit(nopython=True,cache=True)
 def B21(A21,nu):
     return constants.c**2/(2*constants.h*nu**3)*A21
 
-@nb.jit(nopython=True,cache=True) #doesn't help
+@nb.jit(nopython=True,cache=True)
 def B12(A21,nu,g1,g2):
     return g2/g1*B21(A21=A21,nu=nu)
 
@@ -66,6 +64,6 @@ def relative_difference(a,b):
     assert not np.any(np.isnan(rel_diff))
     return np.abs(rel_diff)
 
-#@nb.jit(nopython=True,cache=True) #doesn't help
+@nb.jit(nopython=True,cache=True)
 def Delta_nu(Delta_v,nu0):
     return nu0 * Delta_v / constants.c

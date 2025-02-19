@@ -25,8 +25,6 @@ collider_densities = {'co':{'ortho-H2':1e9/constants.centi**3},
 #for HCl, some levels have relativel low LTE population (~1e-3), but pythonradex gives 0
 #so I have to restrict to only the most highest populated levels for HCL
 min_level_pop = {'co':0,'hcl':1e-2,'ocs@xpol':0,'c':0}
-#HCl has larger errors for unknown reason, need to increase tolerance
-tolerance = {'co':5e-2,'hcl':0.2,'ocs@xpol':1e-2,'c':1e-2}
 Tkin = 101
 width_v = 2*constants.kilo
 ext_background = helpers.generate_CMB_background()
@@ -72,6 +70,6 @@ def test_LTE():
             LTE_level_pop = cloud.emitting_molecule.LTE_level_pop(T=Tkin)
             selection = LTE_level_pop > min_level_pop[specie]*np.max(LTE_level_pop)
             assert np.allclose(cloud.level_pop[selection],LTE_level_pop[selection],
-                               atol=1e-6,rtol=tolerance[specie])
+                               atol=1e-6,rtol=1e-2)
             max_taus.append(np.max(cloud.tau_nu0_individual_transitions))
     print(f'max tau: {np.max(max_taus)}')

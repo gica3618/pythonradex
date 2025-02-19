@@ -23,7 +23,8 @@ line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
 
 
-test_cases = [{'data_filename':'co.dat',
+test_cases = [
+              {'data_filename':'co.dat',
                'coll_partner':'para-H2',
                'coll_partner_densities':np.array((1e2,1e4,1e6))/constants.centi**3,
                'N_values':np.array((1e14,1e16,1e18,1e20,1e22))/constants.centi**2,
@@ -51,6 +52,7 @@ def relative_diff(x):
 ext_background = helpers.generate_CMB_background(z=0)
 data_folder = general.lamda_data_folder
 for test_case in test_cases:
+    print(test_case)
     for coll_density,N,Tkin in itertools.product(test_case['coll_partner_densities'],
                                                  test_case['N_values'],
                                                  test_case['Tkin_values']):

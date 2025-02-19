@@ -49,6 +49,7 @@ freq_interval = radex_wrapper.Interval(min=nu0-epsilon_nu,max=nu0+epsilon_nu)
 #run with LIME output enable first, to check that it runs fine, then suppress it
 suppress_LIME_stdout_stderr = True
 
+'''
 ################################################################
 general_geometry = 'slab'
 geometries = ['uniform slab','LVG slab']
@@ -88,7 +89,7 @@ lime_radius = 4*r
 def density(N):
     return N/(2*r)
 ################################################################
-'''
+
 
 radex_wrapper_geo = {'sphere':'static sphere',
                      'slab':'LVG slab'}

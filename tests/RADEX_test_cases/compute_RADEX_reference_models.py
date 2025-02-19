@@ -7,18 +7,22 @@ Created on Wed Sep  4 12:53:51 2019
 """
 from scipy import constants
 import os
+folderpath = os.path.dirname(os.path.realpath(__file__))
 import sys
-sys.path.append('..')
+sys.path.append(os.path.join(folderpath,'..'))
 import RADEX_test_cases
 import itertools
-
-#Remember that to change the geometry, RADEX needs to be newly compiled
 
 radex_input_filename = 'radex.in'
 radex_output_filename = 'radex.out'
 radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
                        'He':'He'}
-radex_executable = '../Radex/bin/radex'
+executables = {'uniform sphere':'radex_static_sphere',
+               'LVG sphere RADEX':'radex_LVG_sphere',
+               'LVG slab RADEX':'radex_LVG_slab'}
+
+exec_paths = {ID:os.path.join(folderpath,f'../Radex/bin/{ex}') for ID,ex in
+              executables.items()}
 
 def write_RADEX_input_file(mol_data_filename,Tkin,collider_densities,N,width_v):
     with open(radex_input_filename,mode='w') as f:
@@ -42,16 +46,19 @@ for test_case in RADEX_test_cases.test_cases:
                      itertools.product(test_case['collider_densities_values'],
                                        test_case['N_values'],
                                        test_case['Tkin_values']):
-        write_RADEX_input_file( 
-               mol_data_filename=filename,Tkin=Tkin,collider_densities=collider_densities,
-               N=N,width_v=RADEX_test_cases.width_v)
-        os.system(f'{radex_executable} < {radex_input_filename}')
-        with open(radex_output_filename,'r') as f:
-            for line in f:
-                if 'Geometry' in line:
-                    radex_geometry = line.split(':')[1]
-                    break
-        save_filename = RADEX_test_cases.RADEX_out_filename(
-                          radex_geometry=radex_geometry,specie=specie,Tkin=Tkin,
-                          N=N,collider_densities=collider_densities)
-        os.rename(src=radex_output_filename,dst=save_filename)
+        for geo in ('uniform sphere','LVG sphere RADEX','LVG slab RADEX'):
+            write_RADEX_input_file( 
+                   mol_data_filename=filename,Tkin=Tkin,
+                   collider_densities=collider_densities,
+                   N=N,width_v=RADEX_test_cases.width_v)
+            radex_executable = exec_paths[geo]
+            os.system(f'{radex_executable} < {radex_input_filename}')
+            with open(radex_output_filename,'r') as f:
+                for line in f:
+                    if 'Geometry' in line:
+                        radex_geometry = line.split(':')[1]
+                        break
+            save_filename = RADEX_test_cases.RADEX_out_filename(
+                              radex_geometry=radex_geometry,specie=specie,Tkin=Tkin,
+                              N=N,collider_densities=collider_densities)
+            os.rename(src=radex_output_filename,dst=save_filename)

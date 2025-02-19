@@ -29,10 +29,10 @@ n_elements = [5,7,10,15,20] #for Tkin, collider and N
 vary_only_N = False
 
 
-# geometry = 'uniform sphere'
-# radex_executable = '../Radex/bin/radex_static_sphere'
-geometry = 'LVG slab'
-radex_executable = '../Radex/bin/radex_LVG_slab'
+geometry = 'uniform sphere'
+radex_executable = '../../tests/Radex/bin/radex_static_sphere'
+# geometry = 'LVG slab'
+# radex_executable = '../../tests/Radex/bin/radex_LVG_slab'
 
 data_filename = 'co.dat'
 colliders = ['para-H2','ortho-H2']

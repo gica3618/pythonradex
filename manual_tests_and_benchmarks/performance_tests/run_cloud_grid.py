@@ -37,7 +37,7 @@ cloud.solve_radiative_transfer()
 
 start = time.time()
 for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
-                                             Tkin_values):
+                                          Tkin_values):
     collider_densities = {collider:coll_dens}
     cloud.update_parameters(
          ext_background=ext_background,Tkin=Tkin,

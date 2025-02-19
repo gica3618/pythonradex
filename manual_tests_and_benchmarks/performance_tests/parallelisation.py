@@ -45,7 +45,7 @@ ext_background = helpers.generate_CMB_background(z=0)
 collider = 'para-H2'
 
 n_processes = [1,2,4,8]
-n = 15
+n = 5
 N_values = np.logspace(12,15,n)/constants.centi**2
 coll_density_values = np.logspace(3,5,n)/constants.centi**3
 Tkin_values = np.linspace(20,100,n)

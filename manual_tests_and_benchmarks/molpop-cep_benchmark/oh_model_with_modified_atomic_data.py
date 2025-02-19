@@ -26,8 +26,8 @@ ref_transitions = [4,6]
 
 datafilepath = general.datafilepath('oh@hfs_modified.dat')
 width_v = 1.8*constants.kilo
-N = 2e11/constants.centi**2
-#N = 1e14/constants.centi**2
+#N = 2e11/constants.centi**2 #with overlap, molpop-cep only goes until this
+N = 1e14/constants.centi**2
 Tkin = 100
 collider_densities = {collider:1e9/constants.centi**3 for collider in
                       ('ortho-H2','para-H2')}

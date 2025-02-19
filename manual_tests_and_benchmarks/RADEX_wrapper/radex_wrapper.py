@@ -103,7 +103,7 @@ class RadexWrapper():
         executables = {'static sphere':'radex_static_sphere',
                        'LVG sphere':'radex_LVG_sphere',
                        'LVG slab':'radex_LVG_slab'}    
-        exec_paths = {ID:os.path.join(folderpath,f'../Radex/bin/{ex}') for ID,ex in
+        exec_paths = {ID:os.path.join(folderpath,f'../../tests/Radex/bin/{ex}') for ID,ex in
                       executables.items()}
         self.exec_path = exec_paths[geometry]
 

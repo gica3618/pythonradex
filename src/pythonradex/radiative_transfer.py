@@ -6,9 +6,6 @@ import warnings
 import numba as nb
 import numbers
 import traceback
-import time
-
-#TODO remove unnecessary nb.jit stuff
 
 
 class Cloud():
@@ -288,7 +285,8 @@ class Cloud():
     def solve_radiative_transfer(self):
         """Solves the radiative transfer."""
         level_pop = self.get_initial_level_pop()
-        old_level_pops = []
+        #typed list because this will be used by compiled function ng_accelerate:
+        old_level_pops = nb.typed.List([])
         Tex_residual = np.ones(self.emitting_molecule.n_rad_transitions) * np.inf
         old_Tex = 0
         counter = 0
@@ -299,48 +297,27 @@ class Cloud():
                 print(f'iteration {counter}')
             if counter > self.max_iter:
                 raise RuntimeError('maximum number of iterations reached')
-            # start = time.time()
             new_level_pop = self.rate_equations.solve(level_population=level_pop)
-            # end = time.time()
-            # print(f'solve level pop: {end-start:.3g}')
-            # start = time.time()
             Tex = self.emitting_molecule.get_Tex(new_level_pop)
-            # end = time.time()
-            # print(f'Tex: {end-start:.3g}')
-            # start = time.time()
             Tex_residual = helpers.relative_difference(Tex,old_Tex)
             if self.verbose:
                 print(f'max relative Tex residual: {np.max(Tex_residual):.3g}')
-            # end = time.time()
-            # print(f'Tex residual: {end-start:.3g}')
-            # start = time.time()
             tau_nu0 = self.emitting_molecule.get_tau_nu0_lines(
                          N=self.rate_equations.N,level_population=new_level_pop)
-            # end = time.time()
-            # print(f'tau_nu0: {end-start:.3g}')
-            # start = time.time()
             residual = self.compute_residual(
                              Tex_residual=Tex_residual,tau=tau_nu0,
                              min_tau=self.min_tau_considered_for_convergence)
-            # end = time.time()
-            # print(f'residual: {end-start:.3g}')
-            # start = time.time()
             old_Tex = Tex.copy()
             old_level_pops.append(level_pop.copy())
             if len(old_level_pops) > 3:
                 old_level_pops.pop(0)
             level_pop = self.underrelaxation*new_level_pop\
                                     + (1-self.underrelaxation)*level_pop
-            # end = time.time()
-            # print(f'next level pop: {end-start:.3g}')
             if self.use_Ng_acceleration\
                          and counter > self.min_iter_before_ng_acceleration\
                          and counter%self.ng_acceleration_interval == 0:
-                # start = time.time()
                 level_pop = self.ng_accelerate(level_pop=level_pop,
                                                old_level_pops=old_level_pops)
-                # end = time.time()
-                # print(f'ng: {end-start:.3g}')
         if self.verbose:
             print(f'converged in {counter} iterations')
         self.n_iter_convergence = counter

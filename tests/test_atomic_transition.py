@@ -13,17 +13,17 @@ import numpy as np
 
 def test_fast_Tex():
     kwargs = {'Delta_E':1,'g_low':1,'g_up':1}
-    assert atomic_transition.fast_Tex(x1=np.zeros(1),x2=np.zeros(1),**kwargs)[0] == 0
-    assert atomic_transition.fast_Tex(x1=np.zeros(1),x2=np.array((0.3,)),**kwargs)[0] == 0
-    assert np.all(atomic_transition.fast_Tex(x1=np.array((0.2,0.1)),x2=np.zeros(2),**kwargs)[0]
+    assert atomic_transition.Tex(x1=np.zeros(1),x2=np.zeros(1),**kwargs)[0] == 0
+    assert atomic_transition.Tex(x1=np.zeros(1),x2=np.array((0.3,)),**kwargs)[0] == 0
+    assert np.all(atomic_transition.Tex(x1=np.array((0.2,0.1)),x2=np.zeros(2),**kwargs)[0]
                   == 0)
     x1,x2 = np.array((0.2,)),np.array((0.1,))
-    test_Tex = atomic_transition.fast_Tex(x1=x1,x2=x2,**kwargs)[0]
+    test_Tex = atomic_transition.Tex(x1=x1,x2=x2,**kwargs)[0]
     explicit_Tex = -kwargs['Delta_E']/constants.k\
                        * (np.log((x2*kwargs['g_low'])/(x1*kwargs['g_up'])))**-1
     assert np.isclose(test_Tex,explicit_Tex[0],rtol=1e-10,atol=0)
     #test that floats also work as arguments:
-    atomic_transition.fast_Tex(**kwargs,x1=0.2,x2=0.2)
+    atomic_transition.Tex(**kwargs,x1=0.2,x2=0.2)
 
 def test_fast_tau():
     A21 = 1e-4
@@ -33,8 +33,8 @@ def test_fast_tau():
     N1 = 1e14
     N2 = 1e13
     nu = 200*constants.giga
-    test_tau = atomic_transition.fast_tau_nu(A21=A21,phi_nu=phi_nu,g_low=g_low,
-                                             g_up=g_up,N1=N1,N2=N2,nu=nu)
+    test_tau = atomic_transition.tau_nu(A21=A21,phi_nu=phi_nu,g_low=g_low,
+                                        g_up=g_up,N1=N1,N2=N2,nu=nu)
     explicit_tau = constants.c**2/(8*np.pi*nu**2)*A21*phi_nu*(g_up/g_low*N1-N2)
     assert test_tau == explicit_tau
     #check that numpy arrays also work:
@@ -44,8 +44,19 @@ def test_fast_tau():
     nu_array = np.linspace(nu0-width_nu,nu0+width_nu,100)
     sigma_nu = width_nu/np.sqrt(8*np.log(2))
     phi_nu_array = 1/(np.sqrt(2*np.pi)*sigma_nu)*np.exp(-(nu_array-nu0)**2/(2*sigma_nu**2))
-    atomic_transition.fast_tau_nu(A21=A21,phi_nu=phi_nu_array,g_low=g_low,
-                                             g_up=g_up,N1=N1,N2=N2,nu=nu_array)
+    atomic_transition.tau_nu(A21=A21,phi_nu=phi_nu_array,g_low=g_low,
+                             g_up=g_up,N1=N1,N2=N2,nu=nu_array)
+
+def test_K12():
+    Delta_E = 1
+    g_low = 3
+    g_up = 1
+    K21 = 1e-4
+    for Tkin in (120,np.array((23,34))):
+        expected_K12 = (g_up/g_low*K21*np.exp(-Delta_E/(constants.k*Tkin)))
+        K12 = atomic_transition.compute_K12(K21=K21,g_up=g_up,g_low=g_low,
+                                            Delta_E=Delta_E,Tkin=Tkin)
+        assert np.all(expected_K12==K12)
 
 # def test_fast_coll_coeffs():
 #     Tkin_data = np.array((20,40,100,200,300))
@@ -283,7 +294,7 @@ class TestTransition():
                           *np.exp(-coll_trans.Delta_E/(constants.k*Tkin))
             test_Tkin = [3.56,np.array((1,4.56))]
             for Tkin in test_Tkin:
-                expected_K21 = np.interp(np.log(Tkin),self.log_Tkin_data,K21_data)
+                expected_K21 = np.interp(Tkin,self.Tkin_data,K21_data)
                 expected_K12 = get_K12(K21=expected_K21,Tkin=Tkin)
                 K12,K21 = coll_trans.coeffs(Tkin=Tkin)
                 assert np.all(K12 == expected_K12)

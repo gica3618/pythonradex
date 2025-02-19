@@ -166,8 +166,7 @@ class EmittingMolecule(Molecule):
                 assert np.all(coll_trans.Tkin_data==self.Tkin_data[collider])
             self.Tkin_data_limits[collider] = np.min(self.Tkin_data[collider]),\
                                                np.max(self.Tkin_data[collider])
-        self.compute_K_cube()
-        #TODO clean up the stuff that is no longer needed
+        self.set_K21_matrix()
         #collecting parameters, needed for numba-compiled functions:
         self.A21 = np.array([line.A21 for line in self.rad_transitions])
         self.B21 = np.array([line.B21 for line in self.rad_transitions])
@@ -183,31 +182,19 @@ class EmittingMolecule(Molecule):
                                              self.rad_transitions])
         self.Delta_E_rad_transitions = np.array([line.Delta_E for line in
                                                  self.rad_transitions])
-        # self.ordered_colliders = sorted(self.coll_transitions.keys())
-        # self.coll_trans_low_up_number = nb.typed.List([])
-        # self.coll_Tkin_data = nb.typed.List([])
-        # self.coll_log_Tkin_data = nb.typed.List([])
-        # self.coll_K21_data = nb.typed.List([])
-        # self.coll_log_K21_data = nb.typed.List([])
-        # self.coll_gups = nb.typed.List([])
-        # self.coll_glows = nb.typed.List([])
-        # self.coll_DeltaEs = nb.typed.List([])
-        # for collider in self.ordered_colliders:
-        #     transitions = self.coll_transitions[collider]
-        #     n_low_up = [[trans.low.number,trans.up.number] for trans in transitions]
-        #     self.coll_trans_low_up_number.append(np.array(n_low_up))
-        #     Tkin = [trans.Tkin_data for trans in transitions]
-        #     self.coll_Tkin_data.append(np.array(Tkin))
-        #     self.coll_log_Tkin_data.append(np.log(Tkin))
-        #     K21 = [trans.K21_data for trans in transitions]
-        #     self.coll_K21_data.append(np.array(K21))
-        #     self.coll_log_K21_data.append(np.log(K21))
-        #     gup = [trans.up.g for trans in transitions]
-        #     glow = [trans.low.g for trans in transitions]
-        #     self.coll_gups.append(np.array(gup))
-        #     self.coll_glows.append(np.array(glow))
-        #     DeltaE = [trans.Delta_E for trans in transitions]
-        #     self.coll_DeltaEs.append(np.array(DeltaE))
+        self.coll_gups = {}
+        self.coll_glows = {}
+        self.coll_DeltaEs = {}
+        self.coll_nup = {}
+        self.coll_nlow = {}
+        for collider,coll_transitions in self.coll_transitions.items():
+            self.coll_glows[collider] = np.array([c.low.g for c in coll_transitions])
+            self.coll_gups[collider] = np.array([c.up.g for c in coll_transitions])
+            self.coll_DeltaEs[collider] = np.array([c.Delta_E for c in
+                                                    coll_transitions])
+            self.coll_nlow[collider] = np.array([c.low.number for c in coll_transitions])
+            self.coll_nup[collider] = np.array([c.up.number for c in coll_transitions])
+
 
     def get_tau_nu0_lines(self,N,level_population):
         r'''Compute the optical depth at the rest frequency of all lines (dust
@@ -312,44 +299,62 @@ class EmittingMolecule(Molecule):
             return tau_tot
         return tau_tot_nu
 
-    def compute_K_cube(self):
-        self.K_cube = {collider:np.zeros((self.n_levels,self.n_levels,
-                                          self.Tkin_data[collider].size))
-                       for collider in self.coll_transitions.keys()}
+    def set_K21_matrix(self):
+        self.K21_matrix = {collider:np.zeros((len(coll_transitions),
+                                              self.Tkin_data[collider].size))
+                           for collider,coll_transitions in
+                           self.coll_transitions.items()}
         for collider,coll_transitions in self.coll_transitions.items():
-            for i,Tkin in enumerate(self.Tkin_data[collider]):
-                for coll_trans in coll_transitions:
-                    K12,K21 = coll_trans.coeffs(Tkin=Tkin)
-                    n_low = coll_trans.low.number
-                    n_up = coll_trans.up.number
-                    #production of upper level from lower level:
-                    self.K_cube[collider][n_up,n_low,i] += K12
-                    #destruction of lower level by transitions to upper level:
-                    self.K_cube[collider][n_low,n_low,i] += -K12
-                    #production lower level from upper level:
-                    self.K_cube[collider][n_low,n_up,i] += K21
-                    #destruction of upper level by transition to lower level:
-                    self.K_cube[collider][n_up,n_up,i] += -K21
-            assert np.all(np.isfinite(self.K_cube[collider]))
+            for i,coll_trans in enumerate(coll_transitions):
+                self.K21_matrix[collider][i,:] = coll_trans.K21_data
+    
+    @staticmethod
+    @nb.jit(nopython=True,cache=True)
+    def construct_K_matrix(n_levels,K12,K21,nlow,nup):
+        K = np.zeros((n_levels,n_levels))
+        for i in range(len(K12)):
+            nl = nlow[i]
+            nu = nup[i]
+            #production of upper level from lower level:
+            K[nu,nl] += K12[i]
+            #destruction of lower level by transitions to upper level:
+            K[nl,nl] += -K12[i]
+            #production lower level from upper level:
+            K[nl,nu] += K21[i]
+            #destruction of upper level by transition to lower level:
+            K[nu,nu] += -K21[i]
+        return K
+
+    def interpolate_K(self,Tkin,collider):
+        Tlimits = self.Tkin_data_limits[collider]
+        assert Tlimits[0] <= Tkin <= Tlimits[1]
+        output = {}
+        Tkin_data = self.Tkin_data[collider]
+        j = np.searchsorted(Tkin_data,Tkin,side='left')
+        if j == 0:
+            K21 = self.K21_matrix[collider][:,0]
+        else:
+            i = j-1
+            x0 = Tkin_data[i]
+            y0 = self.K21_matrix[collider][:,i]
+            x1 = Tkin_data[j]
+            y1 = self.K21_matrix[collider][:,j]
+            x = Tkin
+            K21 = (y0*(x1-x) + y1*(x-x0)) / (x1-x0)
+        K12 = atomic_transition.compute_K12(
+                  K21=K21,g_up=self.coll_gups[collider],
+                  g_low=self.coll_glows[collider],
+                  Delta_E=self.coll_DeltaEs[collider],Tkin=Tkin)
+        output['K21'] = K21
+        output['K12'] = K12
+        return output
 
     def get_GammaC(self,Tkin,collider_densities):
         GammaC = np.zeros((self.n_levels,)*2)
         for collider,coll_dens in collider_densities.items():
-            Tlimits = self.Tkin_data_limits[collider]
-            assert Tlimits[0] <= Tkin <= Tlimits[1]
-            K_cube = self.K_cube[collider]
-            Tkin_data = self.Tkin_data[collider]
-            j = np.searchsorted(Tkin_data,Tkin,side='left')
-            if j == 0:
-                GammaC += K_cube[:,:,0]*coll_dens
-                continue
-            i = j-1
-            x0 = np.log(Tkin_data[i])
-            y0 = K_cube[:,:,i]
-            x1 = np.log(Tkin_data[j])
-            y1 = K_cube[:,:,j]
-            x = np.log(Tkin)
-            #linear interpolation:
-            interp_K = (y0*(x1-x) + y1*(x-x0)) / (x1-x0)
-            GammaC += coll_dens*interp_K
+            interpK = self.interpolate_K(Tkin=Tkin,collider=collider)
+            K = self.construct_K_matrix(
+                     n_levels=self.n_levels,K12=interpK['K12'],K21=interpK['K21'],
+                     nlow=self.coll_nlow[collider],nup=self.coll_nup[collider])
+            GammaC += K*coll_dens
         return GammaC

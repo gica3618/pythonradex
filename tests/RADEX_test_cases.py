@@ -12,22 +12,24 @@ from scipy import constants
 width_v = 1*constants.kilo
 T_background = 2.73
 
+#TODO choose temperatures that involve interpolation
+
 test_cases = [{'filename':'co.dat',
                'collider_densities_values':[{'ortho-H2':1e2/constants.centi**3,
                                              'para-H2':1e3/constants.centi**3},
                                             {'ortho-H2':1e4/constants.centi**3}],
                'N_values':np.array((1e12,1e15,1e18))/constants.centi**2,
-               'Tkin_values':np.array((30,100,200))},
+               'Tkin_values':np.array((30,123,231))},
               {'filename':'hcl.dat',
                'collider_densities_values':[{'para-H2':1e4/constants.centi**3},
                                             {'para-H2':1e6/constants.centi**3}],
                'N_values':np.array((1e10,1e12,1e14))/constants.centi**2,
-               'Tkin_values':np.array((80,100,200))},
+               'Tkin_values':np.array((88,134,200))},
               {'filename':'ocs@xpol.dat',
                'collider_densities_values':[{'H2':1e2/constants.centi**3},
                                             {'H2':1e4/constants.centi**3}],
                'N_values':np.array((1e10,1e13,1e15))/constants.centi**2,
-               'Tkin_values':np.array((30,100,200))},
+               'Tkin_values':np.array((33,97,224))},
               {'filename':'c.dat',
                #RADEX adds default values of H2, ortho-H2 and para-H2 if not given
                #so need to add
@@ -40,7 +42,7 @@ test_cases = [{'filename':'co.dat',
                                              'ortho-H2':1/constants.centi**3,
                                              'para-H2':1/constants.centi**3}],
                'N_values':np.array((1e12,1e15,1e20))/constants.centi**2,
-               'Tkin_values':np.array((30,100,140))}]
+               'Tkin_values':np.array((25,124,144))}]
 
 def RADEX_out_filename(radex_geometry,specie,Tkin,N,collider_densities):
     rg = radex_geometry.replace(' ','').replace('\n','')

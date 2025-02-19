@@ -79,34 +79,29 @@ class TestFastFlux():
                     expc_flux_nu = geo.compute_flux_nu(**flux_kwargs)
                     expected_flux.append(np.trapezoid(expc_flux_nu,nu))
                 tau_nu0 = np.ones(mol.n_rad_transitions)*test_tau
+                flux_calculator = flux.FluxCalculator(
+                                 emitting_molecule=mol,
+                                 level_population=mol.LTE_level_pop(T),
+                                 geometry_name=geo_name,
+                                 compute_flux_nu=geo.compute_flux_nu,
+                                 tau_nu0_individual_transitions=tau_nu0,
+                                 tau_dust=zero,S_dust=zero,V_LVG_sphere=V_LVG_sphere)
                 if lp == 'Gaussian':
-                    calculated_flux = flux.FluxCalculator.fast_line_fluxes_Gaussian_without_overlap(
+                    calculated_flux = flux_calculator.fast_line_fluxes_Gaussian_without_overlap(
                                        solid_angle=self.solid_angle,
-                                       transitions=self.test_transitions,
-                                       tau_nu0_individual_transitions=tau_nu0,
-                                       Tex=Tex,nu0=mol.nu0,
-                                       compute_flux_nu=geo.compute_flux_nu,
-                                       width_v=mol.width_v,
-                                       tau_peak_fraction=flux.FluxCalculator.tau_peak_fraction,
-                                       nu_per_FHWM=flux.FluxCalculator.nu_per_FHWM)
+                                       transitions=self.test_transitions)
                 elif lp == 'rectangular':
-                    dummy_fc = flux.FluxCalculator(
-                                     emitting_molecule=mol,
-                                     level_population=mol.LTE_level_pop(T),
-                                     geometry_name=geo_name,
-                                     compute_flux_nu=geo.compute_flux_nu,
-                                     tau_nu0_individual_transitions=tau_nu0,
-                                     tau_dust=zero,S_dust=zero,V_LVG_sphere=V_LVG_sphere)
-                    calculated_flux = dummy_fc.fast_line_fluxes_rectangular_without_overlap(
+                    calculated_flux = flux_calculator.fast_line_fluxes_rectangular_without_overlap(
                                       solid_angle=self.solid_angle,
                                       transitions=self.test_transitions)
                 else:
                     raise ValueError
                 assert np.allclose(expected_flux,calculated_flux,atol=0,rtol=5e-3)
 
-    def test_rectangular_tau_constructor(self):
+    def test_rectangular_tau_flux_param_constructor(self):
+        line_index = 3
         mol = self.molecules['rectangular']
-        test_line = mol.rad_transitions[3]
+        test_line = mol.rad_transitions[line_index]
         N = 1e12/constants.centi**2
         level_pop = mol.LTE_level_pop(33)
         N1 = N*level_pop[test_line.low.number]
@@ -118,13 +113,26 @@ class TestFastFlux():
         nu = np.append(nu,(test_line.nu0-width_nu/2,test_line.nu0+width_nu/2))
         nu.sort()
         expected_tau_nu = test_line.tau_nu(N1=N1,N2=N2,nu=nu)
-        constructed_nu,constructed_tau_nu = flux.construct_rectangular_nu_and_tau(
-                                 nu0=test_line.nu0,width_nu=width_nu,
-                                 tau_nu0=test_line.tau_nu0(N1=N1,N2=N2),
-                                 n_nu_elements=15)
-        
+        geo_name = 'uniform slab'
+        geo = radiative_transfer.Cloud.geometries[geo_name]
+        tau_nu0_individual_transitions = mol.get_tau_nu0_lines(
+                                             N=N,level_population=level_pop)
+        flux_calculator = flux.FluxCalculator(
+                             emitting_molecule=mol,level_population=level_pop,
+                             geometry_name=geo_name,V_LVG_sphere=mol.width_v/2,
+                             compute_flux_nu=geo.compute_flux_nu,
+                             tau_nu0_individual_transitions=tau_nu0_individual_transitions,
+                             tau_dust=zero,S_dust=zero)
+        transitions = [line_index,]
+        constructed_nu,constructed_tau_nu,constructed_source_function\
+               = flux_calculator.get_flux_parameters_for_rectangular_flux(
+                                                        transitions=transitions)
         interp_tau_nu = np.interp(x=constructed_nu,xp=nu,fp=expected_tau_nu)
         assert np.allclose(constructed_tau_nu,interp_tau_nu,atol=0,rtol=1e-3)
+        Tex = mol.get_Tex(level_population=level_pop)[line_index]
+        expected_S = helpers.B_nu(T=Tex,nu=nu)
+        interp_S = np.interp(x=constructed_nu,xp=nu,fp=expected_S)
+        assert np.allclose(interp_S,constructed_source_function,atol=0,rtol=1e-3)
 
 
 class TestInvalidFluxRequest():

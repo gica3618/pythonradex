@@ -15,8 +15,10 @@ import copy
 
 
 here = os.path.dirname(os.path.abspath(__file__))
-datafilepath = {'CO':os.path.join(here,'LAMDA_files/co.dat'),
-                'HCl':os.path.join(here,'LAMDA_files/hcl.dat')}
+datafolder = os.path.join(here,'LAMDA_files')
+datafilepath = {'CO':os.path.join(datafolder,'co.dat'),
+                'HCl':os.path.join(datafolder,'hcl.dat'),
+                'C+':os.path.join(datafolder,'c+.dat')}
 cmb = helpers.generate_CMB_background()
 
 line_profile_types = ('rectangular','Gaussian')
@@ -400,11 +402,11 @@ def test_compute_residual():
     Tex_residual = np.array((1,2,3,4,5))
     assert radiative_transfer.Cloud.compute_residual(
                                           Tex_residual=Tex_residual,tau=small_tau,
-                                          min_tau_considered_for_convergence=min_tau) == 0
+                                          min_tau=min_tau) == 0
     expected_residual = np.sum(Tex_residual[tau>min_tau])/n_relevant_taus
     assert radiative_transfer.Cloud.compute_residual(
                                           Tex_residual=Tex_residual,tau=tau,
-                                          min_tau_considered_for_convergence=min_tau)\
+                                          min_tau=min_tau)\
             == expected_residual
 
 
@@ -630,3 +632,39 @@ class TestPhysics():
             cloud.solve_radiative_transfer()
             LTE_level_pop = cloud.emitting_molecule.LTE_level_pop(T=T_dust_value)
             assert np.allclose(cloud.level_pop,LTE_level_pop,atol=1e-5,rtol=1e-2)
+
+
+@pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
+def test_single_transition_molecule():
+    #test C+ which only has a single transition
+    #just a single transition is an edge case, so let's see if the radiative transfer
+    #can be solved
+    solid_angle = 1
+    transitions = [0,]
+    N = 1e-4/constants.centi**2
+    Tkin = 48
+    collider_densities = {'H':10/constants.centi**3,'e':123/constants.centi**3}
+    ext_background_values = [0,cmb]
+    T_dust_values = [0,50,lambda nu: np.ones_like(nu)*451]
+    tau_dust_values = [0,0.01,12,lambda nu: np.ones_like(nu)*2.3]
+    width_v = 1*constants.kilo
+    for cloud in general_cloud_iterator(specie='C+',width_v=width_v):
+        for ext_background in ext_background_values:
+            for T_dust,tau_dust in zip(T_dust_values,tau_dust_values):
+                if 'LVG' in cloud.geometry_name and T_dust != 0:
+                    continue
+                cloud.update_parameters(
+                        N=N,Tkin=Tkin,collider_densities=collider_densities,
+                        ext_background=ext_background,T_dust=T_dust,
+                        tau_dust=tau_dust)
+                cloud.solve_radiative_transfer()
+                nu0 = cloud.emitting_molecule.nu0[0]
+                if cloud.rate_equations.tau_dust(nu0) < 0.1:
+                    cloud.fluxes_of_individual_transitions(
+                             solid_angle=solid_angle,transitions=transitions)
+                v = np.linspace(-2*width_v,2*width_v,10)
+                nu = nu0*(1-v/constants.c)
+                cloud.tau_nu(nu=nu)
+                cloud.spectrum(solid_angle=solid_angle,nu=nu)
+                cloud.print_results()
+    

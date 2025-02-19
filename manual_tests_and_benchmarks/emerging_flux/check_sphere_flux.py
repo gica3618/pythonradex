@@ -60,7 +60,7 @@ beta_fluxes = {ID:np.empty(n_values.size) for ID in beta_funcs.keys()}
 for i,n in enumerate(n_values):
     N1 = n*level_pop[trans.low.number]*2*r
     N2 = n*level_pop[trans.up.number]*2*r
-    tau_nu = atomic_transition.fast_tau_nu(
+    tau_nu = atomic_transition.tau_nu(
                A21=trans.A21,phi_nu=phi_nu,
                g_low=trans.low.g,g_up=trans.up.g,N1=N1,N2=N2,nu=nu)
     source_func = helpers.B_nu(nu=nu,T=T)
@@ -70,16 +70,16 @@ for i,n in enumerate(n_values):
                        /(4*np.pi*d**2) * phi_nu #W/m2/Hz
     if i == 0:
         assert np.max(tau_nu) < 0.01
-        thin_flux = np.trapz(flux_no_beta,nu)
+        thin_flux = np.trapezoid(flux_no_beta,nu)
     for ID,beta_func in beta_funcs.items():
         beta_nu = beta_func(tau_nu=tau_nu)
-        beta_fluxes[ID][i] = np.trapz(flux_no_beta*beta_nu,nu)
+        beta_fluxes[ID][i] = np.trapezoid(flux_no_beta*beta_nu,nu)
         geo = geometries[ID]
         if ID == 'LVG sphere':
             flux_pythonradex = geo.compute_flux_nu(**flux_kwargs,**LVG_sphere_kwargs)
         else:
             flux_pythonradex = geo.compute_flux_nu(**flux_kwargs)
-        pythonradex_fluxes[ID][i] = np.trapz(flux_pythonradex,nu)#W/m2
+        pythonradex_fluxes[ID][i] = np.trapezoid(flux_pythonradex,nu)#W/m2
 
 for ID in beta_funcs.keys():
     fig,ax = plt.subplots()

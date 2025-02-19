@@ -36,7 +36,8 @@ frequency_interval = radex_wrapper.Interval(min=200*constants.giga,
 datafilepath = general.datafilepath('co.dat')
 
 mol = molecule.EmittingMolecule(
-            datafilepath=datafilepath,line_profile_type=line_profile_type,width_v=width_v)
+            datafilepath=datafilepath,line_profile_type=line_profile_type,
+            width_v=width_v)
 level_pop = mol.LTE_level_pop(T=Tex)
 trans = mol.rad_transitions[trans_index]
 N1 = n*level_pop[trans.low.number]*2*r
@@ -44,7 +45,7 @@ N2 = n*level_pop[trans.up.number]*2*r
 width_nu = width_v/constants.c*trans.nu0
 nu = np.linspace(trans.nu0-2*width_nu,trans.nu0+2*width_nu,500)
 phi_nu = trans.line_profile.phi_nu(nu)
-tau_nu = atomic_transition.fast_tau_nu(
+tau_nu = atomic_transition.tau_nu(
            A21=trans.A21,phi_nu=phi_nu,
            g_low=trans.low.g,g_up=trans.up.g,N1=N1,N2=N2,nu=nu)
 print(f'max tau nu: {np.max(tau_nu):.3g}')

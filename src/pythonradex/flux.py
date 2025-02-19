@@ -6,9 +6,6 @@ Created on Fri Aug  2 10:32:03 2024
 @author: gianni
 """
 
-#TODO remove unnecessary nb.jit stuff
-
-import numba as nb
 from scipy import constants
 from pythonradex import helpers
 import numpy as np
@@ -59,48 +56,12 @@ class FluxCalculator():
         kwargs = {'tau_nu':tau_nu,'source_function':source_function,
                   'solid_angle':solid_angle}
         if self.is_LVG_sphere:
+            kwargs['nu'] = nu
+            kwargs['nu0'] = self.emitting_molecule.nu0[transitions][:,None]
             kwargs['V'] = self.V_LVG_sphere
         flux_nu = self.compute_flux_nu(**kwargs)
         flux = np.trapezoid(flux_nu,nu,axis=1)
         return flux
-
-    #following function is very similar to
-    #fast_line_fluxes_rectangular_regular_without_overlap,
-    #but they are difficult to merge because of numba...
-    # @staticmethod
-    # @nb.jit(nopython=True,cache=True)
-    # def fast_line_fluxes_rectangular_LVG_sphere_without_overlap(
-    #              solid_angle,transitions,tau_nu0_individual_transitions,Tex,nu0,
-    #              compute_flux_nu,width_v,V_LVG_sphere):
-    #     obs_line_fluxes = []
-    #     #LVG sphere spectrum is not flat, so need more nu elements than for
-    #     #rectangular spectrum
-    #     n_nu_elements = 51
-    #     for i in transitions:
-    #         tau_nu0 = tau_nu0_individual_transitions[i]
-    #         nu,tau_nu,source_function = get_flux_parameters_for_rectangular_flux(
-    #                                     width_v=width_v,nu0=nu0[i],tau_nu0=tau_nu0,
-    #                                     Tex=Tex[i],n_nu_elements=n_nu_elements)
-    #         flux_nu = compute_flux_nu(tau_nu=tau_nu,
-    #                                   source_function=source_function,
-    #                                   solid_angle=solid_angle,nu=nu,nu0=nu0[i],
-    #                                   V=V_LVG_sphere)
-    #         flux = np.trapezoid(flux_nu,nu)
-    #         obs_line_fluxes.append(flux)
-    #     return np.array(obs_line_fluxes)
-
-    # def fast_line_fluxes_rectangular_without_overlap(self,solid_angle,transitions):
-    #     assert self.emitting_molecule.line_profile_type == 'rectangular'
-    #     kwargs = {'tau_nu0_individual_transitions':self.tau_nu0_individual_transitions,
-    #               'nu0':self.emitting_molecule.nu0,'Tex':self.Tex,
-    #               'compute_flux_nu':self.compute_flux_nu,
-    #               'width_v':self.emitting_molecule.width_v,'solid_angle':solid_angle,
-    #               'transitions':transitions}
-    #     if self.is_LVG_sphere:
-    #         return self.fast_line_fluxes_rectangular_LVG_sphere_without_overlap(
-    #                    **kwargs,V_LVG_sphere=self.V_LVG_sphere)
-    #     else:
-    #         return self.fast_line_fluxes_rectangular_regular_without_overlap(**kwargs)
 
     def fast_line_fluxes_Gaussian_without_overlap(self,solid_angle,transitions):
         nu0 = self.emitting_molecule.nu0[transitions]
