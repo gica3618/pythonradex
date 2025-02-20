@@ -22,12 +22,12 @@ config = SphinxConfig("../pyproject.toml", globalns=globals())
 
 # -- Project information -----------------------------------------------------
 
-project = config['name']
+project = config['project']
 copyright = '2025, Gianni Cataldi'
 author = config['author']
 
 # The full version, including alpha/beta/rc tags
-release = '1.0'
+release = version = config.version
 
 
 # -- General configuration ---------------------------------------------------
