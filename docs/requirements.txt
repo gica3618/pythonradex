@@ -4,3 +4,4 @@ jupyter
 nbsphinx
 scipy
 numpy
+numba
