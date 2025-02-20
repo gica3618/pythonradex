@@ -16,15 +16,16 @@ sys.path.insert(0, os.path.abspath('..'))
 
 #Gianni:
 sys.path.append(os.path.abspath('../src'))
+#take some info from pyproject.toml:
 from sphinx_pyproject import SphinxConfig
 config = SphinxConfig("../pyproject.toml", globalns=globals())
 
 
 # -- Project information -----------------------------------------------------
 
-project = config['project']
+project = config.name
 copyright = '2025, Gianni Cataldi'
-author = config['author']
+author = config.author
 
 # The full version, including alpha/beta/rc tags
 release = version = config.version
