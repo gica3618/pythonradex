@@ -108,12 +108,15 @@ virt_env/
 # Gianni stuff
 tests/RADEX_test_cases/*.out
 tests/RADEX_test_cases/radex.in
+tests/Radex
+manual_tests_and_benchmarks/lime/lime-master
+manual_tests_and_benchmarks/molpop-cep_benchmark/molpop-cep-master/Gianni_models/*.out
+manual_tests_and_benchmarks/molpop-cep_benchmark/molpop-cep-master
 TODO.txt
 documents
 manual_tests_and_benchmarks/benchmarking_vs_RADEX_and_LIME/*.fits
 **/radex.out
 .pytest_cache
-manual_tests_and_benchmarks/molpop-cep_benchmark/molpop-cep-master/Gianni_models/*.out
 manual_tests_and_benchmarks/performance_tests/radex_test_performance.out
 virtenv_pytest_instructions.txt
 testPyPi_instructions.txt
