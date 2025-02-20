@@ -110,6 +110,7 @@ tests/RADEX_test_cases/*.out
 tests/RADEX_test_cases/radex.in
 tests/Radex
 manual_tests_and_benchmarks/lime/lime-master
+manual_tests_and_benchmarks/lime/template_model.c
 manual_tests_and_benchmarks/molpop-cep_benchmark/Gianni_models/*.out
 manual_tests_and_benchmarks/molpop-cep_benchmark/molpop
 manual_tests_and_benchmarks/molpop-cep_benchmark/molpop-cep-master
