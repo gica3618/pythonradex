@@ -170,7 +170,7 @@ class Level():
         '''Calculates the fractional population of the level in LTE.
 
         Args:
-            Z (:obj:`float`): The partiion function.
+            Z (:obj:`float`): The partition function.
             T (:obj:`float`): The temperature in [K].
         
         Returns:

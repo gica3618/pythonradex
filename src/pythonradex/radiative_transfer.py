@@ -59,20 +59,21 @@ class Cloud():
                 "LVG sphere RADEX". The options containing "RADEX" are meant to
                 mimic the behaviour of the original RADEX code by using the same
                 equations as RADEX.
-            line_profile_type (:obj:`str`): The type of the line profile. Available options:
-                "rectangular" or "Gaussian". Note that for geometries "LVG sphere"
-                and "LVG slab", only "rectangular" is allowed.
+            line_profile_type (:obj:`str`): The type of the line profile.
+                Available options: "rectangular" or "Gaussian". Note that for
+                LVG geometries, only "rectangular" is allowed.
             width_v (:obj:`float`): The width of the line profile in [m/s]. For a Gaussian
-                profile, this is interpreted as the FWHM. Note that the intepretation
+                profile, this is interpreted as the FWHM. Note that the interpretation
                 of this parameter depends on the adopted geometry. For the static
                 geometries, width_v is the width of the intrinsic emission profile.
-                On the other hand, for geometries "LVG sphere" and "LVG slab",
-                width_v corresponds to the total velocity width of the cloud.
-                So, for "LVG sphere", width_v=2*V, where V is the velocity at the surface
-                of the sphere. In terms of the constant velocity gradient dv/dr=V/R (with
-                R the radius of the sphere), we can also say width_v=dv/dr*2*R. For
-                "LVG slab", width_v=dv/dz*Z where Z is the depth of the slab and dv/dz
-                the constant velocity gradient of the slab.
+                On the other hand, for LVG geometries (for which the line profile
+                is rectangular), width_v corresponds to the total velocity width
+                of the cloud. So, for "LVG sphere", width_v=2*V, where V is the
+                velocity at the surface of the sphere. In terms of the constant
+                velocity gradient dv/dr=V/R (with R the radius of the sphere),
+                we can also say width_v=dv/dr*2*R. For "LVG slab", width_v=dv/dz*Z
+                where Z is the depth of the slab and dv/dz the constant velocity
+                gradient of the slab.
             use_Ng_acceleration (:obj:`bool`): Whether to use Ng acceleration. Defaults
                 to True.
             treat_line_overlap (:obj:`bool`): Whether to treat the overlap of emission
@@ -81,7 +82,7 @@ class Cloud():
                 are neglected. If True, overlapping lines are treated correctly by
                 performing averages over frequency. This slows down the calculation 
                 considerably. Defaults to False. Can only be used in combination
-                with static geometries (i.e. not with LVG).
+                with static geometries (i.e. not with LVG geometries).
             warn_negative_tau (:obj:`bool`): Whether the raise a warning when negative
                 optical depth is encountered. Defaults to True. Setting this to False
                 is useful when calculating a grid of models.
@@ -155,8 +156,9 @@ class Cloud():
 
     def update_parameters(self,N=None,Tkin=None,collider_densities=None,
                           ext_background=None,T_dust=None,tau_dust=None):
-        r'''Set the parameters for a new radiative transfer calculation. Any of the
-            parameters can be set to None if no update of that parameter is wished.
+        r'''Set or update the parameters for a radiative transfer calculation.
+            Any of the parameters can be set to None if no update of that
+            parameter is wished.
 
         Args:
             ext_background (func, number or None): A function taking the
@@ -345,7 +347,8 @@ class Cloud():
                                  S_dust=self.rate_equations.S_dust)
 
     def fluxes_of_individual_transitions(self,solid_angle,transitions):
-        r''' Calculate the fluxes from individual lines, that is, the amount of
+        r''' Calculate the fluxes of individual lines.
+            The flux of individual lines is the amount of
             energy per time reaching the telescope via photons emitted by the molecule.
             This calculation is only easily possible if the dust is optically thin (i.e.
             the dust does not hinder line photons from escaping the cloud). Thus, this
@@ -378,11 +381,11 @@ class Cloud():
 
     def tau_nu(self,nu):
         r''' Calculate the total optical depth (all lines plus dust) at each
-        input frequency
+        input frequencies
 
         Args:
             nu (numpy.ndarray): The frequencies in [Hz] for which the optical depth
-            should be calculated
+                should be calculated
         
         Returns:
             np.ndarray: The total optical depth at the input frequencies.
@@ -396,7 +399,7 @@ class Cloud():
         Args:
             solid_angle (:obj:`float`): The solid angle of the source in [sr].
             nu (numpy.ndarray): The frequencies in [Hz] for which the optical depth
-            should be calculated
+                should be calculated
         
         Returns:
             np.ndarray: The flux in [W/m2/Hz] for each input frequency.
@@ -407,9 +410,10 @@ class Cloud():
     def model_grid(self,ext_backgrounds,N_values,Tkin_values,collider_densities_values,
                    requested_output,T_dust=0,tau_dust=0,solid_angle=None,
                    transitions=None,nu=None):
-        r'''Iterator over a grid of models. Models are calculated for all
-            possible combinations of the input parameters ext_backgrounds, N_values,
-            Tkin_values and collider_densities_values.
+        r'''Iterator over a grid of models.
+            Models are calculated for all possible combinations of the input
+            parameters ext_backgrounds, N_values, Tkin_values and
+            collider_densities_values.
 
         Args:
             ext_backgrounds (:obj:`dict`): A dictionary, one entry for
@@ -426,10 +430,11 @@ class Cloud():
                 collider. Each entry is a list of densities for which models should be
                 computed for, using a "zip" logic (i.e. calculate a model for the first
                 entries of each list, for the second entries of each list, etc).
-                Units are [m\ :sup:`-3`].
+                Units are [m\ :sup:`-3`]. Example:
+                collider_densities_values={'para-H2':[400,600],'ortho-H2':[700,1000]}
             requested_output (:obj:`list`): The list of requested outputs. Possible
-                entries are 'level_pop','Tex','tau_nu0_individual_transitions',
-                'fluxes_of_individual_transitions','tau_nu', and 'spectrum'
+                entries are 'level_pop', 'Tex', 'tau_nu0_individual_transitions',
+                'fluxes_of_individual_transitions', 'tau_nu', and 'spectrum'
             T_dust (func or number): The dust temperature in [K] as a function of frequency.
                  It is assumed that the source function of the dust is a black body
                  at temperature T_dust. A single number is interpreted as a constant value
@@ -451,7 +456,8 @@ class Cloud():
                 or 'spectrum' is requested. Defaults to None.
 
         Returns:
-            dict: dictionary with fields 'ext_background','N','Tkin' and
+            dict: dictionary representing the model
+                The dictionary fields are 'ext_background', 'N', 'Tkin' and 
                 'collider_densities' to identify the input parameters of the model,
                 as well as any requested output. Units of outputs:
                 'level_pop': no units; 'Tex': [K]; 'tau_nu0': no units;

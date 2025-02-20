@@ -120,17 +120,6 @@ class RateEquations():
         self.U_nu0 = self.U_matrix_nu0()
         self.V_nu0 = self.V_matrix_nu0()
 
-    # @staticmethod
-    # @nb.jit(nopython=True,cache=True)
-    # def fast_tau_line_nu0(level_population,N,nlow_rad_transitions,nup_rad_transitions,
-    #                       A21,phi_nu0,glow_rad_transitions,gup_rad_transitions,nu0):
-    #     N1 = N * level_population[nlow_rad_transitions]
-    #     N2 = N * level_population[nup_rad_transitions]
-    #     tau_nu0 = atomic_transition.tau_nu(
-    #                    A21=A21,phi_nu=phi_nu0,g_low=glow_rad_transitions,
-    #                    g_up=gup_rad_transitions,N1=N1,N2=N2,nu=nu0)
-    #     return tau_nu0
-
     @staticmethod
     @nb.jit(nopython=True,cache=True)
     def tau_line_nu0(level_population,N,trans_low_number,trans_up_number,
@@ -145,16 +134,6 @@ class RateEquations():
                                g_low=glow_rad_transitions[i],
                                g_up=gup_rad_transitions[i],N1=N1,N2=N2,nu=nu0[i])
         return tau_nu0
-
-    # def tau_line_nu0(self,level_population,N):
-    #     return self.fast_tau_line_nu0(
-    #                level_population=level_population,N=N,
-    #                nlow_rad_transitions=self.molecule.nlow_rad_transitions,
-    #                nup_rad_transitions=self.molecule.nup_rad_transitions,
-    #                A21=self.molecule.A21,phi_nu0=self.molecule.phi_nu0,
-    #                glow_rad_transitions=self.molecule.glow_rad_transitions,
-    #                gup_rad_transitions=self.molecule.gup_rad_transitions,
-    #                nu0=self.molecule.nu0)
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
@@ -173,15 +152,6 @@ class RateEquations():
             Ieff[nlow,nup] = I
             Ieff[nup,nlow] = I
         return Ieff
-
-    # def Ieff_nu0(self,beta_nu0,tau_tot_nu0):
-    #     return self.fast_Ieff_nu0(
-    #                  beta_nu0=beta_nu0,tau_tot_nu0=tau_tot_nu0,no_dust=self.no_dust,
-    #                  S_dust_nu0=self.S_dust_nu0,tau_dust_nu0=self.tau_dust_nu0,
-    #                  n_levels=self.molecule.n_levels,
-    #                  nlow_rad_transitions=self.molecule.nlow_rad_transitions,
-    #                  nup_rad_transitions=self.molecule.nup_rad_transitions,
-    #                  Iext_nu0=self.Iext_nu0)
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
@@ -202,14 +172,6 @@ class RateEquations():
             else:
                 term[n_up,n_low] = (1-beta_nu0[i])*tau_line_nu0[i]/tau_tot*A21[i]
         return term
-
-    # def mixed_term_nu0(self,beta_nu0,tau_tot_nu0,tau_line_nu0):
-    #     return self.fast_mixed_term_nu0(
-    #                beta_nu0=beta_nu0,tau_tot_nu0=tau_tot_nu0,
-    #                tau_line_nu0=tau_line_nu0,n_levels=self.molecule.n_levels,
-    #                nlow_rad_transitions=self.molecule.nlow_rad_transitions,
-    #                nup_rad_transitions=self.molecule.nup_rad_transitions,
-    #                A21=self.molecule.A21)
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)

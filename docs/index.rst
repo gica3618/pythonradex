@@ -4,11 +4,15 @@
    contain the root `toctree` directive.
 
 Welcome to the ``pyhonradex`` documentation!
-============================================
+=================================================
 
-``pythonradex`` is a python implementation of the RADEX_ code [vanderTak07]_. It solves the radiative transfer for a uniform medium in non-LTE with an escape probability formalism. The code can be used to quickly estimate the emission from an astrophysical gas given input parameters such as the density and kinetic temperature of the collision partners, the column density of the gas and width of the emission lines. It partially supports treatment of overlapping lines and of an internal dust continuum field.
+``pythonradex`` solves the radiative transfer for a uniform medium in non-LTE with an escape probability formalism. The code can be used to quickly estimate the emission from an astrophysical gas given input parameters such as the kinetic temperature, the column density and the density of the collision partners.
+
+``pythonradex`` is a python re-implementation of the RADEX code [vanderTak07]_. It is generally faster than RADEX (when calculating a grid of models) and provides additional functionality that is not included in RADEX (treatment of overlapping lines, treatment of internal dust continuum, output of spectra,...).
 
 ``pyhonradex`` also provides a convenient method to read files from the LAMDA_ database.
+
+Please see the :ref:`example notebooks<examples>` for an overview of the functionalities offered by ``pythonradex``.
 
 
 .. toctree::
@@ -21,6 +25,7 @@ Welcome to the ``pyhonradex`` documentation!
    geometry
    difference_pythonradex_RADEX
    faq
+   help
    API
    citation
    

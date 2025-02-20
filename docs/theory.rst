@@ -39,7 +39,7 @@ The total absorption and emission coefficients are simply given by the sum over 
 
     j_\nu = \sum_{l\succ l'}j_{ll'}(\nu) + j_c(\nu)
 
-We see that we need to know the fractional level population to calculate :math:`\alpha_\nu` and :math:`j_\nu`, which are needed to solve the radiative transfer. How can we do that? There are two kinds processes that can excite or de-excite an molecular level: radiative processes (emission or absorption of photons) or collisions. If the density of colliders (e.g. H\ :sub:`2`\  or electrons) is high enough (or if the emission is highly optically thick), the energy levels become thermalised and we are in local thermodynamic equilibrium (LTE). In this case, the level population is simply given by the Boltzmann distribution:
+We see that we need to know the fractional level population :math:`n_l` to calculate :math:`\alpha_\nu` and :math:`j_\nu`, which are needed to solve the radiative transfer. How can we do that? There are two kinds processes that can excite or de-excite an molecular level: radiative processes (emission or absorption of photons) or collisions. If the density of colliders (e.g. H\ :sub:`2`\  or electrons) is high enough (or if the emission is highly optically thick), the energy levels become thermalised and we are in local thermodynamic equilibrium (LTE). In this case, the level population is simply given by the Boltzmann distribution:
 
 .. math::
     n_l = n\frac{e^{-E_l/(kT_\mathrm{kin})}}{Q}
@@ -49,7 +49,7 @@ where :math:`Q=\sum_{l'} e^{-E_{l'}/(kT_\mathrm{kin})}` is the partition functio
 .. math::
     \frac{n_l}{n_{l'}} = \frac{g_l}{g_{l'}}e^{-\Delta E/(kT_\mathrm{ex})}
 
-where :math:`g` is the statistical weight and :math:`\Delta E` the energy difference between levels :math:`l` and :math:`l'`.
+where :math:`g` is the statistical weight and :math:`\Delta E` the energy difference between levels :math:`l` and :math:`l'` (note that in LTE, :math:`T_\mathrm{kin}=T_\mathrm{ex}`).
 
 Now, how can we calculate the level populations if LTE does not apply? We assume *statistical equilibrium* (SE). In other words, we assume that the rate of processes that populates a level equals the rate of processes that depopulates a level:
 
@@ -58,17 +58,17 @@ Now, how can we calculate the level populations if LTE does not apply? We assume
 
 Here :math:`C_{l'l}` and :math:`R_{l'l}` are the rates per volume of collisional and radiative transitions respectively, from level :math:`l'` to level :math:`l`. Thus, the left-hand side is the total rate of transitions into level :math:`l`, while the right-hand side is the total rate of transitions out of level :math:`l`. By writing down the statistical equilibrium for each level and solving the system of equations, the level populations can be calculated and the radiative transfer solved.
 
-However, there is a problem: while the collisional rates :math:`C_{l'l}` are known, the radiative rates depend, as one might expect, on the radiation field. If :math:`E_l>E_{l'}`, we have
+However, there is a problem: while the collisional rates :math:`C_{l'l}` are known, the radiative rates depend, as one might expect, on the radiation field. If :math:`l\succ l'`, we have
 
 .. math::
     R_{ll'} = A_{ll'} + B_{ll'}\bar{J}
 
-while if :math:`E_l<E_{l'}`
+while if :math:`l\prec l'`
 
 .. math::
     R_{ll'} = B_{ll'}\bar{J}
 
-Here, :math:`\bar{J}` is the radiation field averaged over frequency and solid angle: :math:`\bar{J}=\frac{1}{4\pi}\int I_\nu\phi_{ll'}(\nu)\mathrm{d}\Omega\mathrm{d}\nu`. Thus, in order to solve the SE equation, we need to know the radiation field, which is what we were after in the first place... In order to solve this chicken and egg problem, we need to adopt an iterative technique.
+Here, :math:`\bar{J}` is the radiation field averaged over frequency and solid angle: :math:`\bar{J}=\frac{1}{4\pi}\int I_\nu\phi_{ll'}(\nu)\mathrm{d}\Omega\mathrm{d}\nu`. Thus, in order to solve the SE equations, we need to know the radiation field, which is what we were after in the first place... In order to solve this chicken and egg problem, we need to adopt an iterative technique.
 
 Accelerated Lambda Iteration (ALI)
 ----------------------------------------------
@@ -99,7 +99,7 @@ The approximate iteration scheme is then based on :math:`I_\nu=\Psi^*_\nu[j_\nu]
 
 Escape probability
 -----------------------------
-We still need to specify the formal solution of the radiative transfer we adopt via the operator :math:`\Psi_\nu`. Same as ``RADEX``, we use an escape probability method. We consider the probability :math:`\beta` of a newly created photon to escape the cloud. This probability depends on the geometry of the cloud and the absorption coefficient (or optical depth). If the cloud is completely optically thick (:math:`\beta\approx 0`), we expect the radiation field to equal the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Thus, we write 
+We still need to specify the formal solution of the radiative transfer we adopt via the operator :math:`\Psi_\nu`. Same as ``RADEX``, we use an escape probability method. We consider the probability :math:`\beta` of a newly created photon to escape the cloud. This probability depends on the geometry of the cloud and the absorption coefficient (or, equivalently, optical depth). If the cloud is completely optically thick (:math:`\beta\approx 0`), we expect the radiation field to equal the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Thus, we write 
 
 .. math::
     I_\nu = \Psi[j_\nu] = \beta(\alpha_\nu^\dagger) I_\mathrm{ext} + (1-\beta(\alpha_\nu^\dagger))\frac{j_\nu}{\alpha_\nu^\dagger}
@@ -111,7 +111,7 @@ For the approximate Psi operator, we choose
 .. math::
     \Psi^*_\nu[j_\nu] = (1-\beta(\alpha_\nu^\dagger))\frac{j_\nu}{\alpha_\nu^\dagger}
 
-Please see :ref:`this section <geometry>` for a list of all geometries available in ``pythonradex`` with the corresponding formulas for the escape probability.
+Please see the :ref:`section about cloud geometries<geometries>` for a list of all geometries available in ``pythonradex`` with the corresponding formulas for the escape probability.
 
 Ng-acceleration
 ------------------------

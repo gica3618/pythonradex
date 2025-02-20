@@ -23,7 +23,7 @@ class Molecule():
             The radiative transitions of the molecule, in the same order as in the
             LAMDA file.
         coll_transitions (dict): The collisional transitions of the molecule. The
-            dictionary keys correspond ot the different colliders. Each entry of
+            dictionary keys correspond to the different colliders. Each entry of
             the dictionary is a list of pythonradex.atomic_transition.CollisionalTransition
             objects, in the same order as in the LAMDA file.
         n_levels (:obj:`int`): the total number of levels
@@ -116,7 +116,7 @@ class EmittingMolecule(Molecule):
             The radiative transitions of the molecule, in the same order as in the
             LAMDA file.
         coll_transitions (dict): The collisional transitions of the molecule. The
-            dictionary keys correspond ot the different colliders. Each entry of
+            dictionary keys correspond to the different colliders. Each entry of
             the dictionary is a list of pythonradex.atomic_transition.CollisionalTransition
             objects, in the same order as in the LAMDA file.
         n_levels (:obj:`int`): the total number of levels
@@ -125,7 +125,7 @@ class EmittingMolecule(Molecule):
     
     def __init__(self,datafilepath,line_profile_type,width_v,read_frequencies=False,
                  partition_function=None):
-        """Constructs a new instance of the Molecule class using a LAMDA datafile
+        """Constructs a new instance of the EmittingMolecule class using a LAMDA datafile
         
         Args:
             datafilepath (:obj:`str`): The filepath to the LAMDA file.
@@ -234,12 +234,12 @@ class EmittingMolecule(Molecule):
         r'''Compute the excitation temperature for all radiative transitions
         
         Args:
-            level_population (numpy.ndarray): the fractional population of each level,
+            level_population (numpy.ndarray): the fractional population of each level, 
                 where the levels are in the order of the LAMDA file
         
         Returns:
             numpy.ndarray: the excitation temperature for each radiative transition,
-                in the order as in the LAMDA file
+            in the order as in the LAMDA file
         '''
         Tex = atomic_transition.Tex(
                    Delta_E=self.Delta_E_rad_transitions,g_up=self.gup_rad_transitions,

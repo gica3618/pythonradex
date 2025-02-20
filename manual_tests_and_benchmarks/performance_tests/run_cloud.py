@@ -17,11 +17,11 @@ import numpy as np
 import shutil
 import os
 
-# data_filename = 'hco+.dat'
-# collider_densities = {'H2':1e3/constants.centi**3}
-data_filename = 'co.dat'
-collider_densities = {'para-H2':1e3/constants.centi**3,
-                      'ortho-H2':1e3/constants.centi**3}
+data_filename = 'hco+.dat'
+collider_densities = {'H2':1e3/constants.centi**3}
+# data_filename = 'co.dat'
+# collider_densities = {'para-H2':1e3/constants.centi**3,
+#                       'ortho-H2':1e3/constants.centi**3}
 
 datafilepath = general.datafilepath(data_filename)
 geometry = 'uniform sphere'

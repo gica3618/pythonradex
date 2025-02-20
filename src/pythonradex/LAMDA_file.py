@@ -33,12 +33,15 @@ def read(datafilepath,read_frequencies,read_quantum_numbers=False):
     
     Returns:
         dict: A dictionary containing the data read from the file.
-            The following keys give acces to lists containing the data. The elements of these lists are in the order they appear in the file.
-                - 'levels' (a list of pythonradex.atomic_transition.Level objects)
-                - 'radiative transitions' (a list of pythonradex.atomic_transitions.RadiativeTransition objects)
-                - 'collisional transitions' (a list of pythonradex.atomic_transition.CollisionalTransition objects)
-                - 'quantum numbers' (list of str, empty if read_quantum_numbers was set to False)
-            
+            The following keys give acces to lists containing the data.
+            The elements of these lists are in the order they appear in the file.
+            'levels' (a list of pythonradex.atomic_transition.Level objects);
+            'radiative transitions' (a list of 
+            pythonradex.atomic_transitions.RadiativeTransition objects);
+            'collisional transitions' (a list of
+            pythonradex.atomic_transition.CollisionalTransition objects);
+            'quantum numbers' (list of str, empty if read_quantum_numbers
+            was set to False)
     '''
     #identifiers used in the LAMDA database files:
     LAMDA_coll_ID = {'1':'H2','2':'para-H2','3':'ortho-H2','4':'e',
