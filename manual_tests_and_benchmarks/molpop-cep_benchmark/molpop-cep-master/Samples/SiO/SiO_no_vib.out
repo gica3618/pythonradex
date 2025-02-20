@@ -1,0 +1,20 @@
+          *** MOLPOP-CEP; version of Mar 18, 2019 ***
+
+* Sample Run for SiO
+* Lowest 20 rotational levels of the ground vibration state
+*
+      Solution method is Slab (Capriotti) escape probability 
+      Molecule data file --- DataBase/SiO.molecule                                                                                                           
+      Number of levels = 20
+
+        Collision information:
+    1.  Relative weight of collision partner = 50.00
+        Collision rates from data file DataBase/Coll/SiO_H2_vib.kij
+
+      Tgas = 1200.0 K
+      n_tot =  1.00E+09 cm-3
+
+      Molecule --- SiO
+      No considerations of dust absorption
+      No considerations of Line Overlap
+      Maser saturation effects included

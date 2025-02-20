@@ -1,0 +1,102 @@
+* CO with collision rates from Flower, 2001, J.Phys.B.,2731  
+* These lines are echoed in the output because they start with a '*'
+* Instructions for data input are found at the end of the input file		
+		Method (LVG, slab, LVGPP, CEP) = CEP
+		Molecule data file = CO
+		Data directory = DataBase      
+      Number of energy levels = 11
+      rot_correction =  off
+      Number of collision partners = 2
+             weight / column for CEP = 1
+        collision rates option= table
+                     data file = CO_H2o.kij
+            calculation option = sqrt(T)
+                scaling factor = 1.0
+             weight / column for CEP = 1
+        collision rates option = table
+                     data file = CO_H2p.kij
+            calculation option = sqrt(T)
+                scaling factor = 1.0
+      File listing physical conditions = Samples/CO/Flower_rates.physical
+%      Gas Temperature = 100k      
+%      n = 1.0e4 
+%      Molecular abundance (n_mol/n) = 1.0e-4
+%      Velocity = 1 km/sec (linewidth for slab)
+%      dlogV/dlogr = 1.0 (in effect only for LVG)
+      overlap = off      
+      Include maser saturation = no
+      Dust properties file = Samples/Standard_ISM.dat
+      Dust absorption = 0
+      
+
+      Optional External Radiation:
+      diluted blackbody fields:                                       
+             W = 0.0     
+%             T_bb = 500 K      
+%             Illumination from (left/right/both/internal) = left
+%             W = 0
+
+      Dust radiation (add a line with tau equal to 0 if several dust components are desired):
+             Dust tau at visual = 3.
+             Dust temperature = 100 K
+             Illumination from (left/right/both/internal) = internal
+             Dust tau at visual = 0.
+             
+     Radiation from file = none
+%             Type of entry for the bolometric scale (ENERGY_DEN/L&R) = L&R
+%             Luminosity = 1.E4 Lo  
+%             Distance from source = 1.E15 cm
+%             Illumination from (left/right/both/internal) = internal
+    
+    Solution method (NEWTON/ALI, non-important for single-zone) = ALI
+    Accuracy in solution of the equations               = 1.0e-3
+    Maximum number of iterations to solve               = 50    
+    Solution strategy = fixed
+       start with all optical depths less than tau_m = 1
+       Number of printings per decade                       = 4
+       Maximum number of dimension steps allowed per decade = 20
+       Total number of steps allowed to reach any limit     = 100
+       stop when dimension exceeds R_m   = 1.0E20 cm
+       or H2 column exceeds        N_col = 1.E26 cm^-2
+    Precision in grid CEP convergence (0 to ignore convergence) = 1.d-1
+    Number of initial zones (only relevant if no file with phys. conditions) = 5
+    
+    Output mu for intensity = 1.0    
+
+  PRINT CONTROL PARAMATERS
+
+      Printing of molecular data (on or off):
+
+      Print energy level data      = off
+        statistical weights g_i    = on
+        energy in cm^{-1}          = on
+        energy in GHz              = on
+        energy in K                = on
+        quantum numbers            = on
+      Print transition data        = on
+        wavelength in micron       = on
+        energy in GHz              = on
+        energy in K                = on
+        Einstein coefficients A_ij = on
+        collision rates C_ij       = on
+      Stop after printing molecular data = off
+
+      Messages from NEWTON (off or on) = off
+      Messages from step-size selector (off or on) = off
+      Printing output for initial guess (off or on) = off
+      print detailed populations (off or on) = on
+
+      information on each step (off or on)= on
+      print detailed populations (off or on) = off
+    
+      Select transitions for detailed output:
+      the number of transitions (-1 for all transitions) = 5
+      When any of these transitions is inverted, list its
+         maser pump parameters (off or on) = on
+         (this option is ignored in CEP calculations)
+         The transitions are: 
+       i =  2      j = 1
+		 i =  3      j = 2
+		 i =  4      j = 3
+		 i =  5      j = 4
+       i =  8      j = 7

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pythonradex"
+# be careful, PyPi will return "400 bad request" error if you delete your project on PyPi and then try to publish again with a previously published version!
+version = "0.1.4"
+description = '1D non-LTE radiative transfer'
+readme = "README.txt"
+requires-python = ">=3.10"
+license = "MIT"
+keywords = ['radiative transfer', 'radex', 'non-LTE']
+authors = [
+  { name = "Gianni Cataldi", email = "cataldi.gia@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = ['scipy>=1.14','numpy>=2.0,<2.2','numba==0.61.0']
+
+[project.urls]
+Documentation = "https://github.com/gica3618/pythonradex#readme"
+Issues = "https://github.com/gica3618/pythonradex/issues"
+Source = "https://github.com/gica3618/pythonradex"

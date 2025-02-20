@@ -1,0 +1,529 @@
+\documentclass[preprint]{aastex}
+%\usepackage{apjfonts}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\[#1]{\cite{#1}}
+\def\eq#1{\begin{equation} #1 \end{equation}}
+\def\eqarray#1{\begin{eqnarray} #1 \end{eqnarray}}
+\def\non{\nonumber \\}
+
+\def\Dnu     {\hbox{$\Delta\nu$}}
+\def\E        {\hbox{${\cal E}$}}
+\def\j        {\hbox{${\jmath}$}}
+\def\Jbar     {\hbox{$\bar J$}}
+\def\Ie       {\hbox{$I_e$}}
+\def\about    {\hbox{$\sim$}}
+\def\half     {\hbox{$\frac12$}}
+\def\tot      {\tau_t}
+\def\t(#1){\tau_{#1}}
+\def\a(#1){\alpha_{#1}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\title
+                 {MOLPOP Line Emission Output}
+
+\author
+{Moshe; May 12, 2017} % \today}
+
+The entire line flux at position $\tau$ is
+\eq{
+               F(\tau) = \int_{-\infty}^{\infty}F_\nu(\tau)d\nu
+                       = \Dnu\int_{-\infty}^{\infty}F_\nu(\tau)dx
+}
+We introduced the line cooling rate per unit area (erg cm$^{-2}$ s$^{-1}$) and
+the cooling factor \j\ via
+\eq{
+                \Lambda = F(\tot) - F(0) = 4\pi\Dnu\,\j
+}
+taking account of emission from the two faces of the slab (eq. 4, 2006 CEP
+paper). As we show in eq. 93 of our CEP notes (where we used \E\ for
+$\Lambda$), in the case of 1--zone we have
+\eq{
+    \j = S\tot\beta(\tot) = \epsilon\ell\beta(\tot)
+}
+where $\epsilon$ is the emission coefficient and $\ell$ is the slab thickness.
+Therefore, the $u \to l$ transition has
+\eq{
+   \Lambda_{u,l} = 4\pi\Dnu\epsilon_{u,l}\beta_{u,l}\ell
+                 = h\nu_{u,l}A_{u,l}\beta_{u,l}n_u\ell
+                 = h\nu_{u,l}A_{u,l}\beta_{u,l}\frac{n_u}{n}N
+}
+where $n_u$ is the population of the upper level, $n$ is the overall molecular
+density and $N$ is its column density. Since $N$ is the overall number of
+molecules per unit area, the cooling rate per molecule (erg s$^{-1}$ per
+molecule) is
+\eq{
+   {\tt{cool}}_{u,l} = \frac{\Lambda_{u,l}}{N}
+                     = h\nu_{u,l}A_{u,l}\beta_{u,l}\frac{n_u}{n}
+}
+and the flux is
+\eq{
+   F(\tot) = -F(0) = \half\Lambda_{u,l}
+                   = \half{\tt{cool}}_{u,l} N
+}
+
+\section*{MOLPOP Implementation}
+
+We use the variables \texttt{x(i)} so that
+\eq{
+  \tt n(i) = nmol*x(i)*we(i)
+}
+is the population of level $i$, with {\tt we(i)} its weight factor. Therefore
+\eq{
+   \tt n(i) A(i,j) = nmol*x(i)*[we(i) A(i,j)]
+}
+and in MOLPOP we absorb the weight factor into the $A$-coefficient. So after
+that is done,
+\eq{
+   \tt cool(i,j) = ems(i,j)*esc(i,j)*x(i)
+}
+(in subroutine {\tt lines}) where
+\eq{
+   \tt ems(i,j) = h\nu(i,j)*A(i,j)
+}
+is defined right after $A$ is scaled with {\tt we(i)} at the end of subroutine
+{\tt INPUT}. Therefore, the flux should be defined as
+\eq{
+   \tt F(i,j) = \half cool(i,j)*nmol*R
+}
+This will give the result in erg cm$^{-2}$ s$^{-1}$. Switch to MKS: W = 10$^7$
+erg s$^{-1}$ and m$^2$ = 10$^4$ cm$^2$ so W m$^{-2}$ = 10$^{7 - 4}$ erg
+cm$^{-2}$ s$^{-1}$ and erg cm$^{-2}$ s$^{-1}$ = 10$^{-3}$ W m$^{-2}$. Therefore
+
+\eq{
+ \tt F(i,j) = aux*cool(i,j) \qquad W\,m^{-2}
+}
+where
+\eq{
+   \tt aux = .5*10^{-3}\,nmol*R
+}
+
+
+\end{document}
+
+\subsection{Line Emissivity}
+
+Now we should be able to get the full line flux from $F = F(\tot) - F(0)$ where
+\eq{
+    F(\tot) = \DnuD\int F_\nu(\tot)dx
+}
+and a similar expression for $F(0)$. This produces pairs of the form
+\eq{
+    \int dx [E_3(\tau_1\Phi) - E_3(\tau_2\Phi)] =
+    \int dx [\half - E_3(\tau_2\Phi)]
+  - \int dx [\half - E_3(\tau_1\Phi)]
+}
+>From the results of problem 2.12 in the Maser book (pp 35--36)
+\eq{
+    \alpha(\tau) = \tau\beta(\tau) = \int dx [\half - E_3(\tau\Phi)]
+}
+giving us
+\eq{
+    \int dx [E_3(\tau_1\Phi) - E_3(\tau_2\Phi)] =
+    \alpha(\tau_2) - \alpha(\tau_1)
+}
+Therefore,
+\eq{
+    F(\tot) = 2\pi\DnuD\sum_{i = 1}^z S_i
+    \left(\alpha_{z,i-1} -\alpha_{z,i}\right),  \qquad
+    -F(0) = 2\pi\DnuD\sum_{i = 1}^z S_i
+    \left(\alpha_{i,0} - \alpha_{i-1,0}\right)
+}
+In the case of symmetric slabs it's enough to calculate just one of these and
+multiply by 2 to get \E. In the general case,
+\eq{\label{eq:E}
+    \E = 2\pi\DnuD\sum_{i = 1}^z S_i
+    \left(\alpha_{i,0} - \alpha_{i-1,0} - \alpha_{z,i} + \alpha_{z,i-1}\right)
+}
+This is a lot simpler than eq.\ \ref{eq:F1}, where we have
+\eq{\label{eq:F2}
+ \E = 4\pi\DnuD \j, \quad
+ \j = \sum_{i = 1}^z S_ip_i\t(i,i-1)
+                      = \sum_{i = 1}^z \Big[\a(i,i-1) S_i -
+     \half\sum_{j \ne i}(\a(i,j) - \a(i-1,j) - \a(i,j-1) + \a(i-1,j-1))S_j\Big]
+}
+So we must verify this is the same result. To simplify handling the sums,
+introduce a matrix
+\eq{\label{eq:M}
+ M_{i,j} = -\half(\a(i,j) - \a(i-1,j) - \a(i,j-1) + \a(i-1,j-1))
+}
+Because $\a(i,j) = \a(j,i)$ $M$ is a symmetric matrix and because $\alpha_{i,i}
+= 0$ its diagonal elements are
+\eq{
+    M_{i,i} = \alpha_{i,i - 1}
+}
+The expression for \j\ in eq.\ \ref{eq:F2} is therefore
+\eq{
+ \j  = \sum_{i = 1}^z M_{i,i}S_i +
+     \sum_{i = 1}^z\sum_{\stackrel{j = 1}{j \ne i}}^z M_{i,j}S_j
+}
+and so obviously
+\eq{
+    \j = \sum_{i = 1}^z\sum_{j = 1}^z M_{i,j}S_j
+       = \sum_{j = 1}^z S_j \sum_{i = 1}^z M_{i,j}
+}
+Now
+\eq{
+   2\sum_{i = 1}^z M_{i,j} =
+        - \sum_{i = 1}^z \left(\a(i, j) - \a(i - 1, j)\right)
+        + \sum_{i = 1}^z \left(\a(i, j - 1) - \a(i - 1, j - 1)\right)
+}
+Work on the 1st sum:
+\eq{
+  \sum_{i = 1}^z \left(\a(i, j) - \a(i - 1, j)\right) =
+  \sum_{i = 1}^z \a(i, j)
+  - \sum_{k = 0}^{z - 1} \a(k, j)
+  = \a(z,j) - \a(0,j)
+}
+Similarly the 2nd:
+\eq{
+  \sum_{i = 1}^z \left(\a(i, j - 1) - \a(i - 1, j - 1)\right)
+  = \a(z,j - 1) - \a(0,j - 1)
+}
+so that
+\eq{
+    \j = \half\sum_{j = 1}^z S_j (\a(0,j) - \a(z,j) - \a(0,j - 1) + \a(z,j - 1))
+}
+With $\E = 4\pi\DnuD\j$, this is exactly the same as eq.\ \ref{eq:E}.
+
+Now it is also quite simple to show that for a symmetric slab, 1-- and 2--zone
+partitions are identical. In the case of 1--zone we have $z = 1$ and
+\eq{
+    \j = \half S(\a(1,0) - \a(1,1) - \a(0,0) + \a(1,0))
+       = \half S\cdot2\a(1,0) = S\tot\beta(\tot)
+}
+For a 2--zone partition the source function is the same in both and
+\eq{
+    \j = \half S(\a(1,0) - \a(2,1) - \a(0,0) + \a(2,0)
+               + \a(2,0) - \a(2,2) - \a(1,0) + \a(2,1))
+       = \half S\cdot2\a(2,0) = S\tot\beta(\tot)
+}
+
+\newpage
+\subsection{Emerging Intensity}
+The emissivity \j\ gives the line cooling. To get the observed radiation from a
+slab need the intensity from equation \ref{eq:I_em}
+\eq{
+    I_\nu(\tot,\mu) = \int_0^{\tot} e^{-(\tot - t)\Phi/\mu}
+                         S(t){\Phi\over\mu}dt
+    = \sum_{i = 1}^z S_i
+     \int\limits_{\tau_{i - 1}}^{\tau_i}e^{-(\tot - t)\Phi/\mu}{\Phi\over\mu} dt
+      = \sum_{i = 1}^z S_i
+   \int\limits_{(\tot - \tau_{i - 1})\Phi/\mu}
+   ^{(\tot - \tau_i)\Phi/\mu}\!\!\!-e^{-u}du
+}
+So
+\eq{
+    I_\nu(\tot,\mu) = \sum_{i = 1}^z S_i
+   \left(e^{-(\tot - \tau_i)\Phi/\mu} -
+         e^{-(\tot - \tau_{i - 1})\Phi/\mu}\right)
+         = \sum_{i = 1}^z S_i
+     \left(e^{-\tau_{z,i}\Phi/\mu} -  e^{-\tau_{z,i - 1}\Phi/\mu}\right)
+}
+Angular integration properly reproduces the flux from equation \ref{eq:Ft}
+because
+\eq{
+    \int_0^1 e^{-\tau\Phi/\mu}\mu d\mu = E_3(\tau\Phi)
+}
+
+\subsection{More on the Effectively Thin Emissivity}
+
+For the effectively thin case we found (eq.\ \ref{eq:eff-thin})
+\eq{
+ {d\j\over d\tau} = {\epsilon\over 1 - \epsilon}B(T)
+                  = {C_{21}\over A_{21}}{e^{E/kT} - 1\over e^{E/kT}}\times
+                    {A_{21}\over B_{21}}{1\over e^{E/kT} - 1}
+                  = {C_{21} e^{-E/kT}\over B_{21}}
+                  = {g_1 C_{12} \over g_2 B_{21}}
+}
+We also have
+\eq{
+    d\tau = {1\over4\pi\DnuD}g_2B_{21}E_{21}(n_1 - n_2) d\ell
+}
+Therefore
+\eq{
+    \E = 4\pi\DnuD\j = E_{21}\int g_1 C_{12}\, (n_1 - n_2)\, d\ell
+}
+
+\section{June 6, 2005: DERIVATIVES}
+
+Derivatives of $\beta$ and $\alpha = \tau\beta$ are most easily calculated from
+the representation
+\eq{
+  \alpha(\tau) = \int_{-\infty}^{\infty} dx \{\half - E_3[\tau\Phi(x)]\}
+}
+This gives
+\eq{
+  {d\alpha\over d\tau} = \int_{-\infty}^{\infty} -\Phi E_3'(\tau\Phi)dx
+                       = \int_{-\infty}^{\infty} \Phi E_2(\tau\Phi)dx
+}
+So we have
+\eq{
+    \alpha' = \int_{-\infty}^{\infty} \Phi(x) E_2[\tau\Phi(x)]dx, \qquad
+    \beta' = {1\over\tau}\left(\alpha' - \beta\right)
+}
+
+\section{July 27, 2005: It's a LINEAR PROBLEM!!!}
+
+{\bf In the CEP formulation, the 2-level problem in $\tau$-space becomes A SET
+OF LINEAR EQUATIONS!!!} Start with equation \ref{eq:S-p}
+\eq{
+    S = (1 - \epsilon)(1 - p)S + \epsilon B(T)
+}
+Instead of manipulating it to solve for $S$ in terms of $p$ and $B$ as we did,
+bring it to the form
+\eq{
+    S + \left({1\over\epsilon} - 1\right)pS = B
+}
+Now make the zone division to get the equation for zone $i$
+\eq{
+    S_i + \eta p_iS_i = B(T_i)
+    \qquad \hbox{where}\
+    \eta  = \left({1\over\epsilon} - 1\right) = {N'_{cr}\over N}
+}
+But
+\eq{
+    p_iS_i = \beta_i S_i + {1\over\t(i,i - 1)}
+            \sum_{\stackrel{j = 1}{j \ne i}}^z M_{i,j}S_j
+}
+where the matrix elements $M_{ij}$ are combinations of $\a(i,j)$ (eq.\
+\ref{eq:M}). So the set of equations for the unknown $S_i$ is
+\eq{
+      \left(1 + \eta\beta_i\right)S_i
+    + {\eta\over\t(i,i - 1)}\sum_{\stackrel{j = 1}{j \ne i}}^z M_{i,j}S_j
+    = B(T_i)
+}
+Voila, a set of linear equations!!! This was right in front of us the whole
+time. In fact, it is even more straightforward to get this directly from the
+standard equation for the source function (eq.\ \ref{eq:S}): divide into zones,
+introduce $\Jbar_i$ as in eq.\ \ref{ave} and get this result without ever
+mentioning $p$.
+
+\section{The Divergent $\alpha(\tau)$}
+
+For the asymptotic behavior of $\alpha$ use equation 88b in Capriotti and
+recall that his definition of $\tau_0$ is line center optical depth to the
+center of the slab (text before eq.\ 83). So the relation to our notation is
+\eq{
+    \tau = 2\tau_0\sqrt{\pi}
+}
+That means that the expression he gives for $\tau_0 > 2.5$ is
+\eq{
+    \alpha(\tau) \simeq \left(\ln\;\tau/\sqrt{\pi}\right)^{1/2}
+                      + {0.25\over\left(\ln\;\tau/\sqrt{\pi}\right)^{1/2}}
+                      + 0.14
+}
+and the asymptotic behavior when $\tau \to \infty$ is $\alpha \sim
+\sqrt{\ln\tau}$. Then how come our equations do not diverge? The reason is that
+the differences entering into $M_{i,j}$ end-up proportional to the second order
+derivative $\alpha''$. To show that, start with
+\eq{
+    \t(i) = \t(i - 1) + \t(i,i-1), \qquad
+    \t(j) = \t(j - 1) + \t(j,j-1)
+}
+and assume $i > j$. Then
+\eqarray{
+    \t(i,j)   &=& \t(i) - \t(j) = \t(i-1,j-1) + \t(i,i-1) - \t(j,j-1)  \cr
+    \t(i-1,j) &=& \t(i-1,j-1) - \t(j,j-1)                            \cr
+    \t(i,j-1) &=& \t(i-1,j-1) + \t(i,i-1)
+}
+and so
+\eqarray{
+    \a(i,j)   &=& \a(i-1,j-1) + \alpha'(\t(i,i-1) - \t(j,j-1))       \cr
+    \a(i-1,j) &=& \a(i-1,j-1) - \alpha'\t(j,j-1)                     \cr
+    \a(i,j-1) &=& \a(i-1,j-1) + \alpha'\t(i,i-1)
+}
+Therefore, to 1st order in the optical thicknesses $\t(i,i-1)$ of single zones
+we have
+\eq{
+ \a(i,j) - \a(i-1,j) - \a(i,j-1) + \a(i-1,j-1) = 0
+}
+
+%\section{July 29, 2005: Rate Equations Linear in the Source Function (AAR)}
+%
+%We start with the statistical equilibrium equations written in the CEP manner:
+%\eqarray{\label{eq:final}
+%    {dn_k^i\over dt} = -\sum_{l = 1}^{k - 1} A_{kl}p_{kl}^i n_u^i +
+%      C_{kl}^i\left(n_k^i - n_l^i e^{-E_{kl}/kT^i}\right) \qquad      \\
+%  \hskip0.2in   +\sum^{L}_{u = k + 1} {g_u\over g_k}
+%       \left[A_{uk}p_{uk}^i n_u^i +
+%      C_{uk}^i\left(n_u^i - n_k^i e^{-E_{uk}/kT^i}\right)\right]   \nonumber
+%}
+%where
+%\eqarray{\label{eq:p_ul}
+%     p^i_{ul} &= &\beta^i_{ul} - {1\over2\t(i,i-1)}
+%     \sum_{\stackrel{j = 1}{j \ne i}}^z
+%     {n_u^j\over n_u^i}\,{n_l^i - n_u^i\over n_l^j - n_u^j} \times \non
+%      &&(\a(i,j) - \a(i-1,j) - \a(i,j-1) + \a(i-1,j-1)).
+%}
+%
+%These equations can be rewritten to incorporate the source function and the optical depth, so that:
+%\eqarray{\label{eq:final}
+%    {dn_k^i\over dt} = -\sum_{l = 1}^{k - 1}  {4\pi\Delta\nu_D\over g_k E_{kl} l^i}
+%    \left[ \tau_{kl}^{i,i-1} \beta_{kl}^i S_{kl}^i - \sum_{\stackrel{j = 1}{j \ne i}}^z M_{i,j} S_{kl}^j +
+%    \tau_{kl}^{i,i-1} {(S_{kl}^i-B^i)\over \eta_{kl}^i} \right] \qquad      \\
+%  \hskip0.2in   +\sum^{L}_{u = k + 1} {4\pi\Delta\nu_D\over g_u E_{uk} l^i}
+%    \left[ \tau_{uk}^{i,i-1} \beta_{uk}^i S_{uk}^i - \sum_{\stackrel{j = 1}{j \ne i}}^z M_{i,j} S_{uk}^j +
+%    \tau_{uk}^{i,i-1} {(S_{uk}^i-B^i)\over \eta_{uk}^i} \right],   \nonumber
+%}
+%
+%which immediately shows that the statistical equilibrium equations are linear in the source functions. In fact, this is a non-linear
+%equation because the optical depths non-linearly depend on the source functions. However, they can be obtained from the level populations,
+%which are obtained from the solution of the linear systems
+%\eq{
+%B_{ul} (n_l^i-n_u^i) S_{ul}^i - A_{ul} n_u^i = 0 \qquad \forall i
+%}
+%for all the transitions between and upper level $u$ and a lower level $l$.
+%%The population of the upper levels, they can be written as:
+%%\eq{
+%%n_u^i = {4\pi\Delta\nu_D\over A_{ul} g_u E_{ul} l^i} \tau_{ul}^{i,i-1} S_{ul}^i
+%%}
+%To these equations, we have to add the closure relation
+%\eq{
+%n^i = \sum_{k=1}^L g_k n_k^i
+%}
+
+\section{November 9, 2005: Other CEP Implementations (ME)}
+
+The CEP fundamental point is that \Jbar\ is calculated directly from the formal
+solution of radiative transfer without solving the differential equation. Our
+approach of zone division and averaging is just one implementation. As noted by
+Jacques Le Bourlot, we could implement CEP also on a grid. Indeed, that's
+straightforward. Equation \ref{Jbar} is simply the standard result
+\eq{\label{eq:Jbar2}
+ \Jbar(\tau) = \half \int_0^{\tot} S(t)dt
+           \int_{-\infty}^{\infty}\Phi^2 E_1(|t - \tau|\Phi) dx
+}
+Or, using the notation of equation 2.9 in Avrett \& Hummer (MNRAS, 130, 295,
+1965),
+\eq{
+    \Jbar = \int_0^{\tot} S(t) K_1(|t - \tau|)dt
+}
+where
+\eq{
+    K_1(\tau) = \half \int_{-\infty}^{\infty}\Phi^2 E_1(\tau\Phi)dx
+}
+They analyze this function in their Appendix I. So for $p$ we simply have
+\eq{
+    p(\tau) = 1 - {1\over S(\tau)}\int_0^{\tot} S(t) K_1(|t - \tau|)dt
+}
+and we can proceed to the rate equation with discretization on a grid instead
+of in zones. In fact, we can even employ the standard ALI-SCP method, with the
+only difference that \Jbar\ is taken from eq.\ \ref{eq:Jbar2} rather than from
+an integration that follows the solution of the radiative transfer equation. It
+seems like such an approach would have all the benefits of ALI-SCP with the
+added advantage of much simpler and accurate calculation of \Jbar\ that does
+not suffer from the errors in determining $I_{\nu}(\mu,\tau)$ in each step. Not
+clear why this has not been done until now (or hasn't it?).
+
+\subsection{November 14, 2005 (AAR)}
+
+
+In case it has not been done before, let us assume, as a first step, that the source function varies linearly between
+two consecutive points in the grid. Let the grid be labeled with the value of $\tau_i$, so that $i=0,\ldots,N$. Since the source function
+varies linearly between points $\tau_i$ and $\tau_{i+1}$, we can write its functional form for each interval as:
+\eq{\label{eq:source_linear}
+S(t) = \cases{a_i+b_i t   & for $\tau_i \leq t \leq \tau_{i+1}$   \cr
+                       0 & elsewhere  \cr},
+}
+where
+\eqarray{\label{eq:source_linear2}
+a_i &=& S_i - \tau_i \frac{S_{i+1}-S_i}{\tau_{i+1}-\tau_i} \\
+b_i &=& \frac{S_{i+1}-S_i}{\tau_{i+1}-\tau_i}
+}
+Eq. \ref{eq:Jbar2} can then be split up:
+\eq{\label{eq:Jbar_split}
+ \Jbar(\tau) = \half \int_0^{\tau} S(t)dt
+           \int_{-\infty}^{\infty}\Phi^2 E_1\left[ (\tau - t)\Phi \right] dx + \half \int_\tau^{\tot} S(t)dt
+           \int_{-\infty}^{\infty}\Phi^2 E_1 \left[ (t-\tau)\Phi \right] dx.
+}
+The first integral takes into account the contribution to the mean intensity of points between the surface and $\tau$, while the second takes into
+account the contribution of points between $\tau$ and the bottom of the slab (given by $\tot$). We call the first contribution
+$\Jbar_\mathrm{outer}(\tau_j)$ while the second is called $\Jbar_\mathrm{inner}(\tau_j)$. Obviously,
+$\Jbar=\Jbar_\mathrm{outer}+\Jbar_\mathrm{inner}$. Interchanging the order of integration in eq. \ref{eq:Jbar_split}, and explicitly separating each integral for each interval $[\tau_i,\tau_{i+1}]$, and carrying out the analytical integrations, we end up with the following two contributions:
+\eq{\label{eq:Jbar_in}
+ \Jbar_\mathrm{outer}(\tau_j) = \half \sum_{i=0}^{j-1}
+           \int_{-\infty}^{\infty}dx \Phi \Bigg[ (a_i+b_i \tau_j) E_2(p) + \frac{b_i}{\Phi}  \left( E_3(p)-e^{-p} \right) \Bigg]_{(\tau_j-\tau_i)\Phi}^{(\tau_j-\tau_{i+1})\Phi}
+}
+\eq{\label{eq:Jbar_out}
+ \Jbar_\mathrm{inner}(\tau_j) = \half \sum_{i=j}^{n-1}
+           \int_{-\infty}^{\infty}dx \Phi \Bigg[ -(a_i+b_i \tau_j) E_2(p) + \frac{b_i}{\Phi} \left( E_3(p)-e^{-p} \right) \Bigg]_{(\tau_i-\tau_j)\Phi}^{(\tau_{i+1}-\tau_j)\Phi},
+}
+
+If the variation of the source function is assumed to be parabolic, the previous expressions are modified to give:
+\eq{\label{eq:Jbar_in}
+ \Jbar_\mathrm{outer}(\tau_j) = \half \sum_{i=0}^{j-1}
+           \int_{-\infty}^{\infty}dx \Phi \Bigg[
+              (a_i+b_i \tau_j + c_i \tau_j^2) E_2(p) +
+              \frac{b_i+2c_i \tau_j}{\Phi} \left( E_3(p)-e^{-p} \right) +
+              \frac{c_i}{\Phi^2} \left( E_4(p)+pe^{-p} \right) \Bigg]_{(\tau_j-\tau_i)\Phi}^{(\tau_j-\tau_{i+1})\Phi}
+}
+\eq{\label{eq:Jbar_out}
+ \Jbar_\mathrm{inner}(\tau_j) = \half \sum_{i=j}^{n-1}
+           \int_{-\infty}^{\infty}dx \Phi \Bigg[ -(a_i+b_i \tau_j + c_i \tau_j^2) E_2(p) +
+              \frac{b_i+2c_i \tau_j}{\Phi} \left( E_3(p)-e^{-p} \right) -
+              \frac{c_i}{\Phi^2} \left( E_4(p)+pe^{-p} \right) \Bigg]_{(\tau_i-\tau_j)\Phi}^{(\tau_{i+1}-\tau_j)\Phi},
+}
+
+
+\section{Variable Linewidth; February 11, 2007}
+
+Consider the variation of \DnuD\ through the source. Refer to the paper's
+equations by number. The radiative transfer eq.\ 1 does not contain any
+information about the linewidth. The frequency dependence enters only via the
+line profile $\Phi(x)$, which is a normalized function of $x$, not of $\nu$.
+Calculating \Jbar\ involves an {\em average} over frequency, so again this is
+done in terms of $x$, not $\nu$, so nothing at all changes in the CEP level
+population equations. The only quantity that knows anything about the linewidth
+is the optical depth in terms of the level populations, given in eq.\ 32. So
+here's the only modification to the formalism:
+\eq{
+    \hbox{paper's eq. 32:} \qquad  \DnuD \Rightarrow \Delta\nu_{ul}^{i}
+}
+where $\Delta\nu_{ul}^{i}$ is the Doppler width of the $u \to l$ line in the
+$i$-th zone. Note that the lack of $ul$ subscript in the paper's equation was a
+mistake. {\bf This is the only effect on the calculation of the level
+populations}.  The reason is that the functional form of $\Phi$ does not
+change; it is the same function of $x$ everywhere, only the correspondence
+between $x$ and $\nu$ varies with position.
+
+Now that we have the level populations, to calculate emerging intensity from
+the top face of the slab we'd use eq.\ (69) above (page 12). On the left we
+have $I_\nu(\tot,\mu)$. On the right we have the profile $\Phi(x)$ in an
+integral over $t$. Now we have to take into account that {\bf the same $\nu$
+implies a different $x$ in every zone}. Breaking the integral into a sum over
+zones makes handling this straightforward. In eq.\ (72), $\Phi$ would be
+evaluated at a different argument in each zone, so here's the modified form:
+\eq{\label{eq:Ft2}
+    F_\nu(\tot)  = 2\pi \sum_{i = 1}^z
+    \left[E_3(\tau_{z,i}\Phi_i) - E_3(\tau_{z,i - 1}\Phi_{i})\right] S_i
+    \qquad \hbox{where} \quad
+    \Phi_i = \Phi\left({\nu - \nu_0\over\Delta\nu^{i}}\right)
+}
+This expression is correct even though it contains optical depth between the
+zone and the surface. The reason is that it comes from the integration over a
+single zone, where $\Phi = \Phi_i$. So the final expression for the line
+emission is the same as it was in eq.\ (77), only $\Phi$ is evaluated at a
+different argument in each zone:
+\eq{
+    F_\nu = F_\nu(\tot) - F_\nu(0) = 2\pi \sum_{i = 1}^z S_i
+    \left[E_3(\tau_{z,i}\Phi_i)
+        - E_3(\tau_i\Phi_i)
+        + E_3(\tau_{i - 1}\Phi_i)
+        - E_3(\tau_{z,i - 1}\Phi_i)
+    \right]
+}
+The $\nu$-integration over $d\nu$ in zone $i$ becomes simply integral with
+$\Delta\nu^{i}dx$, so in the final eq.\ (83) the only thing is to bring the
+linewidth inside the summation, with a different value in each zone:
+\eq{\label{eq:E2}
+    \E = 2\pi\sum_{i = 1}^z S_i\Delta\nu^{i}
+    \left(\alpha_{i,0} - \alpha_{i-1,0} - \alpha_{z,i} + \alpha_{z,i-1}\right)
+}
+
+
+
+\end{document}

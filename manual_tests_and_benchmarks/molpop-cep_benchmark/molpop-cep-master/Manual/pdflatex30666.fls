@@ -1,0 +1,4 @@
+PWD /net/vena/scratch/Dropbox/GIT/molpop-cep/Manual
+INPUT /etc/texmf/web2c/texmf.cnf
+INPUT /usr/share/texmf/web2c/texmf.cnf
+INPUT /usr/share/texlive/texmf-dist/web2c/texmf.cnf

@@ -1,0 +1,122 @@
+Instructions for data input are found at the end of the input file		
+
+The input is a free format, except that all input parameters must be entered
+in the right order and preceded by an equal sign. Everything after a '%' is
+ignored, similar to a Latex comment. Lines that start with a '*' will be
+echoed in the output, and can be used to produce comments.
+
+Keywords are case insensitive. Input file names should have proper case
+because unix systems are case sensitive.
+__________________________________________________________________
+
+
+
+* HCN
+* These lines are echoed in the output because they start with a '*'
+*
+      Solution Method of Radiative Transfer (LVG / LVGPP / slab / CEP) = LVG
+      dlogV/dlogr = 1.0 (in effect only for LVG and LVGPP) 
+
+      Data directory = DataBase      
+      Molecule = HCN_vib
+      Number of energy levels = 31
+      rot_correction =  off
+      
+      Number of collision partners = 1
+       weight / column for CEP = 1
+                    data file = HCN_H2_vib.kij
+            calculation option = sqrt(T)
+
+     File listing physical conditions = none
+
+     Gas Temperature = 100 K      
+     n = 1.0e5 cm-3
+
+  Some special radiative transfer effects that are only implemented in escape probability calculations:
+    Dust properties file = DataBase/Standard_ISM.dat
+    Dust abundance = 0.    relative to standard ISM abundance; 
+                           when not 0, dust absorption effects are included 
+    Molecular abundance = 1.d-7     
+   linewidth = 300 km/sec 
+    Line overlap (on/off) = off ;when ON, will use above linweidth
+    Maser saturation (on/off) = off      
+
+    
+  OPTIONAL EXTERNAL RADIATION:
+    diluted blackbody fields:                                       
+          W = 0.1     
+          T_bb = 150 K      
+          Illumination from (left/right/both/internal) = left
+           W = 0
+
+    Dust radiation:
+%           Dust tau at visual = 3.
+%           Dust temperature = 100 K
+%           Illumination from (left/right/both/internal) = internal
+           Dust tau at visual = 0.
+         
+%           Radiation from file = IR20551_IR5-20um.dat
+%           Type of entry for the bolometric scale (ENERGY_DEN/L&R) = L&R
+%           Luminosity = 2.E11 Lo  
+%           Distance from source = 3.E19 cm
+%           Illumination from (left/right/both/internal) = left
+           Radiation from file = none
+
+%           Type of entry for the bolometric scale (ENERGY_DEN/L&R) = L&R
+%           Luminosity = 1.E4 Lo  
+%           Distance from source = 1.E15 cm
+%           Illumination from (left/right/both/internal) = internal
+
+
+  NUMERICS CONTROLS:
+    Solution strategy (increasing/decreasing)            = increasing 
+    start with every tau smaller/greater than tau_m      = 1
+    stop when molecular column density reaches Nmol_m    = 1.E17 cm-2/kms
+    Number of printings per decade                       = 4
+    Max # of dimension steps allowed per decade          = 20
+    Total number of steps allowed to reach Nmol_m        = 100
+	  Accuracy in solution of the equations          = 1.0e-3
+    Max # of iterations allowed to reach solution        = 100
+   
+  NUMERICS CONTROLS RELEVANT ONLY FOR CEP:
+    CEP solution method (NEWTON/ALI) = ALI
+    Precision in grid CEP convergence (0 to ignore convergence) = 0     
+    Initial # of zones (relevant only if no file with phys. conditions) = 5   
+    Angle of output intensity mu = 1.0
+    
+  PRINT CONTROL PARAMATERS
+      Printing of molecular data (on or off):
+
+      Print energy level data      = on
+        statistical weights g_i    = on
+        energy in cm^{-1}          = off
+        energy in GHz              = off
+        energy in K                = on
+        quantum numbers            = on
+      Print transition data        = on
+        wavelength in micron       = on
+        energy in GHz              = on
+        energy in K                = off
+        Einstein coefficients A_ij = on
+        collision rates C_ij       = on
+      Stop after printing molecular data = off
+
+      Messages from NEWTON (off or on) = off
+      Messages from step-size selector (off or on) = off
+      Printing output for initial guess (off or on) = off
+
+      information on each step (off or on)   = on
+      print detailed populations (off or on) = on
+    
+      Select transitions for detailed output:
+      the number of transitions (-1 for all transitions) = -1
+      When any of these transitions is inverted, list its
+         maser pump parameters (off or on) = on
+         (this option is ignored in CEP calculations)
+         The transitions are: 
+       i =  2      j = 1
+		   i =  3      j = 2
+		   i =  4      j = 3
+		   i =  5      j = 4
+       i =  8      j = 7
+

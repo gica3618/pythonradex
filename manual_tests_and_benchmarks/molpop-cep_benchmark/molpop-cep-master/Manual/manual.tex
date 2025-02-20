@@ -1,0 +1,1406 @@
+\documentclass[12pt]{article}
+\usepackage{natbib}
+\usepackage[driverfallback=dvipdfm]{hyperref}
+\usepackage{dirtree}
+
+
+ \oddsidemargin 0.0in
+ \evensidemargin 0.0in
+ \textwidth 6.5in
+ \topmargin -0.75in
+ \textheight 9.5in
+%  \pagestyle{empty}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\separation {0.5cm}
+\def\non{\nonumber \\}
+\def\DnuD     {\hbox{$\Delta\nu_D$}}
+\def\Jbar     {\hbox{$\bar J$}}
+\def\j        {\hbox{$\jmath$}}
+\def\N        {\hbox{$\cal N$}}
+\def\Ie       {\hbox{$I_e$}}
+\def\Ji       {\hbox{$\bar J^i_\mathrm{ext}$}}
+\def\about    {\hbox{$\sim$}}
+\def\x        {\hbox{$\times$}}
+\def\half     {\hbox{$1\over2$}}
+\def\Ncr      {\hbox{$N'_{\rm cr}$}}
+\def\mic      {\hbox{$\mu$m}}
+\def\ion#1#2  {#1\,{\small {#2}} }
+\def\tot      {\tau_t}
+\def\t(#1){\tau^{#1}}
+\def\a(#1){\alpha^{#1}}
+\def\M{MOLPOP-CEP}
+\def\LVG      {\texttt{LVG}}
+\def\slab     {\texttt{slab}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% For generation of the HTML manual with tth:
+\def\tthdump#1{#1}      % For generating TeX source; ignored by tth
+% Redefine symbols problematic for the browser:
+%%tth:\def\ga{\hbox{$>\sim$}}
+%%tth:\def\la{\hbox{$<\sim$}}
+%%tth:\def\Mo{\hbox{$M_o$}}
+%%tth:\def\Lo{\hbox{$L_o$}}
+%%tth:\def\Mdot{\hbox{$M^{dot}$}}
+%%tth:\def\Ivezic{Ivezic}
+
+%%tth:\begin{html}<TITLE>User Manual for MOLPOP-CEP</TITLE>\end{html}
+%%tth: This HTML file was generated from the TeX source by
+%%tth: the translator TTH, which uses symbol fonts.  These fonts are
+%%tth: not normally enabled for Netscape running under X, because of
+%%tth: the way Netscape groups its fonts. If your browser has problems
+%%tth: displaying the math symbols in this manual, an easy fix can be found
+%%tth: on the TTH website at
+%%tth:\begin{html}<A HREF="http://hutchinson.belmont.ma.us/tth/Xfonts.html">http://hutchinson.belmont.ma.us/tth/Xfonts.html</A>\end{html}
+%%tth:\begin{html}<HR>\end{html}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\title                  {\sc User Manual for \M}
+
+\author{ A. Asensio Ramos \\
+         Instituto de Astrof\'{\i}sica de Canarias\\
+         38205, La Laguna, Tenerife, Spain\\ \\
+        Moshe Elitzur \\
+        Department of Physics and Astronomy \\
+        University of Kentucky, Lexington, KY 40506-0055
+        \\[0.5in] \today}% \today}
+\date{}
+\maketitle
+
+
+\tableofcontents
+
+\newpage
+
+\section*{Disclaimer}
+
+This software is distributed ``as is'' and the authors do not take any
+responsibility for any consequence derived from its use. Use it with care and
+never trust the output without a careful meditation. 
+
+This code is copyrighted,
+1976--2008 by Moshe Elitzur and Andr\'es Asensio Ramos, and may not be copied
+without acknowledging its origin. Use of this code is not restricted, provided
+that acknowledgement is made in each publication. The bibliographic reference
+to this version of \M\ Elitzur \& Asensio Ramos 2006, MNRAS 365, 779. Send bug
+reports, comments and questions to any of the authors.
+
+
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+\M\ is a code for the exact solution of radiative transfer problems in
+multi-level atomic systems. The novel contribution of the code is that the
+radiative transfer equations is analytically integrated so that the final
+problem is reduced to the solution of a non-linear algebraic system of
+equations in the level populations. The radiative transfer is solved
+analytically using the Coupled Escape Probability formalism presented by
+\cite{elitzur_asensio_cep06} and summarized in the last chapter of this manual.
+The current version of the code is limited to plane-parallel slabs that can
+present arbitrary spatial variations of the physical conditions.
+
+The code is written in standard Fortran 90. It is based on the MOLPOP code
+written by M. Elitzur that used single-zone escape probabilities for the
+solution of the radiative transfer problem. The original MOLPOP code, written
+in Fortran 77, has been ported to Fortran 90. During the translation, the code
+has been modularized and all common blocks have been moved to external modules
+that are used only where necessary. All the machinery present in MOLPOP for
+reading the input file and carry out all the needed calculations (interpolation
+of the collisional rates, selection of the active levels, etc.) are still
+present. The fundamental idea when merging together the MOLPOP code and the CEP
+code was to maintain the large flexibility of the input already present in
+MOLPOP. When the solution method chosen in the input file is the single-zone
+escape probability, the original MOLPOP code is executed. When CEP is chosen as
+the method, the routines belonging to the CEP code are used. Although the
+resulting code is a mixture of two existing codes, the interface between both
+is simple and robust.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Uncompressing and compiling MOLPOP-CEP}
+
+The latest version of the code is placed on the Github repository at
+\begin{verbatim}
+https://github.com/aasensio/molpop-cep
+\end{verbatim}
+You can download it
+in two different ways. The most convenient is using \texttt{git}, if installed in
+your system. Just type:
+\begin{verbatim}
+git clone https://github.com/aasensio/molpop-cep
+\end{verbatim}
+and the code will be downloaded on the \texttt{molpop-cep} directory in the
+current directory. An alternative way is by pressing the button ``Download ZIP''
+on the repository webpage and uncompress it. If you clone it, you can always
+pull new changes that we make to the code by typing
+\begin{verbatim}
+git pull.
+\end{verbatim}
+In any case, the MOLPOP-CEP directory
+will contain the master input file \texttt{molpop.inp} (see below) and the
+following subdirectories:
+
+\begin{enumerate}
+\item
+{\tt Source} contains the Fortran 90 sources and a simple makefile.
+\item
+{\tt DataBase} contains molecular data files with energy levels,
+A-coefficients and collision rates
+\item
+{\tt Samples} contains sample input files in separate directories for the
+respective molecular species. Each of these directories includes a
+sub-directory \texttt{OutputTest} with the output files these inputs produce.
+{\tt Manual} contains this manual.
+\end{enumerate}
+
+The code has been tested on several Linux platforms using the Intel Fortran
+Compiler (\texttt{ifort}) and the GNU Fortran Compiler (\texttt{gfortran}). The
+source code is in the \texttt{Source/} directory. The compilation is performed
+with the supplied \texttt{makefile}. It is quite simple and easy to modify, and
+contains additional comments about compiling and pre-processing flags. The
+default compiler is the free \texttt{gfortran} and you can use any other
+compiler through the variable \texttt{COMPILER}. To compile the code, type:
+\begin{verbatim}
+       make clean
+       make
+\end{verbatim}
+After compiling and linking, the executable is copied to the MOLPOP-CEP
+directory that contains the master input \texttt{molpop.inp}. Running the
+program should produce output in the subdirectories of {\tt Samples}. You can
+check your output against those in the corresponding {\tt OutputTest}
+subdirectory.
+
+\begin{quote}
+{\bf Note:} The MOLPOP-CEP executable can be placed anywhere as long as it is
+run from a directory that contains \texttt{molpop.inp}.
+\end{quote}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{General input}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{General considerations}
+A single MOLPOP-CEP run can process an unlimited number of models, each of which
+can correspond to a different molecular species. To accomplish this, MOLPOP-CEP's
+input is always the master input file \texttt{molpop.inp}, which lists the names of the
+actual input files for all models. These filenames must have the form
+\texttt{fname.inp}, where \texttt{fname} is arbitrary and can include a full path, so that a
+single run may produce output models in different directories (as is the case
+with the distribution). In \texttt{molpop.inp}, each input filename must be listed on a
+separate line, with the implied extension \texttt{.inp} omitted. Make sure you press the
+``Enter" key after every filename you enter, especially if it is in the last
+line of \texttt{molpop.inp}. Empty lines are ignored, as is all text following the ``\texttt{\%}''
+sign. This enables you to enter comments and conveniently switch on
+and off the running of any particular model.
+
+The input files have a free format, text and empty lines can be entered
+arbitrarily. All lines in these files that start with the ``\texttt{*}'' sign are echoed in
+the output, and can be used to print out notes and comments. This option can
+also be useful when the program fails for some mysterious reason and you want
+to compare its output with an exact copy of the input line as it was read in
+before processing by \M. The occurrence of relevant numerical input, which is
+entered in standard Fortran conventions, is flagged by the equal sign
+``\texttt{=}''. The only restrictions are that all required input entries must
+be specified, and in the correct order; the most likely source of an input
+error is failure to comply with these requirements.  Recall, also, that Fortran
+requires a carriage return termination of the file's last line if it contains
+relevant input. Single entries are always preceded by the equal sign,
+``\texttt{=}'', and terminated by a blank, which can be optionally preceded
+with a punctuation mark.  For example: \texttt{T = 10,000 K} as well as
+\texttt{Temperature = 1.E4 degrees} and simply \texttt{t = 10000.00} are all
+equivalent, legal input entries (note that comma separations of long numbers
+are permitted).  Because of the special role of ``\texttt{=}'' as a flag for
+input entry, care must be taken not to introduce any ``\texttt{=}'' except when
+required.  All text following the ``\texttt{\%}'' sign is ignored and this can
+be used to comment out material that includes ``\texttt{=}'' signs.  For
+example, different options for the same physical property may require a
+different number of input entries. By commenting out with ``\texttt{\%}'', all
+options may be retained in the input file with only the relevant one switched
+on.
+
+\subsection{Directory structure}
+The following is the directory structure.
+\dirtree{%
+.1 molpop/.
+.2 Basecol/.
+.2 DataBase/.
+.3 Coll/.
+.2 DataBaseBasecol/.
+.3 Coll/.
+.2 Manual/.
+.2 Samples/.
+.3 C+/.
+.3 CO/.
+.3 H2O/.
+.3 OH/.
+.3 SiO/.
+.2 Source/.
+}
+
+We recommend the input files defined in \texttt{molpop.inp} to be located in the \texttt{Samples} directory, separated
+in subdirectories for a better organization.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Input files}
+
+The input contains three types of data --- physical parameters, numerical
+accuracy parameters and output control.  You can use the supplied input files
+as templates. In order to show the structure of an input file, we take
+\texttt{Samples/CO/Flower\_rates.inp} as example and consider all the input
+parameters one by one.
+
+\subsection{Solution Method}
+
+\M\ can solve the level population problem either in the standard escape
+probability approximation or with the exact CEP method. The actual method is
+chosen as the first input:
+
+\vspace{\separation}
+\begin{verbatim}
+  Solution Method of Radiative Transfer (LVG / LVGPP / slab / CEP) = CEP
+\end{verbatim}
+The first three options use the escape probability approximation for large
+velocity gradients (in spherical and plane-parallel geometries) or a quiescent slab. 
+The last option invokes the full CEP
+technique. 
+
+% CEP-NEWTON uses a standard
+% Newton method for directly solving the nonlinear statistical equilibrium
+% equations \ref{eq:statis_equil_eq} of the CEP formalism. CEP-NAG is similar,
+% but uses a convex combination of Newton and scaled gradient directions to
+% ensure global convergence. In both cases, the derivatives of the Jacobian are
+% calculated analytically as a consequence of the analytical treatment of the CEP
+% method. CEP-ALI uses the accelerated $\Lambda$-iteration approach, iterating
+% from the calculation of the radiation field at each zone with the aid of eqs.\
+% (\ref{eq:pi}) and the solution of the preconditioned linearized statistical
+% equilibrium eqs.\ (\ref{eq:statis_equil_eq}).
+
+In the case of LVG calculations, you need to provide the expansion velocity
+instead of the local linewidth and one must specify an additional entry, the
+logarithmic velocity gradient:
+%
+\smallskip
+\begin{verbatim}
+     dlogV/dlogr = 1.0 (in effect only for LVG and LVGPP)
+\end{verbatim}
+
+
+\subsection{Molecular Database}
+
+Enter the path to the directory {\tt DataBase}, containing all the molecular
+data, from where \M\ is run. For example, if {\tt DataBase} is a subdirectory
+of the directory containing \texttt{molpop.inp} (which is the case for the
+zipped package) then the input is
+
+\vspace{\separation}
+\begin{verbatim}
+            Data directory = DataBase
+\end{verbatim}
+% (Mention the sample case with a different directory).
+
+\subsection{The Molecule}
+
+The list of available molecules can be found in the file
+\texttt{DataBase/mol\_list.dat} (see \S\ref{sec:basecol}). Choose one name
+from that list and enter the number of energy levels to be included in the run;
+this number should not exceed the maximum listed in
+\texttt{DataBase/mol\_list.dat}:
+
+\vspace{\separation}
+\begin{verbatim}
+        Molecule data file = CO     
+        Number of energy levels = 11
+\end{verbatim}
+
+Currently, the database contains some species with data for the lowest 
+rotational levels in the first vibration states. \M\ can correct
+for the finite number of rotational levels in the ground vibrational level, as
+described in \cite{lockett_elitzur92}.  The input is then
+
+\vspace{\separation}
+\begin{verbatim}
+        rot_correction = on  
+        jmax = 19  
+\end{verbatim}
+Otherwise, set 
+\vspace{\separation}
+\begin{verbatim}
+        rot_correction = off
+\end{verbatim}
+if you do not want to apply the correction.
+
+\subsection{Collision Rates}
+\label{sec:collisions}
+
+As noted above (\ref{sec:physical}), the collision rate between any two levels
+is $nK_{ij}$, where $K_{ij}$ (cm$^3$\,s$^{-1}$) is the rate coefficient for the
+transition and $n$ is the overall density. \M\ can handle an arbitrary number
+of collisional parters. The contribution of each one to the overall collision
+rate is $fnK_{ij}$, where $f$ is the fractional contribution of the particular
+collider, i.e., $fn$ is the collider density (in cm$^{-3}$). These fractional
+abundances are entered as weight factors with arbitrary scale, and \M\ takes
+care that the normalizations add up to 1. It is also possible to scale each
+collisional rate independently by a factor so that it is possible to experiment
+what happens when one of the collisional partners is neglected or its
+collisional efficiency is increased by an arbitrary factor. There are a number
+of options for entering the individual rate coefficients $K_{ij}$ themselves.
+
+
+\subsubsection{Tabulated Cross Sections}
+
+Collision rates are input from tabulations in files. You need to specify
+the name of the data file listing the collisional rate between each pair of
+levels at a set of different temperatures; a file with this name must exist in
+subdirectory {\tt Coll} of the database directory specified in the second input
+entry (see \S\ref{sec:basecol} below). \M\ interpolates between these temperatures if the
+input value falls between two tabulated ones. If the prescribed temperature is
+outside the tabulated range, \M\ will extrapolate according to the selection
+made with the next keyword. When \texttt{CONST} is selected, \M\ will use the
+same value as the largest or smallest tabulated temperature, as appropriate.
+Selecting \texttt{SQRT(T)} invokes an extrapolation proportional to $\sqrt{T}$
+from the appropriate border. Example:
+
+\vspace{\separation}
+\begin{verbatim}
+            Number of collision partners = 2
+               weight / columns for CEP = 1
+                               data file = CO_H2o.kij
+        extrapolation (SQRT(T) or CONST) = sqrt(T)
+                weight / columns for CEP = 1
+                               data file = CO_H2p.kij
+        extrapolation (SQRT(T) or CONST) = sqrt(T)
+\end{verbatim}
+This input will produce collisions with an equal mix of ortho- and para-H$_2$,
+with collision rates from \cite{flower01}. The option \texttt{weight / columns for CEP}
+indicates the weighting applied to each individual collider. In case of CEP, you can
+select the column of the collider from the file.
+
+\subsection{Physical Conditions}
+\label{sec:physical}
+
+When the CEP method is invoked, the code can handle a slab with variable
+physical conditions. The parameters for each zone of the slab are read from a
+specified input file. The file contains a header of arbitrary length limited by
+a line containing just the ``\texttt{$>$}'' symbol. Subsequent lines list for
+each zone the (1) width in cm; (2) overall density in cm$^{-3}$; (3)
+temperature in K; (4) molecular abundance; (5) local linewidth in km\,s$^{-1}$.
+The last quantity accounts for the local value of \DnuD\ in the Doppler profile
+$e^{-[(\nu - \nu_0)/\Delta \nu_D]^2}$. If the local thermal velocity
+$\sqrt{2kT/m}$ exceeds $c\DnuD/\nu_0$, the code will use it instead.
+
+Example: the following input
+%
+\smallskip
+\begin{verbatim}
+     File listing physical conditions = Samples/CO/Flower_rates.physical
+\end{verbatim}
+invokes entry of physical conditions from the file
+\texttt{Samples/CO/Flower\_rates.physical} listed here:
+\begin{verbatim}
+     Sample file with a slab with variable physical conditions
+
+     >
+
+     Number of zones = 5
+
+  Width          n          T       Abundance     Linewidth      n(o-H2)/n  n(p-H2)/n
+   [cm]       [cm^(-3)]     [K]                      [km/s]
+   2.d15       1.d4       100.d0      1.d-4          1.d0         0.75       0.25
+   2.d15       1.d4       110.d0      1.d-4          1.d0         0.75       0.25
+   2.d15       1.d4       120.d0      1.d-4          1.d0         0.75       0.25
+   2.d15       1.d4       110.d0      1.d-4          1.d0         0.75       0.25
+   2.d15       1.d4       100.d0      1.d-4          1.d0         0.75       0.25
+\end{verbatim}
+Note that the density $n$ enters the calculation in two ways: (1) The collision
+rate (s$^{-1}$) between levels $i$ and $j$ is $C_{ij} = nK_{ij}$, where
+$K_{ij}$ (cm$^3$\,s$^{-1}$) is the rate coefficient for the transition (see \S
+\ref{sec:collisions} below). (2) The molecular number density (cm$^{-3}$) is
+the product of $n$, listed in the second column, and the abundance, which is
+listed in the fourth. The columns from the sixth and above display the relative abundance
+of the colliders that will be considered in the collisions. The number of columns
+have to be equal to the number of colliders.
+
+
+When the code is invoked in the escape probability approximation (solution
+method is either LVG or slab), the physical conditions are uniform. In that
+case it is possible to use
+%
+\smallskip
+\begin{verbatim}
+     File listing physical conditions = none
+\end{verbatim}
+and enter the physical conditions directly in the input file as follows:
+\vspace{\separation}
+\begin{verbatim}
+     Gas Temperature = 100 K
+     n = 1.0e4  cm^-3
+\end{verbatim}
+You can use this input method for physical conditions also in the case of CEP
+calculations if the physical conditions in the slab are uniform.
+
+\begin{quote}
+{\bf Note:} If the physical conditions are entered from a file, make sure your
+input {\em DOES NOT} contain the last four (or five) entries. You can leave
+them in the input file and just comment them out with the symbol {\tt \%}.
+\end{quote}
+
+There are some special radiative transfer effects that are only implemented
+in escape probability calculations:
+\begin{verbatim}
+    Dust properties file = DataBase/Standard_ISM.dat
+    Dust abundance = 0.    relative to standard ISM abundance; 
+                           when not 0, dust absorption effects are included 
+\end{verbatim}
+
+Then, you need to provide the molecular abundance and the linewidth:
+\begin{verbatim}
+     Molecular abundance (n_mol/n) = 1.0e-4
+     Velocity = 1 km/sec (linewidth for slab)
+\end{verbatim}
+You can use this input method for physical conditions also in the case of CEP
+calculations if the physical conditions in the slab are uniform.
+
+\subsection{Line Overlap}
+Photons generated in a certain transition can be sometimes absorbed in another
+if the linewidths exceed the frequency separation between the lines. This
+process is known as line overlap or line fluorescence, and plays an important
+role in OH transitions and the Bowen fluorescence phenomenon. Currently, \M\
+can handle this effect only when invoked in the escape probability mode (\LVG\
+or \slab). The method of calculation is described in \cite{lockett_elitzur89}.
+To invoke this calculation use \vspace{\separation}
+\begin{verbatim}
+        Line overlap (on/off) = on
+\end{verbatim}
+For example, the input file \texttt{Samples/OH/Offer\_rates.inp} carries out a
+calculation taking into account the effect of line overlap. Otherwise, enter
+{\tt overlap = off}.
+
+
+\subsection{Maser Lines}
+When the optical depth of a line becomes negative, the intensity at this
+transition is amplified by the medium in a maser effect. The following input
+determines whether the effect of the maser radiation on the level populations
+(the ``saturation effect") is taken into account:
+
+\vspace{\separation}
+\begin{verbatim}
+        Maser saturation (on/off) = off
+\end{verbatim}
+Selecting {\tt on} invokes an escape probability calculation for the
+saturation effect \citep[see \S 5.3 in][]{elitzur92}. This calculation can be
+selected only if the solution method is \LVG\ or \slab. All CEP calculations
+must have {\tt off} for the saturation entry. Calculations with the {\tt no}
+option produce the maser pump and loss rates that can be used to estimate maser
+emission from the standard phenomenological maser model (see \S\ref{sec:output} below).
+
+
+
+
+% \subsubsection{Hard-Sphere Collisions}
+
+% This collision law, invoked with the keyword \texttt{HARD\_SPHERE} is available
+% for all molecules. In this analytic approximation, all downward collision rate
+% per sub-level are equal to the the same value $\sigma v_{\rm T}$, where
+% $\sigma$ is a common input cross section and $v_{\rm T}$ is the local thermal
+% speed. The sample input file \texttt{OH/Hard\_Sphere.inp} is an example:
+
+% \vspace{\separation}
+% \begin{verbatim}
+%             Number of collision partners = 1
+%                                   weight = 1
+%                   collision rates option = hard_sphere
+%                                x-section = 1.e-15 cm^2
+%                           scaling factor = 1.0
+% \end{verbatim}
+
+% \subsubsection{SiO Rotation-Vibrations}
+
+% This collision law, invoked with the keyword \texttt{SiO\_ROVIB} is available
+% only for SiO. It involves SiO excitations in collisions with H$_2$, using the
+% approximate theory of \cite{bieniek_green83}. This option is utilized in the sample
+% input file \texttt{SiO/SiO.inp}:
+
+% \vspace{\separation}
+% \begin{verbatim}
+%             Number of collision partners = 1
+%                                   weight = 1
+%                   collision rates option = SiO_ROVIB
+%                           scaling factor = 1.0
+% \end{verbatim}
+
+
+
+\subsection{External Radiation}
+
+The cosmic microwave background (CMB) blackbody radiation is always included. 
+The specific temperarature is set by the keyword
+\vspace{\separation}
+\begin{verbatim}
+            T_cmb=2.725 K
+\end{verbatim}
+
+In addition, a number of other radiation fields can be added and in each case the radiation can illuminate
+either side of the source or both. Furthermore, the molecules can be immersed
+in a radiation bath with the specified spectral shape. This is specified with
+the keywords \texttt{left, right, both} and \texttt{internal}. Note that
+distances into the slab are measured from its left side.
+
+\subsubsection{Diluted Blackbody}
+
+An arbitrary number of external diluted blackbody terms, $WB_\nu(T)$, can be
+specified. Each term is parameterized by its temperature \texttt{T\_bb} and
+dilution factor \texttt{W}. When several radiation fields are used, remember to
+always end the list with the \texttt{W = 0}:
+
+\vspace{\separation}
+\begin{verbatim}
+            diluted blackbody fields:    
+             W = 0.1
+             T_bb = 2500 K
+             Illumination from (left/right/both/internal) = left
+             W = 0.
+\end{verbatim}
+
+\subsubsection{Single-Temperature Dust}
+
+The radiation field of dust with the uniform temperature $T$ is $B_\nu(T)(1 -
+e^{-\tau_\nu})$, where $\tau_\nu$ is the dust overall optical depth at
+frequency $\nu$.  You specify such a radiation field by its temperature $T$ and
+dust optical depth at visual. From the latter, \M\ determines the optical depth
+at every wavelength from a tabulation in the file {\tt dust.dat}, which must be
+kept in the parent directory, together with {\tt molpop.inp}. The dust
+properties correspond to standard ISM dust. You can use a different dust by
+substituting the provided tabulation with one of your own.
+
+\M\ can handle an arbitrary number of such radiation fields. The list is
+terminated by an entry with zero optical depth:
+
+\vspace{\separation}
+\begin{verbatim}
+  Dust radiation:
+             Dust tau at visual = 3.
+             Dust temperature = 100 K
+             Illumination from (left/right/both/internal) = internal
+             Dust tau at visual = 0.
+\end{verbatim}
+
+\subsubsection{Radiation Field from a File}
+
+Any spectral shape for the radiation field can be entered as a tabulation in a
+file, whose name is specified as input. The tabulation should have a header, with
+its end marked with a line with \texttt{>} (see \texttt{Samples/ISRF.dat} for an example)
+and then list the
+normalized spectral shape $\lambda F_\lambda/F_{\rm bol}\ (= \nu F_\nu/F_{\rm
+bol})$, where $F_{\rm bol} = \int F_\lambda d\lambda$ is the bolometric flux,
+as a function of wavelength $\lambda$ in \mic. The flux level at the molecular
+source is specified through the overall luminosity of the radiation source and
+the distance to it:
+
+\vspace{\separation}
+\begin{verbatim}
+  Radiation from file = Samples/ISRF.dat
+           Type of entry for the bolometric scale (ENERGY_DEN/L&R) = Energy_den
+           Jbol = 3.E-6 W/m^2
+%           Luminosity = 1.E4 Lo
+%           Distance from source = 1.E15 cm
+           Illumination from (left/right/both/internal) = internal
+\end{verbatim}
+Two possible options are available for the bolometric scale. Either \texttt{ENERGY\_DEN}, so then
+a bolometric radiation density should be provided with \texttt{Jbol} or \texttt{L\&R}, i.e., luminosity
+and distance.
+To signal the end of spectral input files or that there is no input from a file
+altogether enter
+\begin{verbatim}
+             Radiation from file = none
+\end{verbatim}
+
+\subsection{Solution Controls}
+
+Whichever solution method is invoked, \M\ solves the non-linear level
+population equations with an iteration method---either Newton or accelerated
+$\Lambda$-iterations. The solution accuracy and an upper bound on the number of
+allowed iterations are controlled as follows:
+%
+\begin{verbatim}
+       Accuracy in solution of the equations  = 1.0e-3
+       Maximum number of iterations to solve  = 50
+\end{verbatim}
+You may try to solve the level populations for a desired input straightforward
+without any attempt to improve the convergence. In that case, enter
+\begin{verbatim}
+       Solution strategy = fixed
+\end{verbatim}
+However, this may cause numerical difficulties. To aid convergence, \M\ offers
+a step-by-step strategy. Starting from a situation in which the solution is
+known, the code changes the column density in small increments using the
+solution from the previous step as the initial guess for the next one. The
+exact solution is readily obtained in two limiting cases. When all optical
+depths are zero (the optically thin limit) the statistical rate equations for
+the level populations are linear and can be easily inverted. The solutions
+serve as the starting point for an {\tt increasing} strategy, in which the
+column density increases up to a desired value. When all optical depths are
+very large, all the level populations thermalize, following the Boltzmann
+distribution at the local temperature. Thermal populations serve as the
+starting point for the {\tt decreasing} strategy, in which the column density
+decreases until the desired value is reached. In each case you have to specify
+an initial target that serves as the smallest/largest value for all optical
+depths of the initial solution. The next three entries control the sizes of the
+steps. The initial step size, entered as the number of steps per decade,
+controls also the intervals for output printing. If at any point the step size
+is too large, \M\ will keep decreasing it until it either achieves a successful
+solution\footnote{If a successful solution is achieved with a smaller step size
+than originally prescribed, \M\ will attempt to gradually increase the step
+size once it has passed the rough spot that caused problems. The number of
+steps per decade will never be smaller than the initial one.} or bumps against
+either of the two limits set in the input: a lower limit on the step size,
+entered through the maximum number of steps allowed per decade, and an upper
+limit on the total number of steps allowed throughout the entire run. The
+variation of column density is terminated when either physical dimension or the
+overall column density reaches a prescribed upper/lower limit. Here's an
+example of the {\tt increasing} strategy:
+
+\vspace{\separation}
+\begin{verbatim}
+  Solution strategy (increasing/decreasing)            = increasing 
+  start with every tau smaller/greater than tau_m      = 1
+  stop when molecular column density reaches Nmol_m    = 1.E19 cm-2/kms
+  Number of printings per decade                       = 4
+  Max # of dimension steps allowed per decade          = 20
+  Total number of steps allowed to reach Nmol_m        = 100
+  Accuracy in solution of the equations                = 1.0e-3
+  Max # of iterations allowed to reach solution        = 50
+\end{verbatim}
+In a {\tt decreasing} input, {\tt tau\_m} would be a large optical depth
+providing a lower limit for all transitions in the initial solution while
+{\tt R\_m} and {\tt N\_col}, the stopping criteria for the convergence process,
+would have values smaller than the desired target.
+
+When solving the radiative transfer problem using the CEP method, it is
+possible to let the code use a grid refinement technique to approach the exact
+solution of the problem. This grid refinement systematically increases the
+number of zones in which each original zone is subdivided until the maximum
+relative change in the level populations between one grid and the next finer
+grid falls below a given threshold. The code also allows the user not to apply
+the grid refinement technique and solve the radiative transfer problem in the
+given grid. This strategy is chosen by using a zero:
+
+\vspace{\separation}
+\begin{verbatim}
+  NUMERICS CONTROLS RELEVANT ONLY FOR CEP:
+    CEP solution method (NEWTON/ALI) = NEWTON
+    Precision in grid CEP convergence (0 to ignore convergence) = 0
+    Initial # of zones (relevant only if no file with phys. conditions) = 10   
+    Angle of output intensity mu = 0.5
+    vmax profile = 4.0
+\end{verbatim}
+
+\section{Which files call each other}
+\begin{itemize}
+\item \texttt{molpop.inp} defines the input file for the calculation, usually found in the directory \texttt{Samples}.
+\item The keyword \texttt{Data directory} defines the root directory where the molecular data is stored.
+\item The keyword \texttt{Molecule} inside each configuration file defines the file that contains the molecular information, which is found in the directory defined
+by the previous keyword.
+\item The keyword \texttt{File listing physical conditions} defines the physical properties of the slab when a CEP calculation with variable physical conditions is carried out.
+\item The keyword \texttt{data file} in the definition of the collision partners refers to the specific table with collisional data in the \texttt{Coll} directory
+inside the directory defined by the \texttt{Data directory} keyword.
+\item The keyword \texttt{Radiation from file} defines the spectral shape of the boundary condition.
+\end{itemize}
+
+
+
+
+\section{Output}
+\label{sec:output}
+\M\ offers a printout of parts, or all, of the molecular data. This allows you
+to check that the data were entered properly. Printing is controlled with {\tt
+on} and {\tt off} switches:
+\begin{verbatim}
+      Print energy level data      = off
+        statistical weights g_i    = on
+        energy in cm^{-1}          = on
+        energy in GHz              = on
+        energy in K                = on
+        quantum numbers            = on
+      Print transition data        = on
+        wavelength in micron       = on
+        energy in GHz              = on
+        energy in K                = off
+        Einstein coefficients A_ij = on
+        collision rates C_ij       = on
+      Stop after printing molecular data = off
+\end{verbatim}
+In this example, the energy level data will {\em not} be printed, even though
+individual switches are on, because the master switch for these data is off.
+The last switch even allows you to just produce a data tabulation without
+running \M\ at all. Also, when the physical conditions vary in the slab, a
+printout of the collision rates, if requested, will cover only the first zone.
+
+Next you control the amount of output the program produces during the run. The
+different printing options are controlled with {\tt on} and {\tt off} switches;
+in the following example, all options are turned off by the master switch:
+\begin{verbatim}
+      Progress print control                          = off
+        Messages from NEWTON                          = on
+        Messages from step-size selector              = on
+        Messages from CEP progress                    = on
+        Printing output for initial guess             = on
+\end{verbatim}
+Note that whenever the CEP method is selected, \M\ will report its progress on
+the screen irrespective of the output switches; that is, the above listed
+switch only controls the printed output.
+
+The default output, always produced by \M, contains a summary as follows:
+\begin{verbatim}
+      R        Tot column  mol column   emission
+      cm          cm-2        cm-2     erg/s/mol
+   1.000E+16   1.000E+20   1.000E+16   8.557E-21
+   1.778E+16   1.778E+20   1.778E+16   8.288E-21
+   3.162E+16   3.162E+20   3.162E+16   7.928E-21
+\end{verbatim}
+The last column is the overall cooling rate from all the transitions included
+in the calculation. Additional output can be produced by turning on appropriate
+switches. For every printing step, you can output: (1) Detailed level
+populations for all the transitions. (2) Information on all inverted lines, if
+any exist. This output will include the optical depth, excitation temperature
+and inversion efficiency. (3) Information on the prescribed number of top
+thermal emitting lines (note, there are no more then $\half N\x N$ transitions
+among $N$ levels!):
+\begin{verbatim}
+      Information on each step                            = on
+        print detailed populations                        = off
+        information on all inverted lines                 = on
+        Number of cooling lines to print (0 to bypass)    = 15
+\end{verbatim}
+Finally, you can select some specific transitions for special output that will
+be listed at the end of the run in summary form. Enter a number different from
+0 (up to 10) for the number of transitions and then enter a pair of level
+identifier numbers for each transition.  The following example selects a
+summary output for the $J = 1 \to 0$ and $J = 7 \to 6$ rotational transitions
+of CO:
+\begin{verbatim}
+      the number of transitions = 2
+       i =  2      j = 1
+       i =  8      j = 7
+\end{verbatim}
+For each transition, the output lists the excitation temperature, optical depth
+and the line emission (erg/s/mol). If the transition is inverted, the last
+quantity is listed as zero. Instead, the output lists quantities relevant for
+the standard, phenomenological maser model \citep[see][]{elitzur92}: The
+inversion efficiency, pump rate for each level, loss rate for each level and
+their average. Note that all optical depths in the outputs are at line
+center, so that if you want the total optical depth, you have to multiply
+it by $\sqrt{\pi}$.
+
+
+The input file \texttt{fname.inp} produces the output file \texttt{fname.out}in
+the same directory. This is the only output file produced in the single-zone
+escape probability case. When the CEP option is used, additional files are
+generated as output, with the intermediate extension \texttt{CEP} added to the
+name of the input file. For instance, for the
+\texttt{Samples/CO/Flower\_rates.inp} input file, the following output files
+are generated:
+\begin{itemize}
+\item
+\texttt{Samples/CO/Flower\_rates.out} --- main output file
+\item
+\texttt{Samples/CO/Flower\_rates.CEP.trad} --- equivalent radiation
+temperature for each transition and zone
+\item
+\texttt{Samples/CO/Flower\_rates.CEP.pop} --- population of each level for
+each zone
+\item
+\texttt{Samples/CO/Flower\_rates.CEP.slab} --- final slab partitioning in
+the converged solution
+\item
+\texttt{Samples/CO/Flower\_rates.CEP.flux} --- line profiles of emergent
+flux in each selected transition
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Molecular Data and the BASECOL Database}
+\label{sec:basecol}
+
+
+As explained above, molecular data can be placed anywhere provided the root
+directory where the file is located is indicated in each input file. The directory
+\texttt{DataBase} contains a set of files with data for a few molecules. 
+
+\subsection{Energy levels and radiative transitions}
+The energy levels and radiative transitions of a model molecule are specified in the
+corresponding file \texttt{mol\_name.molecule}.  For example, here we shown an extract
+of \texttt{CO.molecule}:
+
+\newpage
+
+\begin{verbatim}
+Rotational energy levels for the ground state of CO
+Reference: CDMS
+
+N. levels and molecular mass
+>
+41  28.d0
+
+     N        g      Energy in cm^{-1}    Level details
+>
+     1        1           0.0000           'J =   0'
+     2        3           3.8450           'J =   1'
+     3        5          11.5350           'J =   2'
+     4        7          23.0695           'J =   3'
+     5        9          38.4481           'J =   4'
+     6       11          57.6704           'J =   5'
+...
+    39       77        2835.7627           'J =  38'
+    40       79        2984.2707           'J =  39'
+    41       81        3136.5095           'J =  40'
+
+Einstein coefficients A_ij for CO
+Reference: CDMS
+
+  i         j         A_ij in s^{-1}
+>
+  2         1         7.203e-08
+  3         2         6.910e-07
+  4         3         2.497e-06
+  5         4         6.126e-06
+  6         5         1.221e-05
+  7         6         2.137e-05
+  8         7         3.422e-05
+...
+ 39        38         4.120e-03
+ 40        39         4.365e-03
+ 41        40         4.613e-03
+\end{verbatim}
+The listing must be ascending in energy.  The statistical weight $g$ is entered
+as integer, energy is in cm$^{-1}$. Each level is internally identified in \M\
+by the running number listed in the first column. The level details are all
+read by \M\ as a single string and used only for information in the output.
+All the lines before the line containing only the symbol ``\texttt{>}'' are
+treated as header. The same applies to the rest of files defining the energy
+levels, radiative and collisional transitions.
+After the energy levels, we find a header for the radiative transitions
+and the list of Einstein coefficients for spontaneous emission ($A_{ij}$).
+
+
+\subsection{Collisional Rates}
+As already mentioned (see \S\ref{sec:collisions}), there are several options
+for specifying collision rates. The most common is to supply tabulations in a
+file. The files with the collisional rates are typicall placed inside the directory 
+\texttt{Coll/}. You can use a Python program to generate the file \texttt{list\_collisions.dat}
+with all the collisional files in the directory:
+\begin{verbatim}
+python listCollisions.py
+\end{verbatim}
+
+As an example, here are the first few lines from \texttt{OH\_H2o.kij}:
+\begin{verbatim}
+Collision rate coefficients for OH-H2_ortho collisions.
+Reference: Offer et al., 1994, J. Chem.Phys., 100, 362
+
+>
+
+Number of temperature columns = 5
+
+   I   J                         TEMPERATURE (K)
+
+              15.0        50.0        100.0       150.0       200.0
+
+   2   1    0.40E-10    0.39E-10    0.34E-10    0.31E-10    0.28E-10
+   3   1    0.17E-09    0.24E-09    0.26E-09    0.25E-09    0.24E-09
+   3   2    0.58E-10    0.71E-10    0.72E-10    0.69E-10    0.65E-10
+   4   1    0.35E-10    0.43E-10    0.43E-10    0.41E-10    0.39E-10
+\end{verbatim}
+The rate coefficients are entered in cm$^3$s$^{-1}$.  Only downward
+(de-excitation) rates need be specified. The program accounts for excitation
+rates via the Boltzmann detailed-balance relation. Elastic collisions are
+ignored.
+
+\subsection{The LAMBDA Database}
+We provide a Python (Python 2.7) script to download data from the Leiden Atomic and Molecular Database (LAMDA)\footnote{Accessible at \texttt{http://home.strw.leidenuniv.nl/$\sim$moldata/}.}
+and transform it to the MOLPOP-CEP format. This way, adding new molecules to perform calculations with 
+our code turns out to be straightforward. The LAMDA database contains information for 3 atomic and an increasing number of molecular species. The
+script is placed on the \texttt{DataBase} directory and can be invoked as:
+\begin{verbatim}
+python lamda.py
+\end{verbatim}
+It will list the molecules currently available in the database and ask for which ones to download.
+
+\subsection{The Basecol Database}
+The Basecol bibliographic and numerical database was established at Meudon
+Observatory to address the community needs for data on molecular excitations.
+Accessible at \url{http://basecol.obspm.fr/}, Basecol stores extensive
+information on molecular frequencies, transition rates and collisional
+excitations. The Basecol team has a web tool
+that remotely accesses their database and creates atomic and molecular data
+files in the \M\ input format on the user's local computer. Since the automatic
+access to the database is not simple, we distributed the code with the
+database downloaded in 2009.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\appendix
+
+\section{APPENDIX}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Formulation of the problem}
+
+The standard multilevel radiative transfer problem in a given domain requires
+the joint solution of the radiative transfer (RT) equation (which describes the
+radiation field) and the kinetic equations (KE) for the atomic or molecular
+level populations (which describe the excitation state). In the most general
+case, the numerical solution of this non-local and non-linear problem requires
+to discretize the model atmosphere in $NP$ zones where the physical properties
+are assumed to be known. The standard multilevel RT problem consists in
+obtaining the populations, $n_j$, of each of the $j=1,2,\ldots,NL$ levels
+included in the atomic or molecular model that are consistent with the
+radiation field created inside the complete domain. This radiation field
+contains contributions from possible background sources and from the radiative
+transitions in the given atomic/molecular model.
+
+Making the usual assumption of statistical equilibrium, the rate equation for each
+level $i$ at each spatial point reduces to \citep[e.g.,][]{socas_trujillo97}:
+\begin{equation}
+\label{eq:statis_equil_eq}
+\sum_{j < i}{\Gamma}_{ji}\,-\,\sum_{j > i}{\Gamma}_{ij}\,
++\,\sum_{j \neq i}{n_j C_{ji}} - n_i \sum_{j \neq i}{C_{ij}} = 0,
+\end{equation}
+where $C_{ij}$ is the so-called collisional rate that quantifies the number of
+transitions per unit volume and unit time between levels $i$ and $j$. The symbol
+$\Gamma_{lu}$ stands for the net radiative rate, which quantifies the net number of
+radiative transitions between a bound lower level $l$ to an upper level $u$. Its
+expression in terms of the populations of the upper and lower levels is:
+\begin{equation}
+\label{eq:net_rad_rate}
+\Gamma_{lu}\,=\,n_l R_{lu}\,-\,n_u\,R_{ul}\, ,
+\end{equation}
+where $R_{ij}$ are the radiative rates.
+
+The collisional rates are assumed to be known and given by the local physical
+conditions of the atmosphere. On the other
+hand, the net radiative rates $\Gamma_{lu}$ depend on the radiation field that is
+present in the domain. For bound-bound transitions, the following expression
+holds:
+\begin{equation}
+\label{eq:net_rate_bound}
+\Gamma_{lu}\,=(n_lB_{lu}-n_uB_{ul}){\bar{J}}_{lu}\,-\,n_uA_{ul},
+\end{equation}
+where $A_{ul}$, $B_{ul}$ and $B_{lu}$ are the spontaneous emission, stimulated emission and
+absorption Einstein coefficients, respectively. The radiation field is parameterized
+in terms of the mean intensity $\bar J_{lu}$, which
+is the frequency averaged mean intensity weighted by the line absorption profile:
+\begin{equation}
+\label{eq:mean_intensity}
+\bar J_{lu} = \frac{1}{4 \pi} \int d \mathbf{\Omega} \int d \nu \phi_{lu} (\nu,
+\mathbf{\Omega})
+I_{\nu \mathbf{\Omega}},
+\end{equation}
+where $\phi_{lu}(\nu,\mathbf{\Omega})$ and $I_{\nu \bf \Omega}$ are, respectively, the normalized line
+profile and
+the specific intensity at frequency $\nu$ and direction $\bf \Omega \rm$. The
+specific intensity is governed by the radiative
+transfer equation, which can be formally solved if we know the variation of the
+opacity ($\chi_{\nu}$) and of the source function ($\epsilon_{\nu}/\chi_{\nu}$, being
+$\epsilon_{\nu}$ the emission coefficient)
+in the medium. Once the stellar atmosphere is discretized, the specific intensity
+can be written formally as
+\begin{equation}
+\label{eq:formal_sol}
+\bf I_{\nu \mathbf{\Omega}} = \bf \Lambda_{\nu \mathbf{\Omega}} \left[ \bf S_{\nu}
+\right] + \mathcal{\bf T}_{\nu \mathbf{\Omega}}, \nonumber
+\end{equation}
+where $\mathcal{\bf T}_{\nu \mathbf{\Omega}}$ is a vector that accounts for the
+contribution of the boundary conditions to the intensity
+at each spatial point of the discretized medium, $\bf S_{\nu}$ is the source
+function vector
+and $\bf \Lambda_{\nu \mathbf{\Omega}}$ is an operator whose element
+$\Lambda_{\nu\mathbf{\Omega}}(i,j)$ gives the response of the radiation field at
+point ``$i$'' due to a unit-pulse perturbation in the source function at point ``$j$''.
+
+Since the radiative transfer equation couples different parts of the atmosphere and
+the absorption and emission properties at all the spatial points depend on the level
+populations, the RT problem is both \emph{non-local} and \emph{non-linear}.
+Therefore, the system of Eqs. (\ref{eq:statis_equil_eq}) represents a highly
+non-linear problem. This non-linearity makes it necessary to apply suitable iterative
+methods. Among them, the simplest one is the $\Lambda$-iteration \citep[e.g.,][]{mihalas78},
+in which, starting from an initial estimation of the populations, the mean intensity at each
+transition is obtained through Eq. (\ref{eq:mean_intensity}) and plugged into
+Eqs. (\ref{eq:statis_equil_eq}). The resulting linear system is solved and the iteration is
+repeated. This scheme works correctly when the optical depth of all transitions is
+less than unity but the convergence time increases dramatically if any transition is optically
+thick. The reason is that the iterative scheme transfers information in the domain in steps
+of the order of $\tau \approx 1$. In optically thick cases, it takes many iterations to
+transfer information from one part of the domain to the others. The accelerated $\Lambda$-iteration
+\citep{rybicki_hummer91,rybicki_hummer92} overcomes many of the convergence problems
+of the simple $\Lambda$-iteration by rewriting the net radiative rates of
+Eq. (\ref{eq:net_rate_bound}) using a suitable combination of population from the
+previous and the new iterative step, thus leading to an important improvement in
+the convergence properties. A modification of this method by \cite{trujillo_fabiani95}
+leads to the Gauss-Seidel and Successive Overrelaxation methods that produce an
+improvement in the convergence rate of up to an order of magnitude. Finally, methods
+based on multigrid iterations \cite{steiner91,fabiani_trujillo_auer97} have also
+been applied to the radiative transfer problem with success.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Coupled Escape Probability} Our code solves the radiative
+transfer problem under the approximation of a plane-parallel slab whose
+physical properties vary only perpendicular to the surface.  The optical depth
+along a ray slanted at $\theta = \cos^{-1} \mu$ from normal is $\tau_\nu(\mu) =
+\tau\Phi(x)/\mu$, and the intensity along the ray obeys the radiative transfer
+equation:
+\begin{equation}
+\label{eq:rad_tran}
+     \mu{dI_\nu(\tau, \mu)\over d\tau} = \Phi(x)[S(\tau) - I_\nu(\tau, \mu)].
+\end{equation}
+It is useful to introduce a quantity called the net radiative
+bracket \citep{athay_skumanich71}, defined by:
+\begin{equation}
+\label{eq:p1}
+   p(\tau) = 1 - {\Jbar(\tau)\over S(\tau)},
+\end{equation}
+which plays the role of a escape probability so that the mean intensity at one point
+is just $(1-p)$ times the local source function. In the standard one-zone
+case, this is equivalent to the well-known escape probability. If the slab
+is divided into many zones, this factor takes into account correctly the
+no-local character of the radiative transfer. From the formal solution of
+the radiative transfer equation,
+\begin{equation}
+\label{eq:p2}
+   p(\tau) = 1 - {1\over 2S(\tau)}\int_0^{\tot}\!\!\! S(t)dt
+                 \int_{-\infty}^{\infty}\!\!\!\Phi^2dx
+                \int_0^1\!\!\! e^{-|\tau - t|\Phi/\mu}{d\mu\over\mu}
+\end{equation}
+when there is no external radiation entering the slab.
+
+Instead of the usual iterative scheme that consider separately the
+radiative transfer equation and the statistical equilibrium equations,
+it is possible to substitute Eq. (\ref{eq:p2}) into the net
+radiative rate, resulting in:
+\begin{equation}
+\label{eq:netrate_withp}
+\Gamma_{lu}\,=- n_u A_{ul} p(\tau),
+\end{equation}
+which demonstrates that the only radiative quantity actually needed for the calculation of
+level populations at every position is the net radiative bracket $p(\tau)$.
+Once this factor is known at each zone of the domain, we could compute the
+level populations that are consistent with the radiation they produce without solving
+for the intensity. It is evident from Eq. \ref{eq:p2} that the factor $p(\tau)$ itself
+can be computed from the level populations, again without solving  for the
+intensity. Therefore, inserting $p(\tau)$ from equation \ref{eq:p2} into the
+radiative rate terms produces {\em level population equations that
+properly account for all the effects of radiative transfer without actually
+calculating the intensity itself}.
+
+\section{Numerical implementation}
+A numerical solution of the resulting level population equations requires a
+spatial grid, partitioning the source into zones such that all properties can
+be considered uniform within each zone. The degree of actual deviations from
+uniformity, and the accuracy of the solution, can be controlled by decreasing
+each zone size through finer divisions with an increasing number of zones.
+Assume that the slab is partitioned into $z$ zones. The $i$-th zone, $i = 1
+\dots z$, occupies the range $\tau_{i-1} < \tau \le \tau_{i}$, with $\tau_0=0$
+and $\tau_z=\tau_t$, with $\tau_t$ the total optical depth. The optical depth
+between any pair of zone boundaries is
+\begin{equation}
+\label{eq:tij}
+    \t(i,j) = |\tau_i - \tau_j|
+\end{equation}
+so that the optical thickness of the $i$-th zone is $\t(i,i - 1)$.
+One has to remind that the optical thickness of the $i$-th zone in a
+given bound-bound transition under the assumption of complete redistribution
+is given by the following linear combination
+of the populations of the upper and lower levels:
+\begin{equation}
+\tau_i(\nu) = \frac{h \nu}{4\pi}
+\left( n_l B_{lu} - n_u B_{ul} \right)
+\Phi \left( \frac{\nu-\nu_0}{\Delta \nu_D^i} \right)
+\end{equation}
+
+Since the temperature and the density of colliders (H$_2$, H or e$^-$) is
+assumed to be constant within each zone, the collisional rates $C_{ij}$ are
+constant in the zone. Correspondingly, the net radiative rate is just given by
+\begin{equation}
+\label{eq:rate}
+\Gamma_{lu}^i\,= -n_u^i A_{ul} p^i,
+\end{equation}
+where the population of the upper level in each zone is also constant and
+the superscript $i$ is used as a zone label. Since the factor $p(\tau)$ varies
+in the zone, it has to be replaced by a constant $p^i$ that should adequately
+represent its value there, for example $p^i = \half\left[p(\tau_{i}) +
+p(\tau_{i-1})\right]$ or $p^i = p\left(\half[\tau_{i} +\tau_{i-1}])\right)$.
+There are no set rules for this replacement other than it must obey $p^i \to
+p(\tau_{i})$ when $\t(i,i-1) \to 0$. We choose for $p^i$ the zone average
+\begin{equation}
+\label{eq:avg}
+      p^i = {1\over\t(i,i-1)}\int_{\tau_{i-1}}^{\tau_i} p(\tau)d\tau,
+\end{equation}
+which turns out to be one of the key ingredients of the success of
+the coupled escape probability. The reason is that the value of $p^i$ used
+in each zone is obtained as an average value inside the zone of the \emph{true}
+variation of $p(\tau)$. The other possibilities assume a simple behavior (linear)
+of the $p(\tau)$ function inside the zone.
+
+\subsection{Internal radiation}
+From Eq. (\ref{eq:p2}), calculation of $p^i$ requires an integration over the
+entire slab, which can be broken into a sum of integrals over the zones. In
+each term of the sum, the zone source function can be pulled out of the
+$\tau$-integration so that
+\begin{eqnarray}
+    p^i &= &1 - {1\over2\t(i,i-1)S^i}
+         \sum_{j = 1}^z S^j \times \non
+         &&\int_{\tau_{i - 1}}^{\tau_{i}}\!\!\!d\tau
+         \int_{\tau_{j - 1}}^{\tau_{j}}\!\!\! dt
+                 \int_{-\infty}^{\infty}\!\!\!\Phi^2dx
+                \int_0^1\!\!\! e^{-|\tau - t|\Phi/\mu}{d\mu\over\mu}
+\end{eqnarray}
+The remaining integrals can be expressed in terms of common functions. Consider
+for example
+\begin{eqnarray}
+    \beta^i &=& 1 - {1\over2\t(i,i-1)}\times \non
+         &&\int_{\tau_{i - 1}}^{\tau_{i}}\!\!\!d\tau
+          \int_{\tau_{i - 1}}^{\tau_{i}}\!\!\!dt
+                 \int_{-\infty}^{\infty}\!\!\!\Phi^2dx
+                \int_0^1\!\!\! e^{-|\tau - t|\Phi/\mu}{d\mu\over\mu},
+\end{eqnarray}
+the contribution of zone $i$ itself to $p^i$. It is straightforward to show
+that $\beta^i = \beta(\t(i,i - 1))$, where
+\begin{equation}
+\label{eq:beta}
+  \beta(\tau) = {1\over\tau}\int_0^\tau \!\!\!dt
+                            \int_{-\infty}^{\infty}\!\!\!\Phi(x)dx
+                            \int_0^1 \!\!\!d\mu\, e^{-t\Phi(x)/\mu}
+\end{equation}
+This function was first introduced by \cite{capriotti65}. It represents the probability
+for photon escape from a slab of thickness $\tau$, averaged over the photon
+direction, frequency and position in the slab. The contribution of zone $j \ne
+i$ to the remaining sum can be handled similarly, and the final expression for
+the coefficient $p^i$ turns out to be very simple:
+\begin{equation}
+\label{eq:pi}
+     p^i = \beta^i + {1\over\t(i,i-1)}\!\!
+     \sum_{\stackrel{j = 1}{j \ne i}}^z \!\! {S^j\over S^i} M^{ij}
+\end{equation}
+where
+\begin{equation}
+\label{eq:M}
+    M^{ij} = -\frac12(\a(i,j) - \a(i-1,j) - \a(i,j-1) + \a(i-1,j-1))
+\end{equation}
+and where $\a(i,j) = \t(i,j)\beta(\t(i,j))$. The quantity $\a(i,j)$ obeys
+$\a(i,j) = \a(j,i)$ and $\a(i,i) = 0$, therefore $M^{ij} = M^{ji}$ and $M^{ii}
+= \a(i,i-1)$. The
+first term in the expression for $p^i$ is the average probability for photon
+escape from zone $i$, reproducing one of the common variants of the escape
+probability method in which the whole slab is treated as a single zone
+\cite[e.g.,][]{krolik_mckee78}. The subsequent sum describes the effect on the level
+populations in zone $i$ of radiation produced in all other zones. Each term in
+the sum has a simple interpretation in terms of the probability that photons
+generated elsewhere in the slab traverse every other zone and get absorbed in
+zone $i$, where their effect on the level populations is similar to that of
+radiation external to the slab.
+
+Inserting the final expression for $p^i$ from Eq. (\ref{eq:pi}) into the rate terms
+of Eq. (\ref{eq:netrate_withp}) in every zone produces a set of non-linear algebraic
+equations for the unknown level populations $n_k^i$. The solution of these equations
+yields the full solution of the line transfer problem by considering only level
+populations. The computed populations are self-consistent with their internally
+generated radiation even though the radiative transfer equation is not handled
+at all.
+
+\subsection{Numerical evaluation of the auxiliary functions}
+
+Although the couple escape probability overcomes the solution of the radiative
+transfer equation, it is necessary to evaluate the $\tau$-dependent auxiliary
+function $\beta(\tau)$. In order to speed up the evaluation of these functions,
+we tabulated it for 1000 points in $\tau$ and a spline interpolation routine is
+used to calculate its values at any other value of $\tau$ not in the database.
+We have verified that this approach gives computational times comparable to
+those given by using the approximate formula of \cite{krolik_mckee78} but the
+reached precision is much larger.
+
+
+\subsection{External radiation}
+
+The only effect of external radiation on the rate equations is to modify the
+net radiative rate of the $i$-th zone as a consequence of the modification of the radiation field.
+If $\bar J_\mathrm{int}^i$ is the mean intensity in the $i$-th zone produced by the slab
+itself, the total radiation field is given by:
+\begin{equation}
+\bar J^i = \bar J_\mathrm{int}^i + \bar J_\mathrm{ext}^i
+\end{equation}
+where $\bar J_\mathrm{ext}^i$ is the zone average of the contribution of the
+external radiation. When the external radiation corresponds to the emission
+from dust which permeates the source, \Ji\ is simply the angle-averaged
+intensity of the local dust emission in the $i$-th zone. When the external
+radiation originates from outside the slab and has an isotropic distribution
+with intensity \Ie\ ($= J_e$) in contact with the $\tau = 0$ face, then
+\begin{equation}
+  \Ji = \half J_e{1\over\t(i,i-1)} \left( \a(i,0) - \a(i-1,0) \right).
+\end{equation}
+If the radiation is in contact with the $\tau=\tau_t$, the expression turns out
+to be:
+\begin{equation}
+  \Ji = \half J_e{1\over\t(i,i-1)} \left( \a(i,z) - \a(i-1,z) \right).
+\end{equation}
+
+\subsection{Solution of the final equations}
+
+The solution method just described is exact in the sense that the discretized
+equations are mathematically identical to the original ones when $\t(i,i-1) \to
+0$ for every $i$. As is usually the case, the only approximation in actual
+numerical calculations is the finite size of the discretization, i.e., the
+finite number of zones. As a consequence, if one is interested in solving the
+problem up to a given precision in the level populations, one should start with
+an initial number of zones and stop when the relative change between one grid
+and a refined one in which a suitable regridding strategy is applied is below a
+predefined tolerance. MOLPOP-CEP allows the user to select whether to converge
+the solution using grid refinement or just converge the problem in a predefined
+grid.
+
+The actual numerical solution of the set of Eqs. (\ref{eq:statis_equil_eq}) can
+be carried out using two different techniques. The most straightforward is to use
+a Newton method to solve the non-linear equations. The interesting key point
+is that the Jacobian matrix can be calculated analytically because the dependence
+of the radiation field on the population is known analytically. The second
+possibility is to apply the $\Lambda$-iteration method. The diagonal of the
+$\Lambda$ operator, that gives the response of the radiation field at zone
+$j$ to a unitary perturbation of the source function at point $i$, can be
+easily calculated under the previous formalism. This second method of solution
+can be competitive when the numerical inversion of the Jacobian turns out
+to be too time consuming.
+
+In order to improve the convergence properties of the code, the following strategy
+is applied the solution of the statistical equilibrium equations. This is of special
+interest for the case in which the physical conditions are constant. Two possible
+possibilities exist: start from a molecular column density in which all the lines
+are optically thin ($\tau < 1$) or start from a molecular column density in which
+all the lines are optically thick ($\tau \gg 1$). In the first case, the level
+populations should be close to the optically thin solution and this can be chosen
+as the initial condition. In the second case, the level populations should be close
+to local thermodynamical equilibrium (LTE) and the Boltzmann distribution can be
+assumed as an initial condition. Then, the molecular column density is either reduced
+or increased in steps until some suitable limits in the column density are
+reached. This strategy allows the code to increase the convergence behavior and, as
+a subproduct, the solution is obtained for many intermediate problems.
+
+If the final solution is far from any of the limiting cases (optically thin or
+LTE populations), the Newton method can suffer from convergence problems. Another
+remedy for this difficulty that we plan to investigate in the future is to carry out
+several accelerated $\Lambda$-iterations starting from one of the limiting cases
+(hopefully the closer to the final solution) and then apply the Newton method
+for the solution refinement. Although the accelerated $\Lambda$-iteration can also
+suffer from convergence problems if started far from the solution, they are less
+important than for the Newton scheme.
+
+
+\section{Cooling and emergent radiation}
+
+Once the populations are found, radiative quantities can be calculated in a
+straightforward manner from summations over the zones. The emerging intensity
+at direction $\mu$ is
+\begin{equation}
+    I_\nu(\tot,\mu) = \sum_{i = 1}^z
+     \left(e^{-\tau^{z,i}\Phi/\mu} -  e^{-\tau^{z,i - 1}\Phi/\mu}\right)S^i.
+\end{equation}
+The flux density emerging from each face of the slab obeys
+\begin{eqnarray}
+    F_\nu(\tot) &=& 2\pi\sum_{i = 1}^z
+    \left[E_3(\tau^{z,i}\Phi^i) - E_3(\tau^{z,i - 1}\Phi^i)\right] S^i \non
+    -F_\nu(0)  &=& 2\pi \sum_{i = 1}^z
+    \left[E_3(\t(i - 1,0)\Phi^i) - E_3(\t(i,0)\Phi^i)\right] S^i
+\end{eqnarray}
+where $E_3$ is the third exponential integral \citep[e.g.,][]{abramowitz72}. The line profile
+is given by:
+\begin{equation}
+\Phi^i = \Phi \left( \frac{\nu-\nu_0}{\Delta \nu_D^i} \right)
+\end{equation}
+The slab luminosity, given
+by the expression:
+\begin{equation}
+\Lambda = 4 \pi \int_0^{\tot} \Delta \nu_D S(\tau)p(\tau)d\tau,
+\end{equation}
+is calculated after discretization with the following summation:
+\begin{equation}
+\Lambda = 4 \pi \sum_{i = 1}^z
+ \left(\alpha^{i,0} - \alpha^{i-1,0} - \alpha^{z,i} + \alpha^{z,i-1}\right)S^i.
+\end{equation}
+
+\begin{thebibliography}{17}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[{{Abramowitz} \& {Stegun}(1972)}]{abramowitz72}
+{Abramowitz}, M., \& {Stegun}, I.~A. 1972, {Handbook of Mathematical Functions}
+  (New York: Dover)
+
+\bibitem[{{Athay} \& {Skumanich}(1971)}]{athay_skumanich71}
+{Athay}, R.~G., \& {Skumanich}, A. 1971, ApJ, 170, 605
+
+\bibitem[{{Bieniek} \& {Green}(1983)}]{bieniek_green83}
+{Bieniek}, R.~J., \& {Green}, S. 1983, ApJL, 265, L29
+
+\bibitem[{{Capriotti}(1965)}]{capriotti65}
+{Capriotti}, E.~R. 1965, ApJ, 142, 1101
+
+\bibitem[{{Elitzur}(1992)}]{elitzur92}
+{Elitzur}, M. 1992, {Astronomical Masers} (Dordrecht: Kluwer Academic
+  Publishers)
+
+\bibitem[{{Elitzur} \& {Asensio Ramos}(2006)}]{elitzur_asensio_cep06}
+{Elitzur}, M., \& {Asensio Ramos}, A. 2006, MNRAS, 365, 779
+
+\bibitem[{{Fabiani Bendicho} {et~al.}(1997){Fabiani Bendicho}, {Trujillo
+  Bueno}, \& {Auer}}]{fabiani_trujillo_auer97}
+{Fabiani Bendicho}, P., {Trujillo Bueno}, J., \& {Auer}, L.~H. 1997, A\&A, 324,
+  161
+
+\bibitem[{{Flower}(2001)}]{flower01}
+{Flower}, D.~R. 2001, J. Phys. B, 34, 2731
+
+\bibitem[{{Krolik} \& {McKee}(1978)}]{krolik_mckee78}
+{Krolik}, J.~H., \& {McKee}, C.~F. 1978, ApJS, 37, 459
+
+\bibitem[{{Lockett} \& {Elitzur}(1989)}]{lockett_elitzur89}
+{Lockett}, P., \& {Elitzur}, M. 1989, ApJ, 344, 525
+
+\bibitem[{{Lockett} \& {Elitzur}(1992)}]{lockett_elitzur92}
+---. 1992, ApJ, 399, 704
+
+\bibitem[{{Mihalas}(1978)}]{mihalas78}
+{Mihalas}, D. 1978, in {Stellar Atmospheres}, Vol. 455
+
+\bibitem[{{Rybicki} \& {Hummer}(1991)}]{rybicki_hummer91}
+{Rybicki}, G.~B., \& {Hummer}, D.~G. 1991, A\&A, 249, 720
+
+\bibitem[{{Rybicki} \& {Hummer}(1992)}]{rybicki_hummer92}
+---. 1992, A\&A, 262, 209
+
+\bibitem[{{Socas-Navarro} \& {Trujillo Bueno}(1997)}]{socas_trujillo97}
+{Socas-Navarro}, H., \& {Trujillo Bueno}, J. 1997, ApJ, 490, 383
+
+\bibitem[{{Steiner}(1991)}]{steiner91}
+{Steiner}, O. 1991, A\&A, 242, 290
+
+\bibitem[{{Trujillo Bueno} \& {Fabiani Bendicho}(1995)}]{trujillo_fabiani95}
+{Trujillo Bueno}, J., \& {Fabiani Bendicho}, P. 1995, ApJ, 455, 646
+
+\end{thebibliography}
+
+
+% \bibliographystyle{apj}
+% \bibliography{/scratch/Dropbox/biblio,apjmnemonic}
+
+
+\end{document}

@@ -1,0 +1,22 @@
+Energy levels for C+
+Reference: CDMS
+
+Molecular species
+>
+C+
+
+N. levels and molecular mass
+>
+2  12.01d0
+
+     N        g      Energy in cm^{-1}    Level details
+>
+     1        2           0.0000           'J =   0.5'
+     2        4           63.3950          'J =   1.5'
+
+Einstein coefficients A_ij for C+
+Reference: CDMS
+
+  i         j         A_ij in s^{-1}
+>
+  2         1          2.30e-6 

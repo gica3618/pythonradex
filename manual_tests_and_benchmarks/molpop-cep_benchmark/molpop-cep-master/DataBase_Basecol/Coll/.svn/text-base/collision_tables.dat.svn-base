@@ -1,0 +1,195 @@
+List of available tables of collision rates.
+
+>
+H2O_4.kij
+Rotational excitation of ortho-H$_2$O by He (Green & al., 1993)  stateTostate
+S.Green;S.Maluendes;A.~D.McLean;,Ap. J. S.,85,181
+   ******************
+CS_10.kij
+Rotational excitation of CS by para-H$_2$, 20K < T < 300K, lowest 21 levels (Turner & al, 1992)  stateTostate
+B.~E.Turner;Kin-WingChan;S.Green;D.~A.Lubowich;,  Ap. J.,399,114-133
+   ******************
+HCO+_11.kij
+Rotational excitation of HCO$^+$ by para-H$_2$, 10K < T < 400K (Flower, 1999)  stateTostate
+D.~R.Flower;,M.N.R.A.S.,305,651--653
+   ******************
+OCS_12.kij
+Rotational excitation of OCS by He (Flower, 2001)  stateTostate
+D.~R.Flower;,M.N.R.A.S.,328,147--149
+   ******************
+HCl_14.kij
+Excitation of the hyperfine levels of HCl by He (Neufeld & al. 1994)  stateTostate
+D.~A.Neufeld;S.Green;,  Ap. J.,432,158--166
+   ******************
+SiO_100.kij
+Rotational excitation of SiO by collisions with para-H$_2$(j=0) (10 < T < 300K) (Dayou & Balanca, 2006)  stateTostate
+F.Dayou;C.Balanca;,Astron. Astrophys.,459,297-305
+   ******************
+CO_98.kij
+Rotational de-excitation of CO by para-H$_2$ (j=0), 5K < T < 70K - 6 levels (Wernli et al., 2006)  stateTostate
+M.Wernli;P.Valiron;A.Faure;L.Wiesenfeld;P.Jankowski;K.Szalewicz;,Astron. Astrophys.,446,367-372
+   ******************
+HF_63.kij
+ Rotational excitation of HF(v=0) by He (Reese et al, 2005)  stateTostate
+C.Reese;T.Stoecklin;A.Voronin;J.~C.Rayez;,Astron. Astrophys.,430,1139--1142
+   ******************
+H2CO_17.kij
+Rotational Excitation of para-H$_2$CO by He (Green, 1991)  stateTostate
+S.Green;,Ap. S. S.,76,979-983
+   ******************
+H2CO_18.kij
+Rotational Excitation of ortho-H$_2$CO by He (Green, 1991)  stateTostate
+S.Green;,Ap. S. S.,76,979-983
+   ******************
+HCS+_19.kij
+Rotational Excitation of HCS$^+$ by He (Monteiro 1984)  stateTostate
+T.~S.Monteiro;,M.N.R.A.S.,210,1--11
+   ******************
+SO2_20.kij
+Rotational excitation of SO$_2$ by He (Green 1995)  stateTostate
+S.Green;,Ap. J. S.,100,213
+   ******************
+HDO_21.kij
+Rotational excitation of HDO by He (Green 1989)  stateTostate
+S.Green;,Ap. J. S.,70,813--831
+   ******************
+H2O_22.kij
+Rotational excitation of para-H$_2$O by He (Green & al., 1993)  stateTostate
+S.Green;S.Maluendes;A.~D.McLean;,Ap. J. S.,85,181
+   ******************
+SiO_23.kij
+Rotational excitation of SiO by para-H$_2$, 20K < T < 300K (Turner & al. 1992)  stateTostate
+B.~E.Turner;Kin-WingChan;S.Green;D.~A.Lubowich;,  Ap. J.,399,114-133
+   ******************
+SO_32.kij
+Excitation of the fine structure of SO by para-H$_2$ (Green 1994).  stateTostate
+S.Green;,  Ap. J.,434,188--191
+   ******************
+CO_33.kij
+Rotational excitation of CO by ortho-H$_2$ (Flower, 2001)  stateTostate
+D.~R.Flower;,J. Phys. B: At. Mol. Opt. Phys.,34,2731--2738
+   ******************
+CO_34.kij
+Rotational excitation of CO by para H$_2$ (Flower, 2001)  stateTostate
+D.~R.Flower;,J. Phys. B: At. Mol. Opt. Phys.,34,2731--2738
+   ******************
+OCS_35.kij
+Rotational excitation of OCS by para-H$_2$ (Green & al.,1978)  stateTostate
+S.Green;S.Chapman;,Ap. J. S.,37,169--194
+   ******************
+HC3N_36.kij
+Rotational excitation of HC$_3$N by He (Green & al., 1978)  stateTostate
+S.Green;S.Chapman;,Ap. J. S.,37,169--194
+   ******************
+H2O_41.kij
+Rotational excitation of ortho-H$_2$O by ortho-H$_2$(Phillips & al., 1996)  stateTostate
+T.~R.Phillips;S.Maluendes;S.Green;,Ap. J. S.,107,467
+   ******************
+H2O_42.kij
+ Rotational excitation of ortho-H$_2$O by para-H$_2$ (Phillips & al., 1996)  stateTostate
+T.~R.Phillips;S.Maluendes;S.Green;,Ap. J. S.,107,467
+   ******************
+H2O_43.kij
+Rotational excitation of para-H$_2$O by ortho-H$_2$ (Phillips & al., 1996)   stateTostate
+T.~R.Phillips;S.Maluendes;S.Green;,Ap. J. S.,107,467
+   ******************
+N2H+_82.kij
+Rotational collisional de-excitation rate coefficients of N$_2$H$^+$ by He, 5K < T < 50K (Daniel & al. 2005)  stateTostate
+F.Daniel;M.-L.Dubernet;M.Meuwly;J.Cernicharo;L.Pagani;,M.N.R.A.S.,363,1083--1091
+   ******************
+H2O_44.kij
+ Rotational excitation of para-H$_2$O by para-H$_2$ (Phillips et al., 1996)  stateTostate
+T.~R.Phillips;S.Maluendes;S.Green;,Ap. J. S.,107,467
+   ******************
+SiC2_45.kij
+ Rotational excitation of SiC$_2$ by He (Chandra & al., 2000)  stateTostate
+S.Chandra;W.~H.Kegel;,Astron. Astrophys. Sup.,142,113--118
+   ******************
+c-C3H2_46.kij
+Rotational Excitation of ortho-cyclopropendyle  by He (Chandra & al., 2000)  stateTostate
+S.Chandra;W.~H.Kegel;,Astron. Astrophys. Sup.,142,113--118
+   ******************
+c-C3H2_47.kij
+Rotational Excitation of para-cyclopropendyle by He (Chandra & al., 2000)  stateTostate
+S.Chandra;W.~H.Kegel;,Astron. Astrophys. Sup.,142,113--118
+   ******************
+CO_48.kij
+ Rotational de-excitation of CO by H for 5K < T< 100K (Balakrishnan & al, 2002)  stateTostate
+N.Balakrishnan;M.Yan;A.Dalgarno;,  Ap. J.,568,443--447
+   ******************
+CO_50.kij
+ Rotational de-excitation of CO (v=0) by He (Cecchi-Pestellini & al, 2002)  stateTostate
+C.Cecchi-Pestellini;E.Bodo;N.Balakrishnan;A.Dalgarno;,  Ap. J.,571,1015-1020
+   ******************
+SiS_119.kij
+Rotational de-excitation of SiS molecules by collisions with He (Vincent, L. et al, 2007, A&A 472, 1037-1040)   stateTostate
+L.Vincent;A.Spielfiedel;F.Lique;,Astron. Astrophys.,472,1037-1040
+   ******************
+CS_61.kij
+Rotational excitation of CS by H2, 10K < T < 100K, 13 lowest levels (Green & Chapman, 1978)  stateTostate
+S.Green;S.Chapman;,Ap. J. S.,37,169--194
+   ******************
+CO_60.kij
+ Rotational de-excitation of CO by H for 100K< T <3000K (Balakrishnan & al, 2002)  stateTostate
+N.Balakrishnan;M.Yan;A.Dalgarno;,  Ap. J.,568,443--447
+   ******************
+HCN_62.kij
+Rotational excitation of HCN by He, 5K =< T =< 100K (Green & Thaddeus, 1974)  stateTostate
+S.Green;P.Thaddeus;,  Ap. J.,191,653--658
+   ******************
+N2H+_69.kij
+Hyperfine collisional excitation rate coefficients of N$_2$H$^+$ by He, 5K < T < 50K (Daniel & al. 2005)  stateTostate
+F.Daniel;M.-L.Dubernet;M.Meuwly;J.Cernicharo;L.Pagani;,M.N.R.A.S.,363,1083--1091
+   ******************
+SO_77.kij
+Rotational excitation of sulfur monoxyde by collisions with helium at low temperature, 5K < T < 50K - 31 levels (Lique & al., 2005)  stateTostate
+F.Lique;A.Spielfiedel;M.-L.Dubernet;N.Feautrier;,J. Chem. Phys.,123,134316
+   ******************
+SO_81.kij
+Rotational excitation of sulfur monoxyde by collisions with helium at high temperature, 60K < T < 300K - 91 levels (Lique & al., 2006)  stateTostate
+F.Lique;M.-L.Dubernet;A.Spielfiedel;N.Feautrier;,Astron. Astrophys.,450,399-405
+   ******************
+NH3_83.kij
+Rotational excitation of ortho-NH$_3$ by He (Machin et al, 2005)  stateTostate
+L.Machin;E.Roueff;,J. Phys. B: At. Mol. Opt. Phys.,38,1519--1534
+   ******************
+NH3_84.kij
+Rotational excitation of para-NH$_3$ by He (Machin et al, 2005)  stateTostate
+L.Machin;E.Roueff;,J. Phys. B: At. Mol. Opt. Phys.,38,1519--1534
+   ******************
+NH3_85.kij
+Rotational excitation of ortho-NH$_3$ by para-H$_2$ (j=0) (Danby et al, 1986)  stateTostate
+G.Danby;D.~R.Flower;E.Kochanski;L.Kurdi;P.Valiron;,J. Phys. B: At. Mol. Opt. Phys.,19,2891--2906
+   ******************
+NH3_87.kij
+ Rotational excitation of para-NH$_3$ by para-H$_2$ (j=0) (Danby et al, 1987)  stateTostate
+G.Danby;D.~R.Flower;P.Valiron;E.Kochanski;L.Kurdi;,J. Phys. B: At. Mol. Opt. Phys.,20,1039--1058
+   ******************
+NH3_88.kij
+Rotational excitation of ortho-NH$_3$ by para-H$_2$ (j=0) (Danby et al., 1988)  stateTostate
+G.Danby;D.~R.Flower;P.Valiron;P.Schilke;C.~M.Walmsley;,M.N.R.A.S.,235,229--238
+   ******************
+NH3_89.kij
+Rotational excitation of para-NH$_3$ by para-H$_2$ (j=0) (Danby et al., 1988)  stateTostate
+G.Danby;D.~R.Flower;P.Valiron;P.Schilke;C.~M.Walmsley;,M.N.R.A.S.,235,229--238
+   ******************
+CS_90.kij
+Rotational excitation of sulfur monosulfide by collisions with helium (Lique et al., 2006)  stateTostate
+F.Lique;A.Spielfiedel;J.Cernicharo;,Astron. Astrophys.,451,1125-1132
+   ******************
+N2H+_91.kij
+Rotational excitation of N$_2$H$^+$ by He (Green, 1975)  stateTostate
+S.Green;,  Ap. J.,201,366--372
+   ******************
+HCN_92.kij
+ Excitation of hyperfine levels of HCN by He (Monteiro et al., 1986)  stateTostate
+T.~S.Monteiro;J.Stutzki;,M.N.R.A.S.,221,33P--39P
+   ******************
+SiO_95.kij
+Rotational excitation of SiO by collisions with helium (10 < T < 300K) (Dayou & Balanca, 2006)  stateTostate
+F.Dayou;C.Balanca;,Astron. Astrophys.,459,297-305
+   ******************
+CO_97.kij
+Rotational de-excitation of CO by ortho-H$_2$ (j=1), 5K < T < 70K - 6 levels (Wernli et al., 2006)  stateTostate
+M.Wernli;P.Valiron;A.Faure;L.Wiesenfeld;P.Jankowski;K.Szalewicz;,Astron. Astrophys.,446,367-372
+   ******************
