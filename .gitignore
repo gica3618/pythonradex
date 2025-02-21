@@ -90,7 +90,7 @@ celerybeat-schedule
 .venv
 venv/
 ENV/
-virt_env/
+virt_env*/
 
 # Spyder project settings
 .spyderproject
@@ -106,7 +106,6 @@ virt_env/
 .mypy_cache/
 
 # Gianni stuff
-tests/RADEX_test_cases/*.out
 tests/RADEX_test_cases/radex.in
 tests/Radex
 manual_tests_and_benchmarks/lime/lime-master
