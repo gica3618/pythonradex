@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "pythonradex"
 # be careful, PyPi will return "400 bad request" error if you delete your project on PyPi and then try to publish again with a previously published version!
-version = "1.0.0"
+version = "1.0.1"
 description = '1D non-LTE radiative transfer'
 readme = "README.txt"
 requires-python = ">=3.10"
