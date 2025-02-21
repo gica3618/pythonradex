@@ -114,6 +114,7 @@ manual_tests_and_benchmarks/molpop-cep_benchmark/Gianni_models/*.out
 manual_tests_and_benchmarks/molpop-cep_benchmark/molpop
 manual_tests_and_benchmarks/molpop-cep_benchmark/molpop-cep-master
 manual_tests_and_benchmarks/benchmarking_vs_RADEX_and_LIME/*.fits
+manual_tests_and_benchmarks/performance_tests/radex_test_preformance.inp
 manual_tests_and_benchmarks/performance_tests/radex_test_performance.out
 documents
 **/radex.out
