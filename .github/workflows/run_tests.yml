@@ -5,6 +5,9 @@ name: Python package
 
 on:
   push:
+    #branches is necessary to avoid running this when new tags are pushed 
+    branches:
+      - '**'  # Matches all branches
     paths:
       - 'src/**'
       - 'tests/**'
