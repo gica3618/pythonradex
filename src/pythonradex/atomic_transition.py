@@ -309,7 +309,7 @@ class EmissionLine(RadiativeTransition):
             
 class CollisionalTransition(Transition):
 
-    '''Represent the collisional transition between two energy levels
+    '''Represents the collisional transition between two energy levels
     
     Attributes:
         up (pythonradex.atomic_transition.Level): the upper level of the transition
