@@ -27,7 +27,3 @@ dynamic = ["version"]
 Documentation = "https://pythonradex.readthedocs.io/en/latest/"
 Issues = "https://github.com/gica3618/pythonradex/issues"
 Source = "https://github.com/gica3618/pythonradex"
-
-[tool.hatch.version]
-source = "tag"
-pattern = "v(?P<version>.*)"
