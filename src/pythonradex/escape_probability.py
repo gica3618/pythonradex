@@ -12,7 +12,7 @@ from scipy import constants
 
 class EscapeProbabilityUniformSphere():
     
-    '''Represents the escape probability from a uniform spherical medium.'''
+    '''Represents the escape probability from a uniform sphere.'''
 
     def __init__(self):
         self.beta = escape_probability_functions.beta_uniform_sphere
