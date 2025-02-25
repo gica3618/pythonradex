@@ -29,7 +29,7 @@ Issues = "https://github.com/gica3618/pythonradex/issues"
 Source = "https://github.com/gica3618/pythonradex"
 
 [tool.hatch.version]
-path = "pythonradex/__init__.py"
+path = "src/pythonradex/__init__.py"
 
 [tool.hatch.build.hooks.custom]
 hooks = ["set_version_from_tag"]
