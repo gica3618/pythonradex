@@ -26,6 +26,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install hatch
 
+    - name: Set version from tag
+      run: python scripts/set_version_from_tag.py
+
     - name: Build the package
       run: hatch build
 
