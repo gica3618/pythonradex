@@ -14,10 +14,11 @@ def main():
         sys.exit(1)
 
     # Write the version to __init__.py
-    with open('pythonradex/__init__.py', 'r') as f:
+    init_filepath = 'src/pythonradex/__init__.py'
+    with open(init_filepath, 'r') as f:
         lines = f.readlines()
 
-    with open('pythonradex/__init__.py', 'w') as f:
+    with open(init_filepath, 'w') as f:
         for line in lines:
             if line.startswith('__version__'):
                 f.write(f"__version__ = '{version}'\n")
