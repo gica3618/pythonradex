@@ -1,4 +1,4 @@
-Help / Bug reports
-=======================
+Help / Bug reports / Contributing
+========================================
 
-For questions or bug reports, please open an issue at `<https://github.com/gica3618/pythonradex/issues>`_.
+For questions, bug reports, ideas for new features or contributions, please open an issue at `<https://github.com/gica3618/pythonradex/issues>`_.
