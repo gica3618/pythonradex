@@ -22,11 +22,19 @@ bibliography: paper.bib
 
 # Summary
 
-A very common task in astronomical research is to use flux measurements to estimate the physical parameters (temperature, mass, density etc.) of a gas. This requires a radiative transfer calculation, that is, a calculation of how the radiation propagates in the medium via emission and absorption. The RADEX code [@vanderTak:2007]
+A common task in astronomical research is to use observed line emission to estimate the physical parameters (temperature, mass, density etc.) of a gas. This requires a radiative transfer calculation, that is, a calculation of how the radiation propagates in the medium via emission and absorption. In radio and infrared astronomy, the Fortran code RADEX [@vanderTak:2007] is a popular tool to solve the non-LTE radiative transfer of a uniform medium in a simplified geometry. I present a python implementation of RADEX: pythonradex. Written in pure python, pythonradex provides an easy and intuitive user interface. Furthermore, pythonradex provides additional functionality not included in RADEX:
+1. pythonradex is able to treat the effects of a continuum field (i.e. dust)
+2. pythonradex is able to correctly treat overlapping lines
 
 # Statement of need
 
-Line emission occurs when an atom or molecule transitions from a higher to a lower energy level by emitting a photon with a wavelength that corresponds to the energy difference between the upper and lower level. 
+Line emission occurs when a molecule transitions from a higher to a lower energy level, thereby emitting a photon with a wavelength that corresponds to the energy difference between the upper and lower level. This can either happen spontaneously (spontaneous emission) or by interaction with another photon of the same wavelength (stimulated emission). On the other hand, a molecule can also absorb a photon, thereby transitioning from a lower to a higher energy level. Finally, transitions can also occur when the molecule collides with another particle. In this latter case, the energy is exchanged in the form of kinetic energy and no photons are involved.
+
+Clearly, to calculate the amount of emission and absorption occurring in the gas, we need to know the fraction of molecules residing in each energy level (the *fractional level population*). The level population of a specific transition is often characerised by the *excitation* temperature defined by
+\begin{equation}
+\frac{n_2}{n_1} = \frac{g_2}{g_1}e^{-\Delta E/(kT_\mathrm{ex})}
+\end{equation}
+
 
 `Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
 enables wrapping low-level languages (e.g., C) for speed without losing
@@ -90,7 +98,6 @@ Figure sizes can be customized by adding an optional second parameter:
 
 # Acknowledgements
 
-We acknowledge contributions from Brigitta Sipocz, Syrtis Major, and Semyeong
-Oh, and support from Kathryn Johnston during the genesis of this project.
+I would like to thank Simon Bruderer for his helpful clarifications about the ALI method. I also thank Andrés Asensio Ramos for helpful discussions about the LVG geometry and help with the MOLPOP-CEP code that was used to benchmark pythonradex.
 
 # References
