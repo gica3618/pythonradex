@@ -141,6 +141,7 @@ for i,n in enumerate(n_elements):
     start = time.time()
     for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                               Tkin_values):
+        start_setup = time.time()
         #print(N,coll_dens,Tkin)
         collider_densities = {collider:coll_dens for collider in colliders}
         with open(radex_input_file,mode='w') as f:
@@ -156,7 +157,12 @@ for i,n in enumerate(n_elements):
             f.write(f'{N/constants.centi**-2}\n')
             f.write(f'{width_v/constants.kilo}\n')
             f.write('0\n')
+        end_setup = time.time()
+        print(f'setup: {end_setup-start_setup}')
+        start_calc = time.time()
         os.system(f'{radex_executable} < {radex_input_file} > /dev/null')
+        end_calc = time.time()
+        print(f'calc: {end_calc-start_calc}')
         #os.system(f'radex < {radex_input_file}')
     end = time.time()
     RADEX_times[i] = end-start
