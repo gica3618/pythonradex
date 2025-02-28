@@ -17,7 +17,7 @@ There is a difference between the outputs of ``RADEX`` and ``pythonradex``. The 
 
 Different flux for spherical geometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-For a given excitation temperature :math:`T_{ex}` and optical depth :math:`\tau_\nu`, ``RADEX`` calculates the flux as
+For a given excitation temperature :math:`T_{ex}` and optical depth :math:`\tau_\nu`, ``RADEX`` calculates the intensity as
 
 .. math::
     I_\nu = B_\nu(T_{ex})(1-e^{-\tau_\nu})
