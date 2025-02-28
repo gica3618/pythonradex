@@ -22,18 +22,36 @@ bibliography: paper.bib
 
 # Summary
 
-A common task in astronomical research is to use observed line emission to estimate the physical parameters (temperature, mass, density etc.) of a gas. This requires a radiative transfer calculation, that is, a calculation of how the radiation propagates in the medium via emission and absorption. In radio and infrared astronomy, the Fortran code RADEX [@vanderTak:2007] is a popular tool to solve the non-LTE radiative transfer of a uniform medium in a simplified geometry. I present a python implementation of RADEX: pythonradex. Written in pure python, pythonradex provides an easy and intuitive user interface. Furthermore, pythonradex provides additional functionality not included in RADEX:
-1. pythonradex is able to treat the effects of a continuum field (i.e. dust)
+A common task in astronomical research is to estimate the physical parameters (temperature, mass, density etc.) of a gas by using observed line emission. This often requires a radiative transfer calculation, that is, a calculation of how the radiation propagates in the medium via emission and absorption. In radio and infrared astronomy, the Fortran code RADEX [@vanderTak:2007] is a popular tool to solve the non-LTE radiative transfer of a uniform medium in a simplified geometry. I present a python implementation of RADEX: pythonradex. Written in pure python, pythonradex provides an easy and intuitive user interface. Furthermore, pythonradex provides additional functionality not included in RADEX:
+
+1. pythonradex is able to treat the effects of a dust continuum field
 2. pythonradex is able to correctly treat overlapping lines
 
 # Statement of need
 
-Line emission occurs when a molecule transitions from a higher to a lower energy level, thereby emitting a photon with a wavelength that corresponds to the energy difference between the upper and lower level. This can either happen spontaneously (spontaneous emission) or by interaction with another photon of the same wavelength (stimulated emission). On the other hand, a molecule can also absorb a photon, thereby transitioning from a lower to a higher energy level. Finally, transitions can also occur when the molecule collides with another particle. In this latter case, the energy is exchanged in the form of kinetic energy and no photons are involved.
+Observations of molecular line emission at radio and infrared wavelengths are crucial to constrain the physical and chemical properties of various astrophysical environments. Modern astronomical facilities such as the Atacama Large Millimeter/submillimeter Array (ALMA) or the James Webb Space Telescope (JWST) are providing a wealth of line emission data that is successfully used in various sub-fields of astrophysics to advance our understanding of the universe.
 
-Clearly, to calculate the amount of emission and absorption occurring in the gas, we need to know the fraction of molecules residing in each energy level (the *fractional level population*). The level population of a specific transition is often characerised by the *excitation* temperature defined by
+To interpret observations of line emission, a radiative transfer calculation is typically used: one calculates the amount of radiation reaching the telescope for a given set of input parameters describing the source (temperature, density, geometry, etc.). This calculation needs to take into account the emission and absorption of radiation in the medium. Then, the input parameters can be adjusted such that the predicted flux matches the observations. For detailed discussion of radiative transfer, see e.g. 
+@Rybicki:1985.
+
+A crucial quantity determining how a gas emits and absorbs photons is the fractional level population, that is, the fraction of molecules residing in each energy level. This is because emission and absorption of photons happens via transitions between the different energy levels. The level population of a specific transition is often characterised by the *excitation temperature* $T_\mathrm{ex}$, defined by
 \begin{equation}
 \frac{n_2}{n_1} = \frac{g_2}{g_1}e^{-\Delta E/(kT_\mathrm{ex})}
 \end{equation}
+Here, $n_2$ and $n_1$ are the number densities of molecules in the upper and lower level of the transitions, respectively, $g_2$ and $g_1$ are the statistical weights, $\Delta E$ is the energy difference between the levels and $k$ is the Boltzmann constant.
+
+
+Line emission occurs when a molecule transitions from a higher to a lower energy level, thereby emitting a photon with a wavelength that corresponds to the two levels. This can either happen spontaneously (spontaneous emission) or by interaction with another photon of the same wavelength (stimulated emission). On the other hand, a molecule can also absorb a photon, thereby transitioning from a lower to a higher energy level. Finally, transitions (both excitation and de-excitation) can also occur when the molecule collides with another particle. In this latter case, the energy is exchanged in the form of kinetic energy and no photons are involved.
+
+Clearly, to calculate the amount of emission and absorption occurring in the gas, we need to know the fraction of molecules residing in each energy level (the *fractional level population*). The level population of a specific transition is often characterised by the *excitation temperature* $T_\mathrm{ex}$, defined by
+\begin{equation}
+\frac{n_2}{n_1} = \frac{g_2}{g_1}e^{-\Delta E/(kT_\mathrm{ex})}
+\end{equation}
+Here, $n_2$ and $n_1$ are the number densities of molecules in the upper and lower level of the transitions, respectively, $g_2$ and $g_1$ are the statistical weights, $\Delta E$ is the energy difference between the levels and $k$ is the Boltzmann constant.
+
+If, for each transition, $T_\mathrm{ex}$ is equal to the kinetic temperature of the gas, the gas is said to be in *local thermodynamic equilibrium* (LTE). This occurs if collisional de-excitation happens more frequently than spontaneous emission. If LTE applies, the level population is known (for a given kinetic temperature), and solving the radiative transfer becomes straightforward, at least in principle.
+
+On the other hand, if the density of colliders is too low for LTE to apply, the level population is unknown and needs to be calculated. In such a situation, one typically assumes *statistical equilibrium*: for a given level, the rate of excitation equals the rate of de-excitation. This can be expressed with the following equation: 
 
 
 `Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
