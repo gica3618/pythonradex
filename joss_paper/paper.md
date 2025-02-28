@@ -24,21 +24,32 @@ bibliography: paper.bib
 
 A common task in astronomical research is to estimate the physical parameters (temperature, mass, density etc.) of a gas by using observed line emission. This often requires a radiative transfer calculation, that is, a calculation of how the radiation propagates in the medium via emission and absorption. In radio and infrared astronomy, the Fortran code RADEX [@vanderTak:2007] is a popular tool to solve the non-LTE radiative transfer of a uniform medium in a simplified geometry. I present a python implementation of RADEX: pythonradex. Written in pure python, pythonradex provides an easy and intuitive user interface. Furthermore, pythonradex provides additional functionality not included in RADEX:
 
-1. pythonradex is able to treat the effects of a dust continuum field
-2. pythonradex is able to correctly treat overlapping lines
+1. treatment of dust continuum effects
+2. treatment of overlapping lines
 
 # Statement of need
 
-Observations of molecular line emission at radio and infrared wavelengths are crucial to constrain the physical and chemical properties of various astrophysical environments. Modern astronomical facilities such as the Atacama Large Millimeter/submillimeter Array (ALMA) or the James Webb Space Telescope (JWST) are providing a wealth of line emission data that is successfully used in various sub-fields of astrophysics to advance our understanding of the universe.
+Observations of molecular line emission at radio and infrared wavelengths are crucial to constrain the physical and chemical properties of various astrophysical environments. Modern astronomical facilities such as the Atacama Large Millimeter/submillimeter Array (ALMA) or the James Webb Space Telescope (JWST) are providing a wealth of line emission data that is used in various sub-fields of astrophysics.
 
-To interpret observations of line emission, a radiative transfer calculation is typically used: one calculates the amount of radiation reaching the telescope for a given set of input parameters describing the source (temperature, density, geometry, etc.). This calculation needs to take into account the emission and absorption of radiation in the medium. Then, the input parameters can be adjusted such that the predicted flux matches the observations. For detailed discussion of radiative transfer, see e.g. 
-@Rybicki:1985.
+To interpret observations of line emission, a radiative transfer calculation is typically used. In such a calculation, the amount of radiation reaching the telescope for a given set of input parameters describing the source (temperature, density, geometry, etc.) is determined. This calculation needs to take into account the emission and absorption of radiation in the medium. For basic discussion of radiative transfer, see for example @Rybicki:1985.
 
-A crucial quantity determining how a gas emits and absorbs photons is the fractional level population, that is, the fraction of molecules residing in each energy level. This is because emission and absorption of photons happens via transitions between the different energy levels. The level population of a specific transition is often characterised by the *excitation temperature* $T_\mathrm{ex}$, defined by
+Typically, the input parameters of the radiative transfer calculation are adjusted such that the predicted flux matches the observations. If the medium is dense enough, local thermodynamic equilibrium (LTE) maybe be assumed. This considerably simplifies the calculation because the fractional population of the energy levels of the molecules, which determines emission and absorption, is equal to the Boltzmann distribution. On the other hand, in non-LTE, the fractional level population needs to be calculated explicitly by assuming statistical equilibrium (that is, the rate of de-excitation a level is set equal to the rate of excitation), which adds considerable complexity and computational cost.
+
+Various codes exist to solve the radiative transfer for a range of application scenarios. Codes solving the radiative transfer in 3D are used for detailed calculations of  sources with well-known geometries. Examples include RADMC-3D [@Dullemond:2012] and LIME [@Brinch:2010]. However, a full 3D calculation is often too computationally expensive if a large number of model calculations is needed to explore the parameter space. This applies especially in the case of non-LTE. In such a situation, 1D codes that are able to quickly provide an approximate solution are a common alternative. In this respect, the 1D non-LTE code RADEX [@vanderTak:2007] has gained considerable popularity: as of February 28, 2025, the RADEX paper by @vanderTak:2007 has 1361 citations. RADEX is a code written in Fortran that solves the radiative transfer of a uniform medium using an escape probability formalism. For an input column density, kinetic temperature, line width and collider density, the program outputs excitation temperatures and line fluxes.
+
+However, the Fortran nature of RADEX makes it somewhat difficult to use for the younger generation of astronomers that is more used to scripting with python. While some python wrappers of RADEX exist (for example pyradex, @pyradex)
+
+
+
+A crucial quantity determining the emission and absorption of photons is the fractional level population, that is, the fraction of molecules residing in each energy level. This is because emission and absorption of photons happens via transitions between the different energy levels. The level population of a specific transition is often characterised by the *excitation temperature* $T_\mathrm{ex}$, defined by
 \begin{equation}
 \frac{n_2}{n_1} = \frac{g_2}{g_1}e^{-\Delta E/(kT_\mathrm{ex})}
 \end{equation}
-Here, $n_2$ and $n_1$ are the number densities of molecules in the upper and lower level of the transitions, respectively, $g_2$ and $g_1$ are the statistical weights, $\Delta E$ is the energy difference between the levels and $k$ is the Boltzmann constant.
+Here, $n_2$ and $n_1$ are the number densities of molecules in the upper and lower level of the transition, respectively, $g_2$ and $g_1$ are the statistical weights, $\Delta E$ is the energy difference between the levels and $k$ is the Boltzmann constant.
+
+In local thermodynamic equilibrium (LTE), the excitation temperature equals the kinetic temperature for all transitions. LTE applies if transitions induced by collisions are frequent enough to thermalise the level population. In other words, the number density of colliders needs to be high enough for LTE to apply. Thus, assuming LTE, the level population is known (for a given kinetic gas temperature), which considerably simplifies the problem.
+
+On the other hand, in a non-LTE situation, the level population needs to be explicitly calculated.
 
 
 Line emission occurs when a molecule transitions from a higher to a lower energy level, thereby emitting a photon with a wavelength that corresponds to the two levels. This can either happen spontaneously (spontaneous emission) or by interaction with another photon of the same wavelength (stimulated emission). On the other hand, a molecule can also absorb a photon, thereby transitioning from a lower to a higher energy level. Finally, transitions (both excitation and de-excitation) can also occur when the molecule collides with another particle. In this latter case, the energy is exchanged in the form of kinetic energy and no photons are involved.
