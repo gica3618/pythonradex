@@ -1,5 +1,5 @@
 ---
-title: 'pythonradex: non-LTE radiative transfer in pure python'
+title: 'pythonradex: a python implementation of the non-LTE radiative transfer code RADEX with additional functionality'
 tags:
   - python
   - astronomy
@@ -18,25 +18,15 @@ affiliations:
 date: 27 February 2025
 bibliography: paper.bib
 
-# Optional fields if submitting to a AAS journal too, see this blog post:
-# https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-aas-journal: Astrophysical Journal <- The name of the AAS journal.
 ---
 
 # Summary
 
-The forces on stars, galaxies, and dark matter under external gravitational
-fields lead to the dynamical evolution of structures in the universe. The orbits
-of these bodies are therefore key to understanding the formation, history, and
-future state of galaxies. The field of "galactic dynamics," which aims to model
-the gravitating components of galaxies to study their structure and evolution,
-is now well-established, commonly taught, and frequently used in astronomy.
-Aside from toy problems and demonstrations, the majority of problems require
-efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration).
+A very common task in astronomical research is to use flux measurements to estimate the physical parameters (temperature, mass, density etc.) of a gas. This requires a radiative transfer calculation, that is, a calculation of how the radiation propagates in the medium via emission and absorption. The RADEX code [@vanderTak:2007]
 
 # Statement of need
+
+Line emission occurs when an atom or molecule transitions from a higher to a lower energy level by emitting a photon with a wavelength that corresponds to the energy difference between the upper and lower level. 
 
 `Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
 enables wrapping low-level languages (e.g., C) for speed without losing
