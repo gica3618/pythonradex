@@ -43,7 +43,7 @@ The pythonradex code addresses this concerns. It is written in pure python, thus
 
 # Implementation
 
-pythonradex implements the Accelerated Lambda Iteration (ALI) scheme presented by @Rybicki1992 in their section 2.3 ("full preconditioning strategy"). Same as RADEX, an escape probability equation (which depends on the geometry chosen by the user) is used to calculate the radiation field for a given level population, allowing to solve the radiative transfer iteratively. To speed up the convergence, ng-acceleration [@Ng1974] is employed. To make the code faster, critical parts are just-in-time compiled using the numba package [@Lam2015].
+pythonradex implements the Accelerated Lambda Iteration (ALI) scheme presented by @Rybicki1992 in their section 2.3 ("full preconditioning strategy"). Same as RADEX, an escape probability equation (which depends on the geometry chosen by the user) is used to calculate the radiation field for a given level population, allowing to solve the radiative transfer iteratively. To speed up the convergence, ng-acceleration [@Ng:1974] is employed. To make the code faster, critical parts are just-in-time compiled using the numba package [@Lam:2015].
 
 pythonradex allows the user to choose among the following geometries:
 
