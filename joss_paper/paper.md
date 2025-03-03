@@ -38,7 +38,11 @@ Some python wrappers of RADEX exist, for example pyradex [@pyradex] or ndradex [
 
 # Implementation
 
-pythonradex implements the Accelerated Lambda Iteration (ALI) scheme presented by @Rybicki1992. Like RADEX, an escape probability equation is used to calculate the radiation field for a given level population. This allows solving the radiative transfer iteratively. To speed up the convergence, ng-acceleration [@Ng1974] is employed. To make the code faster, critical parts are just-in-time compiled using the numba package [@Lam2015]. pythonradex supports four geometries (static sphere, large velocity gradient (LVG) sphere, static slab, LVG slab).
+pythonradex implements the Accelerated Lambda Iteration (ALI) scheme presented by @Rybicki1992. Like RADEX, an escape probability equation is used to calculate the radiation field for a given level population. This allows solving the radiative transfer iteratively. To speed up the convergence, ng-acceleration [@Ng1974] is employed. To make the code faster, critical parts are just-in-time compiled using the numba package [@Lam2015]. pythonradex supports four geometries: static sphere, large velocity gradient (LVG) sphere, static slab and LVG slab. Effects of internal continuum and overlapping lines are not supported for LVG geometries.
+
+Figure \autoref{fig:HCN_spectrum} illustrates the capability of pythonradex to solve the radiative transfer for overlapping lines.
+
+![Spectrum of HCN around 177.3 GHz computed with pythonradex. The blue solid and orange dotted lines show the spectrum calculated with cross-excitation effects turned on and off, respectively. The position and width of the individual hyperfine transitions is illustrated by the black dotted lines.\label{fig:HCN_spectrum}](HCN_spec)
 
 # Benchmarking
 
@@ -46,21 +50,21 @@ pythonradex was benchmarked against RADEX for a number of example problems, gene
 
 # Performance
 
-The code architecture is optimised for the typical use case of a parameter space exploration. On a laptop with four i7-7700HQ cores (eight virtual cores), running a grid of CO models was three times faster with pythonradex compared to RADEX. However, the CPU usage of pythonradex was much higher than RADEX during this test. Still, it demonstrates that pythonradex might be faster than RADEX depending on the setup.
+pythonradex is optimised for the use case of a parameter space exploration. On a laptop with four i7-7700HQ cores (eight virtual cores), running a grid of CO models was three times faster with pythonradex compared to RADEX. However, the CPU usage of pythonradex was much higher than RADEX during this test. Still, it demonstrates that pythonradex might be faster than RADEX depending on the setup.
 
-# Some differences between RADEX and pythonradex
+# Additional differences between RADEX and pythonradex
 
 ## Output flux
 
-The line fluxes output by RADEX are "background subtracted". More concretely, RADEX computes the intensity as $(B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})$, where $B_\nu$ is the Planck function, $I_\mathrm{bg}$ the external background and $\tau_\nu$ the optical depth. The idea is that these fluxes can directly be compared to observations. However, whether this formula is correct or not depends on the telescope (for example, it is not correct for an interferometer like ALMA). On the other hand, pythonradex simply outputs the pure line flux without any background subtraction (for a slab geometry, the intensity is computed as $B_\nu(T_\mathrm{ex})(1-e^{-\tau_\nu})$). This gives the user more flexibility for the comparison to observations.
+RADEX computes line fluxes based on a "background subtracted" intensity given by $(B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})$, where $B_\nu$ is the Planck function, $I_\mathrm{bg}$ the external background and $\tau_\nu$ the optical depth. This may or may not be the right quantity to be compared to observations. In contrast, pythonradex simply outputs the pure line flux (for example, for a slab geometry, fluxes are based on an intensity $B_\nu(T_\mathrm{ex})(1-e^{-\tau_\nu})$).
 
-## Different flux for spherical geometry
+## Flux for spherical geometry
 
-RADEX produces inconsistent fluxes in spherical geometries because it always uses the flux formula for a slab, regardless of the adopted geometry. This can be demonstrated by considering the optically thin limit where the total flux (in [W/m$^2$]) is simply given by
+Regardless of the adopted geometry, RADEX always uses the flux formula for a slab geometry. This produces inconsistent results. Consider the optically thin limit where the total flux (in [W/m$^2$]) for a sphere is simply given by
 \begin{equation}
 F_\mathrm{thin} = V_\mathrm{sphere}n_2A_{21}\Delta E \frac{1}{4\pi d^2}
 \end{equation}
-with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ is the volume of the sphere, $n$ the (constant) number density, $x_2$ the fractional level population of the upper level, $A_{21}$ the Einstein coefficient, $\Delta E$ the energy of the transition and $d$ the distance of the source. pythonradex correctly reproduces this limiting case by using the formula by @Osterbrock1974. RADEX overestimates the optically thin flux by a factor 1.5.
+with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ the volume of the sphere, $n$ the number density, $x_2$ the fractional level population of the upper level, $A_{21}$ the Einstein coefficient, $\Delta E$ the energy of the transition and $d$ the distance. pythonradex correctly reproduces this limiting case by using the formula by @Osterbrock1974, while RADEX overestimates the optically thin flux by a factor 1.5.
 
 # Dependencies
 
