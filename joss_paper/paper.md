@@ -42,7 +42,7 @@ pythonradex implements the Accelerated Lambda Iteration (ALI) scheme presented b
 
 Figure \autoref{fig:HCN_spectrum} illustrates the capability of pythonradex to solve the radiative transfer for overlapping lines.
 
-![Spectrum of HCN around 177.3 GHz computed with pythonradex. The blue solid and orange dotted lines show the spectrum calculated with cross-excitation effects turned on and off, respectively. The position and width of the individual hyperfine transitions is illustrated by the black dotted lines.\label{fig:HCN_spectrum}](HCN_spec)
+![Spectrum of HCN around 177.3 GHz computed with pythonradex. The blue solid and orange dotted lines show the spectrum calculated with cross-excitation effects turned on and off, respectively. The position and width of the individual hyperfine transitions is illustrated by the black dotted lines.\label{fig:HCN_spectrum}](HCN_spec.pdf)
 
 # Benchmarking
 
