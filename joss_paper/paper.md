@@ -62,7 +62,7 @@ F_\mathrm{thin} = V_\mathrm{sphere}n_2A_{21}\Delta E \frac{1}{4\pi d^2}
 \end{equation}
 with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ is the volume of the sphere, $n$ the (constant) number density, $x_2$ the fractional level population of the upper level, $A_{21}$ the Einstein coefficient, $\Delta E$ the energy of the transition and $d$ the distance of the source. pythonradex correctly reproduces this limiting case by using the formula by @Osterbrock1974. RADEX overestimates the optically thin flux by a factor 1.5.
 
-#Dependencies
+# Dependencies
 
 pythonradex depends on the following three packages:
 
