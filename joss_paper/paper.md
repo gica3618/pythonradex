@@ -56,7 +56,7 @@ pythonradex is optimised for the use case of a parameter space exploration. On a
 
 ## Output flux
 
-RADEX computes line fluxes based on a "background subtracted" intensity given by $(B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})$, where $B_\nu$ is the Planck function, T_\mathrm{ex}$ the excitation temperature, $I_\mathrm{bg}$ the external background and $\tau_\nu$ the optical depth. This may or may not be the right quantity to be compared to observations. In contrast, pythonradex does not apply any observational correction, thus giving more flexibility to the user.
+RADEX computes line fluxes based on a "background subtracted" intensity given by $(B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})$, where $B_\nu$ is the Planck function, $T_\mathrm{ex}$ the excitation temperature, $I_\mathrm{bg}$ the external background and $\tau_\nu$ the optical depth. This may or may not be the right quantity to be compared to observations. In contrast, pythonradex does not apply any observational correction, thus giving more flexibility to the user.
 
 ## Flux for spherical geometry
 
