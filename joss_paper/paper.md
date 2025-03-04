@@ -42,7 +42,7 @@ pythonradex is written in pure python and implements the Accelerated Lambda Iter
 
 \autoref{fig:HCN_spectrum} illustrates the capability of pythonradex to solve the radiative transfer for overlapping lines. Note that treating overlapping lines adds considerable computational cost because averages over line profiles need to be calculated.
 
-![Spectrum of HCN around 177.3 GHz computed with pythonradex. The blue solid and orange dotted lines show the spectrum calculated with cross-excitation effects turned on and off, respectively. The positions and widths of the individual hyperfine transitions are illustrated by the black dotted lines.\label{fig:HCN_spectrum}](HCN_spec.pdf)
+![Spectrum of HCN around 177.3 GHz computed with pythonradex. The blue solid and orange dashed lines show the spectrum calculated with cross-excitation effects turned on and off, respectively. The positions and widths of the individual hyperfine transitions are illustrated by the black dotted lines.\label{fig:HCN_spectrum}](HCN_spec.pdf)
 
 # Benchmarking
 
@@ -56,7 +56,7 @@ pythonradex is optimised for the use case of a parameter space exploration. On a
 
 ## Output flux
 
-RADEX computes line fluxes based on a "background subtracted" intensity given by $(B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})$, where $B_\nu$ is the Planck function, $I_\mathrm{bg}$ the external background and $\tau_\nu$ the optical depth. This may or may not be the right quantity to be compared to observations. In contrast, pythonradex simply outputs the pure line flux, leaving 
+RADEX computes line fluxes based on a "background subtracted" intensity given by $(B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})$, where $B_\nu$ is the Planck function, T_\mathrm{ex}$ the excitation temperature, $I_\mathrm{bg}$ the external background and $\tau_\nu$ the optical depth. This may or may not be the right quantity to be compared to observations. In contrast, pythonradex does not apply any observational correction, thus giving more flexibility to the user.
 
 ## Flux for spherical geometry
 
