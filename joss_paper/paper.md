@@ -34,7 +34,7 @@ If the medium is dense enough, local thermodynamic equilibrium (LTE) maybe be as
 
 Various codes are available to solve the radiative transfer. Codes solving the radiative transfer in 3D are used for detailed calculations of sources with well-known geometries. Examples include RADMC-3D [@Dullemond2012] and LIME [@Brinch2010]. However, a full 3D calculation is often too computationally expensive if a large parameter space needs to be explored, in particular in non-LTE. 1D codes that quickly provide an approximate solution are a commonly used alternative. In this respect, the 1D non-LTE code RADEX [@vanderTak2007] has gained considerable popularity: as of February 28, 2025, the RADEX paper by @vanderTak2007 has 1361 citations. The Fortan code RADEX solves the radiative transfer of a uniform medium using an escape probability formalism.
 
-The python programming language is now very widely used in astronomy. Still, no python version of RADEX is available, although some python wrappers exist (for example SpectralRadex [@SpectralRadex] or ndradex [@ndradex]). Furthermore, RADEX cannot take into account the effects of an internal continuum field (typically arising from dust that is mixed with the gas), nor cross-excitation effects arising when transitions overlap in frequency. The pythonradex code addresses these concerns.
+The python programming language is now very widely used in astronomy. Still, no python version of RADEX is available, although some python wrappers (for example SpectralRadex [@SpectralRadex] or ndradex [@ndradex]) and even a Julia version [@jadex] exist. Furthermore, RADEX cannot take into account the effects of an internal continuum field (typically arising from dust that is mixed with the gas), nor cross-excitation effects arising when transitions overlap in frequency. The pythonradex code addresses these concerns.
 
 # Implementation
 
@@ -76,6 +76,6 @@ pythonradex depends on the following packages:
 
 # Acknowledgements
 
-I would like to thank Simon Bruderer for his helpful clarifications about the ALI method. I also thank Andrés Asensio Ramos for helpful discussions about the LVG geometry and the MOLPOP-CEP code.
+I thank Simon Bruderer for his helpful clarifications about the ALI method, and Andrés Asensio Ramos for helpful discussions about the LVG geometry and the MOLPOP-CEP code.
 
 # References
