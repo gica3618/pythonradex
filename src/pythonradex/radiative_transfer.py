@@ -133,7 +133,8 @@ class Cloud():
         if collider_densities is not None:
             for collider in collider_densities.keys():
                 if collider not in self.emitting_molecule.coll_transitions:
-                    raise ValueError(f'no data for collider "{collider}" available')
+                    raise ValueError(f'no data for collider "{collider}" available'
+                                    +' in the LAMDA data file')
         if 'LVG' in self.geometry_name:
             if not (T_dust in (None,0) and tau_dust in (None,0)):
                 #this is because for LVG, it is assumed that radiation escaping
