@@ -56,6 +56,19 @@ class Molecule():
         self.n_levels = len(self.levels)
         self.n_rad_transitions = len(self.rad_transitions)
         self.set_partition_function(partition_function=partition_function)
+        #collecting rad transition parameters, needed for numba-compiled functions:
+        self.A21 = np.array([line.A21 for line in self.rad_transitions])
+        self.B21 = np.array([line.B21 for line in self.rad_transitions])
+        self.B12 = np.array([line.B12 for line in self.rad_transitions])
+        self.nu0 = np.array([line.nu0 for line in self.rad_transitions])
+        self.gup_rad_transitions = np.array([line.up.g for line in self.rad_transitions])
+        self.glow_rad_transitions = np.array([line.low.g for line in self.rad_transitions])
+        self.nlow_rad_transitions = np.array([line.low.number for line in
+                                              self.rad_transitions])
+        self.nup_rad_transitions = np.array([line.up.number for line in
+                                             self.rad_transitions])
+        self.Delta_E_rad_transitions = np.array([line.Delta_E for line in
+                                                 self.rad_transitions])
 
     def set_partition_function(self,partition_function):
         if partition_function is None:
@@ -96,6 +109,24 @@ class Molecule():
             return np.concatenate([p.reshape(shape) for p in pops],axis=0)
         else:
             return np.array(pops)
+
+    def get_Tex(self,level_population):
+        r'''Compute the excitation temperature for all radiative transitions
+        
+        Args:
+            level_population (numpy.ndarray): the fractional population of each level, 
+                where the levels are in the order of the LAMDA file
+        
+        Returns:
+            numpy.ndarray: the excitation temperature for each radiative transition,
+            in the order as in the LAMDA file
+        '''
+        Tex = atomic_transition.Tex(
+                   Delta_E=self.Delta_E_rad_transitions,g_up=self.gup_rad_transitions,
+                   g_low=self.glow_rad_transitions,
+                   x1=level_population[self.nlow_rad_transitions],
+                   x2=level_population[self.nup_rad_transitions])
+        return Tex
 
     def get_rad_transition_number(self,transition_name):
         '''Returns the transition number for a given transition name'''
@@ -167,21 +198,9 @@ class EmittingMolecule(Molecule):
             self.Tkin_data_limits[collider] = np.min(self.Tkin_data[collider]),\
                                                np.max(self.Tkin_data[collider])
         self.set_K21_matrix()
-        #collecting parameters, needed for numba-compiled functions:
-        self.A21 = np.array([line.A21 for line in self.rad_transitions])
-        self.B21 = np.array([line.B21 for line in self.rad_transitions])
-        self.B12 = np.array([line.B12 for line in self.rad_transitions])
-        self.nu0 = np.array([line.nu0 for line in self.rad_transitions])
+        #collecting phi_nu0 and coll parameters, needed for numba-compiled functions:
         self.phi_nu0 = np.array([line.line_profile.phi_nu(line.nu0) for line
                                  in self.rad_transitions])
-        self.gup_rad_transitions = np.array([line.up.g for line in self.rad_transitions])
-        self.glow_rad_transitions = np.array([line.low.g for line in self.rad_transitions])
-        self.nlow_rad_transitions = np.array([line.low.number for line in
-                                              self.rad_transitions])
-        self.nup_rad_transitions = np.array([line.up.number for line in
-                                             self.rad_transitions])
-        self.Delta_E_rad_transitions = np.array([line.Delta_E for line in
-                                                 self.rad_transitions])
         self.coll_gups = {}
         self.coll_glows = {}
         self.coll_DeltaEs = {}
@@ -194,7 +213,6 @@ class EmittingMolecule(Molecule):
                                                     coll_transitions])
             self.coll_nlow[collider] = np.array([c.low.number for c in coll_transitions])
             self.coll_nup[collider] = np.array([c.up.number for c in coll_transitions])
-
 
     def get_tau_nu0_lines(self,N,level_population):
         r'''Compute the optical depth at the rest frequency of all lines (dust
@@ -229,24 +247,6 @@ class EmittingMolecule(Molecule):
         '''
         level_population = self.LTE_level_pop(T=T)
         return self.get_tau_nu0_lines(N=N,level_population=level_population)
-
-    def get_Tex(self,level_population):
-        r'''Compute the excitation temperature for all radiative transitions
-        
-        Args:
-            level_population (numpy.ndarray): the fractional population of each level, 
-                where the levels are in the order of the LAMDA file
-        
-        Returns:
-            numpy.ndarray: the excitation temperature for each radiative transition,
-            in the order as in the LAMDA file
-        '''
-        Tex = atomic_transition.Tex(
-                   Delta_E=self.Delta_E_rad_transitions,g_up=self.gup_rad_transitions,
-                   g_low=self.glow_rad_transitions,
-                   x1=level_population[self.nlow_rad_transitions],
-                   x2=level_population[self.nup_rad_transitions])
-        return Tex
 
     def identify_overlapping_lines(self):
         self.overlapping_lines = []

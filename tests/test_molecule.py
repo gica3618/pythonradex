@@ -153,7 +153,7 @@ def test_get_tau_line_nu():
             assert np.all(expected_tau==tau_line_funcs[i](nu))
 
 def test_Tex():
-    for mol in emitting_molecules.values():
+    for mol in list(emitting_molecules.values()) + list(molecules.values()):
         level_population = rng.random(mol.n_levels)
         level_population /= np.sum(level_population)
         Tex = mol.get_Tex(level_population=level_population)
