@@ -14,7 +14,7 @@ The core of ``pyhonradex`` is the ``Cloud`` class which is used to solve the rad
 
 Reading LAMDA files
 -------------------------
-``pyhonradex`` provides a convenient function in the ``LAMDA_file`` module to read files from the LAMDA database:
+``pyhonradex`` provides a convenient function in the ``LAMDA_file`` module to read files that follow the `LAMDA format <https://home.strw.leidenuniv.nl/~moldata/molformat.html>`_, for example from the `EMAA <https://emaa.osug.fr/>`_ or `LAMDA <https://home.strw.leidenuniv.nl/~moldata/>`_ databases:
 
 .. autofunction:: pythonradex.LAMDA_file.read
 

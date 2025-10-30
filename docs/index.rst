@@ -10,7 +10,7 @@ Welcome to the ``pyhonradex`` documentation!
 
 ``pythonradex`` is a python re-implementation of the RADEX code [vanderTak07]_. Depending on the setup, it can be faster than RADEX when calculating a grid of models. It also provides additional functionality that is not included in RADEX (treatment of overlapping lines, treatment of internal dust continuum, output of spectra,...).
 
-``pyhonradex`` also provides a convenient method to read files from the LAMDA_ database.
+``pyhonradex`` also provides a convenient method to read files in the LAMDA format (e.g. from the EMAA_ or LAMDA_ databases).
 
 Please see the :ref:`example notebooks<examples>` for an overview of the functionalities offered by ``pythonradex``.
 
@@ -67,3 +67,5 @@ Bibliography
 .. _RADEX: http://home.strw.leidenuniv.nl/~moldata/radex.html
 
 .. _LAMDA: http://home.strw.leidenuniv.nl/~moldata/
+
+.. _EMAA: https://emaa.osug.fr/

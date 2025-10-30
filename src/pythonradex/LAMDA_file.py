@@ -16,8 +16,9 @@ def is_comment(line):
 
 def read(datafilepath,read_frequencies,read_quantum_numbers=False):
     '''
-    Read a LAMDA data file. LAMDA files can be downloaded from the LAMDA database
-    at http://home.strw.leidenuniv.nl/~moldata
+    Read a data file that follows the LAMDA format (https://home.strw.leidenuniv.nl/~moldata/molformat.html).
+    Such files can for example be downloaded from the EMAA (https://emaa.osug.fr/)
+    or the LAMDA (http://home.strw.leidenuniv.nl/~moldata) databases.
 
     Args:
         datafilepath (:obj:`str`): The filepath to the LAMDA file.
