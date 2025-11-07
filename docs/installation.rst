@@ -1,7 +1,7 @@
 Installation
 =================
 
-``pythonradex`` requires python version >=3.10. ``pythonradex`` is available on `PyPi <https://pypi.org/project/pythonradex/>`_. It can be installed with the ``pip`` command as follows:
+``pythonradex`` currently supports python versions 3.10, 3.11, 3.12 and 3.13. ``pythonradex`` is available on `PyPi <https://pypi.org/project/pythonradex/>`_. It can be installed with the ``pip`` command as follows:
 
 .. code-block:: bash
 
