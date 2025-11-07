@@ -115,14 +115,14 @@ Before submitting a pull request, please clear all output and re-run the noteboo
 
 1. Create a new branch:
 
-    git checkout -b fix-something
+        git checkout -b fix-something
 
 2. Make your changes.
 3. Run tests to ensure everything passes.
 4. Commit with a clear message
 5. Push your branch:
 
-    git push origin fix-something
+        git push origin fix-something
 
 6. Open a **Pull Request** on GitHub against the `main` branch.
 
