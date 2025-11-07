@@ -134,7 +134,7 @@ By contributing to `pythonradex`, you agree that your contributions will be lice
 
 ---
 
-Thank you for contributing to **pythonradex**!
+Thank you for contributing to `pythonradex`!
 
 
 *This file was initially drafted with assistance from ChatGPT (OpenAI GPT-5).*

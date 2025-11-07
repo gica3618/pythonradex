@@ -2,4 +2,6 @@ pythonradex solves the 1D non-LTE radiative transfer for a homogeneous medium. I
 
 For more details, please refer to the documentation: http://pythonradex.readthedocs.io/
 
+For questions, bug reports, or feature suggestions, please open an issue on github.
+
 pythonradex is written and maintained by Gianni Cataldi

@@ -25,7 +25,7 @@ Please see the :ref:`example notebooks<examples>` for an overview of the functio
    geometry
    difference_pythonradex_RADEX
    faq
-   help
+   contact
    API
    citation
    
