@@ -178,35 +178,5 @@ print("max flux residual:")
 for nH2,flux_residual in zip(nH2_grid,flux_residuals):
     print(f"nH2 = {nH2/constants.centi**-3} cm-3: {np.max(flux_residual)}")
 
-
 if save_figure:
     plt.savefig("pythonradex_vs_radex.pdf",format="pdf",bbox_inches="tight") 
-
-
-'''
-
-#calculate a grid of models
-
-coll_densities = {'ortho-H2':1e4/constants.centi**3,'para-H2':1e4/constants.centi**3}
-Tex_grid = np.empty((N_grid.size,Tkin_grid.size,n_trans))
-Tex_grid_radex = Tex_grid.copy()
-for i,N in enumerate(N_grid):
-    for j,Tkin in enumerate(Tkin_grid):
-        radex_model = compute_RADEX_model(N=N,Tkin=Tkin,
-                                          coll_partner_densities=coll_densities)
-        pythonradex_model = compute_pythonradex_model(
-                                 N=N,Tkin=Tkin,coll_partner_densities=coll_densities)
-        Tex_pythonradex = pythonradex_model[0]
-        Tex_grid[i,j,:] = Tex_pythonradex
-        Tex_radex = radex_model[0]
-        Tex_grid_radex[i,j,:] = Tex_radex
-Tex_residual = np.abs((Tex_grid-Tex_grid_radex)/Tex_grid_radex)
-Tex_residual = np.mean(Tex_residual,axis=-1)
-
-N_GRID,TKIN_GRID = np.meshgrid(N_grid,Tkin_grid,indexing='ij')
-fig,ax = plt.subplots()
-im = ax.pcolormesh(N_GRID,TKIN_GRID,np.log10(Tex_residual))
-fig.colorbar(im,ax=ax)
-ax.set_xscale("log")
-ax.set_yscale("log")
-'''
