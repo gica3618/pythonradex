@@ -40,19 +40,19 @@ The python programming language is now very widely used in astronomy. Still, no 
 
 `pythonradex` is written in python and implements the Accelerated Lambda Iteration (ALI) scheme presented by @Rybicki1992. Like `RADEX`, an escape probability equation is used to calculate the radiation field for a given level population. This allows solving the radiative transfer iteratively. To speed up the convergence, ng-acceleration [@Ng1974] is employed. Critical parts of the code are just-in-time compiled using `numba` [@Lam2015].
 
-`pythonradex` supports four geometries: **two static geometries (slab and sphere), and two geometries (again slab and sphere) assuming a large velocity gradient (LVG). In the LVG approximation, it is assumed that all regions of the source are Doppler shifted with respect to each other due to a velocity gradient. This means that all photons escape the source, unless absorbed locally [e.g. @Elitzur1992].**
+`pythonradex` supports four geometries: **two static geometries (slab and sphere), and two large-velocity-gradient (LVG) geometries (again slab and sphere). In the LVG approximation, it is assumed that all regions of the source are Doppler shifted with respect to each other due to a velocity gradient. This means that all photons escape the source, unless absorbed locally [e.g. @Elitzur1992].**
 
-**Note that currently, effects of internal continuum and overlapping lines can only be included for the static geometries. Another limitation is that only a single molecule can be considered at the time, so solving the radiative transfer of overlapping lines of different molecule is not supported yet.**
+**Note that currently, effects of internal continuum and overlapping lines can only be included for the static geometries. Another limitation is that only a single molecule can be considered at the time. Thus, solving the radiative transfer of overlapping lines of different molecule is not supported yet. Also, treating overlapping lines adds considerable computational cost because averages over line profiles need to be calculated.**
 
 **Like `RADEX`, `pythonradex` needs a file in LAMDA-format as input to read the molecular data. Such files can for example be downloaded from the LAMDA [@Schoier2005] or EMAA [@EMAA] databases.**
 
-\autoref{fig:HCN_spectrum} illustrates the capability of `pythonradex` to solve the radiative transfer for overlapping lines. Note that treating overlapping lines adds considerable computational cost because averages over line profiles need to be calculated.
-
-![Spectrum of HCN around 177.3 GHz computed with `pythonradex`. The blue solid and orange dashed lines show the spectrum calculated with cross-excitation effects turned on and off, respectively. The positions and widths of the individual hyperfine transitions are illustrated by the black dotted lines.\label{fig:HCN_spectrum}](HCN_spec.pdf)
-
 # Benchmarking
 
-`pythonradex` was benchmarked against `RADEX` for a number of example problems, generally with excellent agreement. To test the treatment of overlapping lines, `pythonradex` was tested against the `MOLPOP-CEP` code [@AsensioRamos2018], again showing good agreement.
+`pythonradex` was benchmarked against `RADEX` for a number of example problems, generally with excellent agreement **(see Figure \autoref{fig:pythonradex_vs_radex} for an example).** To test the treatment of overlapping lines, `pythonradex` was tested against the `MOLPOP-CEP` code [@AsensioRamos2018], again showing good agreement, **as illustrated in \autoref{fig:HCN_spectrum}.**
+
+![The relative difference between the CO 2-1 fluxes computed with `pythonradex` and `RADEX`. Each panel shows a parameter space of column density and kinetic temperature with a fixed H$_2$ density. Values below 1% are clipped to the colormap minimum (1%). Values above 50% are shown in red. Significant differences in the predicted fluxes are found for high column densities and temperatures paired with low H$_2$ densities.\label{fig:pythonradex_vs_radex}](pythonradex_vs_radex.pdf)
+
+![Spectrum of HCN around 177.3 GHz computed with `pythonradex` **and** `MOLPOP-CEP`.** Good agreement is found when treating line overlap. Interestingly, the spectra differ somewhat when ignoring overlap.** The positions and widths of the individual hyperfine components are illustrated by the black dotted lines.\label{fig:HCN_spectrum}](HCN_spec.pdf)
 
 # Performance
 

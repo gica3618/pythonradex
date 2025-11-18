@@ -1,0 +1,12 @@
+This file contains the MOLPOP molecular list. A molecule whose mol_name is,
+e.g., XYZ should have a data file XYZ.lev with listing of N_lev energy levels
+and XYZ.aij tabulating their A-coefficients. mol_mass is the mass number. 
+When adding another molecule make sure to terminate  data lines with CR.
+
+                      mol_name          N_lev       mol_mass
+>
+'CO'             41       28.0      
+'H2O_ortho'      48       18.0      
+'H2O_para'       48       18.0      
+'OH'             32       17.0      
+'SiO_vib'       100       44.0      

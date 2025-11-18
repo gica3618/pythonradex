@@ -1,0 +1,55 @@
+\documentclass[preprint,12pt]{aastex}
+\usepackage{amssymb,amsmath}
+
+ \textwidth=6.5in
+ \textheight=9in
+ \topmargin=-0.75in
+ \headheight=.15in
+ \headsep=.35in
+ \oddsidemargin=0in \evensidemargin=0in
+ \parindent=1.2em
+ \parskip=0.5ex
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\eq#1{\begin{equation} #1 \end{equation}}
+
+\def\Dv       {\hbox{$\Delta v$}}
+\def\Tbr      {\hbox{$T_{\rm br}$}}
+\def\Tx       {\hbox{$T_{\rm ex}$}}
+\def\TB       {\hbox{$T_{\rm B}$}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%\title
+\thispagestyle{empty}
+
+\section*{Integrated Brightness Temperature for MOLPOP-CEP\\
+  Moshe, June 6, 2014}
+
+
+For uniform conditions, the line brightness temperature at frequency shift $x =
+v/\Dv$ from line center, where \Dv\ is the thermal linewidth, is
+\eq{
+   \Tbr(x) = \Tx\left(1 - e^{-\tau(x)}\right)
+}
+where \Tx\ is the line excitation temperature. The optical depth $\tau(x)$ is
+\eq{
+   \tau(x) = \frac{\tau_0}{\mu}e^{-x^2}
+}
+where $\tau_0$ is the optical depth at line center and $\mu$ the viewing angle
+from the slab normal. Therefore, the line-integrated brightness in
+K\,km\,s$^{-1}$ is
+\eq{
+  \TB \equiv \int \Tbr dv = \Tx\Dv\int \left(1 - e^{-\tau(x)}\right)dx
+}
+Since MOLPOP produces the linewidth \Dv\ in the quantity {\tt vt} (it is
+internally converted to cm\,s$^{-1}$ and must be divided by 10$^5$) and all
+internal optical depths are at line-center, implementing this expression is
+straightforward. In CEP runs, the integration is performed zone by zone, then
+added up.
+
+
+\end{document}

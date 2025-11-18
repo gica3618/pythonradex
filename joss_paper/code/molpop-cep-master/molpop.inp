@@ -1,0 +1,34 @@
+%
+%   This is a sample master input file for MOLPOP
+%   This sample is ready to run and should serve to check
+%   the first run of the program.
+%   Each input file will generate a corresponding output in the 
+%   same directory. It can be checked against the output file with
+%   the same name in subdireectory OutpuTest
+%
+
+%Samples/CO/no_dust
+%Samples/CO/dust_absorption
+%Samples/CO/Rad1
+%Samples/CO/Rad2
+%Samples/CO/Rad3
+
+% CO with variable conditions. No grid refinement
+%Samples/CO/CEP_variable
+
+% CO with variable conditions. Grid refinement. Takes long time
+% Samples/CO/CEP_variable_convergence
+%Samples/CO/CEP_const
+%Samples/CO/SLED_nE4_T100
+
+% CO with constant physical conditions, increasing strategy and grid convergence. Takes long time
+%Samples/CO/CEP_const
+
+%Samples/H2O/para
+%Samples/H2O/ortho
+ 
+%Samples/OH/OH_overlap
+
+%Gianni models:
+Gianni_molpopcep_models/HCN_model_with_overlap
+Gianni_molpopcep_models/HCN_model_no_overlap

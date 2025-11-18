@@ -11,31 +11,56 @@ import general
 from pythonradex import radiative_transfer,helpers
 import numpy as np
 from scipy import constants
+import matplotlib.pyplot as plt
 
 #calculate some simple CO models to make sure I understand the inputs of molpop-cep
 
 ref_transitions = [1,2]
-
-def FWHM(Doppler_param):
-    return 2*np.sqrt(np.log(2))*Doppler_param
-
+Doppler = 1*constants.kilo
 datafilepath = general.datafilepath('co.dat')
-width_v = FWHM(1*constants.kilo)
-cloud = radiative_transfer.Cloud(
-                      datafilepath=datafilepath,geometry='uniform slab',
-                      line_profile_type='rectangular',width_v=width_v)
-
 n = 1e4/constants.centi**3
 Tkin = 100
 ext_background = helpers.generate_CMB_background()
+solid_angle = 1
+
+width_v = 2*np.sqrt(np.log(2))*Doppler
+cloud = radiative_transfer.Cloud(
+                      datafilepath=datafilepath,geometry='uniform slab',
+                      line_profile_type='Gaussian',width_v=width_v)
+
+molpop_cep_N = np.array((1e16,1e17,1e18,1e19))*constants.centi**-2/constants.kilo
+
+#from the .out file of molpop-cep:
+molpop_cep_tau_nu0 = [[1.54E-01,1.09E+00,6.30E+00,4.97E+01],[4.35E-01,2.26E+00,1.25E+01,9.76E+01]]
+molpop_cep_Tex = [[6.89E+01,7.36E+01,9.18E+01,9.85E+01],[4.18E+01,6.53E+01,8.94E+01,9.82E+01]]
+
 collider_densities = {'para-H2':n/2,'ortho-H2':n/2}
-for N in np.array([1e16,1e17,1e18,1e19])/constants.centi**2:
+for i,N_molpop in enumerate(molpop_cep_N):
+    N = N_molpop*Doppler
     print(f'N={N/constants.centi**-2:.1g} cm-2')
     cloud.update_parameters(N=N,Tkin=Tkin,collider_densities=collider_densities,
                             ext_background=ext_background,T_dust=0,tau_dust=0)
     cloud.solve_radiative_transfer()
-    for i in ref_transitions:
-        print(f'trans {i}:')
-        print(f'Tex={cloud.Tex[i]:.3g} K')
-        print(f'tau_nu0={cloud.tau_nu0_individual_transitions[i]}')
+    fig,axes = plt.subplots(2)
+    fig.suptitle(f"{N/constants.centi**-2:.2g} cm-2")
+    for j,trans_index in enumerate(ref_transitions):
+        print(f'trans {trans_index}:')
+        print(f'Tex={cloud.Tex[trans_index]:.3g} K (molpop: {molpop_cep_Tex[j][i]})')
+        print(f'tau_nu0={cloud.tau_nu0_individual_transitions[trans_index]}'
+              +f" (molpop: {molpop_cep_tau_nu0[j][i]})")
+        v = np.linspace(-3*width_v,3*width_v,100)
+        trans = cloud.emitting_molecule.rad_transitions[trans_index]
+        nu = trans.nu0*(1-v/constants.c)
+        spec = cloud.spectrum(solid_angle=solid_angle,nu=nu)
+        ax = axes[j]
+        ax.set_title(f"trans {trans_index}")
+        ax.plot(v/constants.kilo,spec,label="pythonradex")
+        width_nu = width_v/constants.c*trans.nu0
+        sigma_nu = helpers.FWHM2sigma(width_nu)
+        molpop_tau_nu = molpop_cep_tau_nu0[j][i]*np.exp(-(nu-trans.nu0)**2/(2*sigma_nu**2))
+        molpop_cep_spec = helpers.B_nu(nu=nu,T=molpop_cep_Tex[j][i])\
+                         *(1-np.exp(-molpop_tau_nu))
+        ax.plot(v/constants.kilo,molpop_cep_spec,label="molpop")
+        if j==0:
+            ax.legend(loc="best")
     print('\n')

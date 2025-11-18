@@ -1,0 +1,313 @@
+\documentclass[preprint,12pt]{aastex}
+\usepackage{amssymb,amsmath}
+
+ \textwidth=6.5in
+ \textheight=9in
+ \topmargin=-0.75in
+ \headheight=.15in
+ \headsep=.35in
+ \oddsidemargin=0in \evensidemargin=0in
+ \parindent=1.2em
+ \parskip=0.5ex
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\eq#1{\begin{equation} #1 \end{equation}}
+\def\<#1>    {\hbox{$\langle{#1}\rangle$}}
+\def\sub#1{_{\rm #1}}
+
+\def\Tcmb     {\hbox{$T_{\rm CMB}$}}
+\def\TRJ      {\hbox{$T_{\rm RJ}$}}
+\def\Tb       {\hbox{$T_{\rm br}$}}
+\def\Tbr      {\hbox{$\Delta T_{\rm br}$}}
+\def\TRJ      {\hbox{$\Delta T_{\rm RJ}$}}
+\def\Tx       {\hbox{$T_{\rm ex}$}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%\title
+\thispagestyle{empty}
+
+\section*{Brightness Temperature for MOLPOP-CEP\\
+  Moshe, October 4--30, 2013}
+
+\paragraph{Definitions:}
+
+For intensity $I_\nu$, brightness temperature \Tb\ is defined from $B_\nu(\Tb)
+= I_\nu$, where $B$ is the Planck function. Carl Heiles states that ``radio
+astronomers who observe mm-wave lines, for which the RJ approx is not valid,
+generally quote the antenna temperature as if the RJ approx were valid." That
+is, if $RJ$ is the Rayleigh Jeans form of $B$ and $\TRJ$ is the temperature
+obtained from this definition then
+\eq{\label{eq:TRJ}
+   RJ(T_{\rm RJ}) = B_\nu(\Tb)     \quad \Rightarrow \quad
+   T_{\rm RJ} = \frac{T_l}{e^{T_l/T_{\rm br}} - 1}
+}
+where $T_l = h\nu/k$. The limit $T_l \ll \Tb$ gives $T_{\rm RJ}$ = \Tb, as it
+should.
+
+Radio observers typically measure intensity $I_\nu$ in the direction of a cloud
+and subtract from it the empty sky measurement, which detects only the CMB. The
+result can be expressed in brightness temperature \Tbr, defined from
+\eq{
+   B_\nu(\Tbr) = I_\nu({\rm measured}) - B_\nu(\Tcmb)
+}
+The measured intensity includes the cloud emission $I_\nu$, which is the
+quantity of interest, and the transmitted CMB, namely
+\eq{
+  I_\nu({\rm measured}) = I_\nu + B_\nu(\Tcmb)e^{-\tau}
+}
+where $\tau$ is the cloud optical depth. Therefore
+\eq{\label{eq:CEP}
+  B(\Tbr) = I - B(\Tcmb)\left(1 -  e^{-\tau}\right)
+}
+and the subscript $\nu$ can be removed because everything is done at line
+center. Assuming all quantities, including level populations, to be uniform
+throughout the source, the intensity emerging perpendicular to its face is
+\eq{
+       I = B(\Tx)\left(1 -  e^{-\tau}\right)
+}
+so that
+\eq{\label{eq:EP}
+  B(\Tbr) = \left[B(\Tx) - B(\Tcmb) \right] \left(1 -  e^{-\tau}\right)
+}
+In both cases, whether assuming uniform conditions or not, \Tbr\ obtained from
+either eq.\ \ref{eq:CEP} or \ref{eq:EP} can be expressed in terms of an
+equivalent \TRJ\ using eq.\ \ref{eq:TRJ}.
+
+
+\paragraph{MOLPOP Implementation:}
+
+Modeling the source, an exact MOLPOP calculation (using CEP) will produce a
+prediction for $I$. So the model prediction for the observed \Tbr\ will be
+obtained by solving equation \ref{eq:CEP}, where $I$ is the model result for
+intensity. In the escape probability approximation everything is uniform and
+one can use equation \ref{eq:EP} to get \Tbr.
+
+MOLPOP has a ``Planck exponential" function {\tt plexp = 1/[exp(x) - 1]}.
+Equation \ref{eq:EP} is therefore
+\eq{\label{eq:EP_Tb}
+   {\tt plexp}\left({T_l\over\Tbr}\right) =
+   \left[{\tt plexp}\left({T_l\over\Tx}\right)
+   - {\tt plexp}\left({T_l\over\Tcmb}\right)\right]
+   \left(1 -  e^{-\tau}\right)
+}
+which translates to the RJ-equivalent temperature
+\eq{\label{eq:EP_TRJ}
+   \TRJ = T_l
+   \left[{\tt plexp}\left({T_l\over\Tx}\right)
+   - {\tt plexp}\left({T_l\over\Tcmb}\right)\right]
+   \left(1 -  e^{-\tau}\right)
+}
+For a CEP calculation, all that is needed is to replace ${\tt plexp}(T_l/\Tx)$
+in these two expressions with $I*c^2/2h\nu^3$.
+
+
+I have already added to the escape probability branch of MOLPOP listings of
+\Tbr, determined from equation \ref{eq:EP_Tb}, and \TRJ, determined from
+equation \ref{eq:EP_TRJ}. This is done with a new subroutine {\tt
+Tbr4Tx(Tl,Tx,taul,Tbr,TRJ)} added in {\tt maths\_molpop.f90}. I have also coded
+a similar subroutine {\tt Tbr4I(nu,I,taul,Tbr,TRJ)} that performs the same
+calculations from the intensity $I$. This should be used to tabulate \Tbr\ and
+\TRJ\ when calculating an exact solution using CEP. Below is the listing of the
+relevant section in the program. The functions {\tt Tbr\_Tx} and {\tt Tbr\_I}
+are still there for compatibility with what may have already been coded be in
+the CEP part. They should be removed in lieu of the subroutines.
+
+
+
+\bigskip \noindent\rule{\hsize}{.5pt} \bigskip
+
+\centerline{\tt In maths\_molpop.f90}
+\begin{verbatim}
+! =================  Stuff related to Planck function  ====================
+
+
+      double precision function plexp(x)
+!-------------------------------------------------------
+!     calculates the Planck function, modulo 2h*nu^3/c^2
+!     That is:   plexp = 1/[exp(x) - 1]
+!-------------------------------------------------------
+         implicit none
+         double precision x
+
+         if(x .eq. 0.0) then
+           write(16,'(6x,a)') 'ERROR! Function plexp called with argument zero.'
+           plexp = 1.d100
+         else if(x .gt. 50.0) then
+           plexp = 0.0
+         else if(dabs(x) .lt. 0.001) then
+           plexp = 1.0/x
+         else
+           plexp = 1.0/(dexp(x) - 1.0)
+         end if
+         return
+      end function plexp
+
+
+      double precision function Inv_plexp(P)
+!----------------------------------------------------------------
+!     Finds the argument of the Planck function given its value P
+!     That is, solves the equation P = 1/[exp(x) - 1]
+!----------------------------------------------------------------
+         implicit none
+         double precision, intent(in) :: P
+
+         if (P > 1.e3) then  ! might as well use small x (RJ) limit
+             inv_plexp = 1./P
+         else
+             inv_plexp = DLOG(1. + 1./P)
+         end if
+         return
+      END function Inv_plexp
+
+
+      Subroutine Tbr4Tx(Tl,Tx,taul,Tbr,TRJ)
+!----------------------------------------------------------------
+!     For a line with temperature-equivalent frequency Tl
+!     enter with excitation temperature Tx and optical depth taul
+!     calculate brightness temperature from
+!
+!        B(Tbr) = [B(Tx) - B(Tcmb)]*[1 - exp(-taul)]
+!
+!     All intensitie are in photon occupation number because
+!     we use plexp for B(T); so B(Tbr) is simply TRJ/Tl
+!     where TRJ is the Rayleigh Jeans equivalent T
+!----------------------------------------------------------------
+         implicit none
+         double precision, intent(in)  :: Tl, Tx, taul
+         double precision, intent(out) :: Tbr, TRJ
+         double precision B
+         integer sgn
+
+         if (Tx == Tcmb) then
+            TRJ = 0.
+            Tbr = 0.
+            return
+         end if
+
+         B = (plexp(Tl/Tx) - plexp(Tl/Tcmb)) * (1. - dexp(-taul))
+
+!        negative B means Tx < Tcmb so we get absorption line; negative Tbr
+         sgn = 1
+         if (B < 0.d0) sgn = -1
+
+         TRJ = Tl*B
+         Tbr = sgn*Tl/Inv_plexp(dabs(B))
+         return
+      END Subroutine Tbr4Tx
+
+
+      Subroutine Tbr4I(nu,I,taul,Tbr,TRJ)
+!------------------------------------------------------------
+!     For a line with frequency nu
+!     enter with intensity I and optical depth taul
+!     calculate brightness temperature from
+!
+!        B(Tbr) = I - B(Tcmb)*[1 - exp(-taul)]
+!
+!     All intensities are converted to photon occupation number
+!     For B(T) we use plexp, I is converted with 2h*nu^3/c^2
+!     Then the RJ tempearture is simply TRJ = Tl*B(Tbr)
+!-------------------------------------------------------------
+         implicit none
+         double precision, intent(in)  :: nu, I, taul
+         double precision, intent(out) :: Tbr, TRJ
+         double precision B, Tl, Intensity
+         integer sgn
+
+         Tl = hPl*nu/Bk
+         Intensity = I/(2*hPl*nu**3/cl**2)
+
+         B = Intensity - plexp(Tl/Tcmb) * (1. - dexp(-taul))
+
+         if (B == 0.d0) then
+            TRJ = 0.
+            Tbr = 0.
+            return
+         end if
+
+!        negative B means we get absorption line; negative Tbr
+         sgn = 1
+         if (B < 0.d0) sgn = -1
+
+         TRJ = Tl*B
+         Tbr = sgn*Tl/Inv_plexp(dabs(B))
+         return
+      END Subroutine Tbr4I
+
+
+
+      double precision function Tbr_Tx(Tl,Tx,taul)
+!----------------------------------------------------------------
+!     For a line with temperature-equivalent frequency Tl
+!     enter with excitation temperature Tx and optical depth taul
+!     calculate brightness temperature from
+!
+!        B(Tbr) = [B(Tx) - B(Tcmb)]*[1 - exp(-taul)]
+!
+!     All intensitie are in photon occupation number because
+!     we use plexp for B(T)
+!----------------------------------------------------------------
+         implicit none
+         double precision, intent(in) :: Tl, Tx, taul
+         double precision B
+         integer sgn
+
+         if (Tx == Tcmb) then
+            Tbr_Tx = 0.
+            return
+         end if
+
+         B = (plexp(Tl/Tx) - plexp(Tl/Tcmb)) * (1. - dexp(-taul))
+
+!        negative B means Tx < Tcmb so we get absorption line; negative Tbr
+         sgn = 1
+         if (B < 0.d0) sgn = -1
+
+         Tbr_Tx = sgn*Tl/Inv_plexp(dabs(B))
+         return
+      END function Tbr_Tx
+
+
+      double precision function Tbr_I(nu,I,taul)
+!------------------------------------------------------------
+!     For a line with frequency nu
+!     enter with intensity I and optical depth taul
+!     calculate brightness temperature from
+!
+!        B(Tbr) = I - B(Tcmb)*[1 - exp(-taul)]
+!
+!     All intensities are converted to photon occupation number
+!     For B(T) we use plexp, I is converted with 2h*nu^3/c^2
+!-------------------------------------------------------------
+         implicit none
+         double precision, intent(in) :: nu, I, taul
+         double precision B, Tl, Intensity
+         integer sgn
+
+         Tl = hPl*nu/Bk
+         Intensity = I/(2*hPl*nu**3/cl**2)
+
+         B = Intensity - plexp(Tl/Tcmb) * (1. - dexp(-taul))
+
+         if (B == 0.d0) then
+            Tbr_I = 0.
+            return
+         end if
+
+!        negative B means we get absorption line; negative Tbr
+         sgn = 1
+         if (B < 0.d0) sgn = -1
+
+         Tbr_I = sgn*Tl/Inv_plexp(dabs(B))
+         return
+      END function Tbr_I
+
+!========================================================================
+
+\end{verbatim}
+
+\end{document}

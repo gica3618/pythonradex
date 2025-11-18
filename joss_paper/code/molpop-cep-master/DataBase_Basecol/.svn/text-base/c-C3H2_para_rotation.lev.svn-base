@@ -1,0 +1,58 @@
+no title defined
+source database : jpl
+N : rotational quantum number
+Ka : is the K value in the limiting case of a prolate symmetric-top
+Kc : is the K value in the limiting case of an oblate symmetric-top
+tau : (Ka) - (Kc), varies between -N and +N
+epsilon : epsilon is the symmetry coefficient in wavefunction, can be 1 or -1
+  N     g   Energy in cm^{-1}
+>
+  1     1        0.000000e+00             'N = 0  Ka = 0  Kc = 0  tau = 0  epsilon = 1  '
+  2     3        1.729200e+00             'N = 1  Ka = 1  Kc = 1  tau = 0  epsilon = 1  '
+  3     5        4.467600e+00            'N = 2  Ka = 0  Kc = 2  tau = -2  epsilon = 1  '
+  4     5        6.027200e+00            'N = 2  Ka = 1  Kc = 1  tau = 0  epsilon = -1  '
+  5     5        6.747300e+00             'N = 2  Ka = 2  Kc = 0  tau = 2  epsilon = 1  '
+  6     7        8.388500e+00            'N = 3  Ka = 1  Kc = 3  tau = -2  epsilon = 1  '
+  7     7        1.121470e+01            'N = 3  Ka = 2  Kc = 2  tau = 0  epsilon = -1  '
+  8     7        1.320140e+01             'N = 3  Ka = 3  Kc = 1  tau = 2  epsilon = 1  '
+  9     9        1.341930e+01            'N = 4  Ka = 0  Kc = 4  tau = -4  epsilon = 1  '
+ 10     9        1.733970e+01           'N = 4  Ka = 1  Kc = 3  tau = -2  epsilon = -1  '
+ 11    11        1.956790e+01            'N = 5  Ka = 1  Kc = 5  tau = -4  epsilon = 1  '
+ 12     9        2.003240e+01             'N = 4  Ka = 2  Kc = 2  tau = 0  epsilon = 1  '
+ 13     9        2.144110e+01            'N = 4  Ka = 3  Kc = 1  tau = 2  epsilon = -1  '
+ 14     9        2.262060e+01             'N = 4  Ka = 4  Kc = 0  tau = 4  epsilon = 1  '
+ 15    11        2.461680e+01           'N = 5  Ka = 2  Kc = 4  tau = -2  epsilon = -1  '
+ 16    13        2.683370e+01            'N = 6  Ka = 0  Kc = 6  tau = -6  epsilon = 1  '
+ 17    11        2.853790e+01             'N = 5  Ka = 3  Kc = 3  tau = 0  epsilon = 1  '
+ 18    11        3.145440e+01            'N = 5  Ka = 4  Kc = 2  tau = 2  epsilon = -1  '
+ 19    13        3.300620e+01           'N = 6  Ka = 1  Kc = 5  tau = -4  epsilon = -1  '
+ 20    11        3.390180e+01             'N = 5  Ka = 5  Kc = 1  tau = 4  epsilon = 1  '
+ 21    15        3.521660e+01            'N = 7  Ka = 1  Kc = 7  tau = -6  epsilon = 1  '
+ 22    13        3.804150e+01            'N = 6  Ka = 2  Kc = 4  tau = -2  epsilon = 1  '
+ 23    13        4.188520e+01            'N = 6  Ka = 3  Kc = 3  tau = 0  epsilon = -1  '
+ 24    15        4.251280e+01           'N = 7  Ka = 2  Kc = 6  tau = -4  epsilon = -1  '
+ 25    13        4.430410e+01             'N = 6  Ka = 4  Kc = 2  tau = 2  epsilon = 1  '
+ 26    17        4.471670e+01            'N = 8  Ka = 0  Kc = 8  tau = -8  epsilon = 1  '
+ 27    13        4.579260e+01            'N = 6  Ka = 5  Kc = 1  tau = 4  epsilon = -1  '
+ 28    13        4.781450e+01             'N = 6  Ka = 6  Kc = 0  tau = 6  epsilon = 1  '
+ 29    15        4.867520e+01            'N = 7  Ka = 3  Kc = 5  tau = -2  epsilon = 1  '
+ 30    17        5.313620e+01           'N = 8  Ka = 1  Kc = 7  tau = -6  epsilon = -1  '
+ 31    15        5.369820e+01            'N = 7  Ka = 4  Kc = 4  tau = 0  epsilon = -1  '
+ 32    19        5.533390e+01            'N = 9  Ka = 1  Kc = 9  tau = -8  epsilon = 1  '
+ 33    15        5.762250e+01             'N = 7  Ka = 5  Kc = 3  tau = 2  epsilon = 1  '
+ 34    17        6.042290e+01            'N = 8  Ka = 2  Kc = 6  tau = -4  epsilon = 1  '
+ 35    15        6.077850e+01            'N = 7  Ka = 6  Kc = 2  tau = 4  epsilon = -1  '
+ 36    15        6.388600e+01             'N = 7  Ka = 7  Kc = 1  tau = 6  epsilon = 1  '
+ 37    19        6.487650e+01           'N = 9  Ka = 2  Kc = 8  tau = -6  epsilon = -1  '
+ 38    17        6.656970e+01           'N = 8  Ka = 3  Kc = 5  tau = -2  epsilon = -1  '
+ 39    21        6.706800e+01         'N = 10  Ka = 0  Kc = 10  tau = -10  epsilon = 1  '
+ 40    17        7.154480e+01             'N = 8  Ka = 4  Kc = 4  tau = 0  epsilon = 1  '
+ 41    19        7.328690e+01            'N = 9  Ka = 3  Kc = 7  tau = -4  epsilon = 1  '
+ 42    17        7.515490e+01            'N = 8  Ka = 5  Kc = 3  tau = 2  epsilon = -1  '
+ 43    17        7.730890e+01             'N = 8  Ka = 6  Kc = 2  tau = 4  epsilon = 1  '
+ 44    21        7.773370e+01          'N = 10  Ka = 1  Kc = 9  tau = -8  epsilon = -1  '
+ 45    17        7.929000e+01            'N = 8  Ka = 7  Kc = 1  tau = 6  epsilon = -1  '
+ 46    23        7.991920e+01         'N = 11  Ka = 1  Kc = 11  tau = -10  epsilon = 1  '
+ 47    19        8.056050e+01           'N = 9  Ka = 4  Kc = 6  tau = -2  epsilon = -1  '
+ 48    17        8.239710e+01             'N = 8  Ka = 8  Kc = 0  tau = 8  epsilon = 1  '
+

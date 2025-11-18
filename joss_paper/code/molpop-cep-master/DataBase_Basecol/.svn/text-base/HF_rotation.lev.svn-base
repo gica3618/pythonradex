@@ -1,0 +1,15 @@
+no title defined
+source database : jpl
+N : rotational quantum number
+v1 : vibrational quantum number (unique for diatoms or vibr. QN of first normal mode)
+  N     g   Energy in cm^{-1}
+>
+  1     1        0.000000e+00                                           'N = 0  v1 = 0  '
+  2     3        4.111100e+01                                           'N = 1  v1 = 0  '
+  3     5        1.232821e+02                                           'N = 2  v1 = 0  '
+  4     7        2.464118e+02                                           'N = 3  v1 = 0  '
+  5     9        4.103479e+02                                           'N = 4  v1 = 0  '
+  6    11        6.148884e+02                                           'N = 5  v1 = 0  '
+  7    13        8.597812e+02                                           'N = 6  v1 = 0  '
+  8    15        1.144725e+03                                           'N = 7  v1 = 0  '
+
