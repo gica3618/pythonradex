@@ -15,8 +15,6 @@ from pythonradex import radiative_transfer,helpers
 import itertools
 
 
-cloud_kwargs = {}
-
 ext_background = helpers.generate_CMB_background()
 
 cloud = radiative_transfer.Cloud(
@@ -29,7 +27,7 @@ cloud = radiative_transfer.Cloud(
 start_warmup = time.perf_counter()
 cloud.update_parameters(
       ext_background=ext_background,Tkin=grid_definition.grid["Tkin_grid"][0],
-      collider_densities={collider:grid_definition.grid["coll_density_values"][0] for collider in
+      collider_densities={collider:grid_definition.coll_density_values[0] for collider in
                           grid_definition.grid["colliders"]},
       N=grid_definition.grid["N_grid"][0],T_dust=0,tau_dust=0)
 cloud.solve_radiative_transfer()
@@ -38,7 +36,7 @@ print(f"warm up: {end_warmup-start_warmup} s")
 
 start = time.perf_counter()
 #IMPORTANT: put N in innermost loop to improve performance
-for coll_dens,Tkin,N in itertools.product(grid_definition.grid["coll_density_values"],
+for coll_dens,Tkin,N in itertools.product(grid_definition.coll_density_values,
                                           grid_definition.grid["Tkin_grid"],
                                           grid_definition.grid["N_grid"]):
     collider_densities = {collider:coll_dens for collider in

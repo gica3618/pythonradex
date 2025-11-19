@@ -31,10 +31,10 @@ radex_executable = '../../../tests/Radex/bin/radex_static_sphere'
 
 n_grid_elements = 20
 
-# data_filename = 'co.dat'
-# colliders = ['para-H2','ortho-H2']
-# log_N_limits = 13+4,18+4
-# Tmin,Tmax = 20,250
+data_filename = 'co.dat'
+colliders = ['para-H2','ortho-H2']
+log_N_limits = 13+4,18+4
+Tmin,Tmax = 20,250
 #narrow range where RADEX does not throw warnings:
 # log_N_limits = 16+4,16.3+4
 # Tmin,Tmax = 50,51

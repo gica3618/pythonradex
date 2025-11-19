@@ -25,7 +25,7 @@ executable = radex_executables[grid_definition.geometry]
 start = time.perf_counter()
 setup_times = []
 calc_times = []
-for coll_dens,Tkin,N in itertools.product(grid_definition.grid["coll_density_values"],
+for coll_dens,Tkin,N in itertools.product(grid_definition.coll_density_values,
                                           grid_definition.grid["Tkin_grid"],
                                           grid_definition.grid["N_grid"]):
     start_setup = time.time()
