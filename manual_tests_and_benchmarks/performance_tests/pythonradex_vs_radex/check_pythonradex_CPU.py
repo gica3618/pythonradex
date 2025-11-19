@@ -6,6 +6,7 @@ Created on Tue Nov 18 15:34:53 2025
 @author: gianni
 """
 
+#this is just to check how much CPU pythonradex uses
 #in terminal, do something like /usr/bin/time -v python check_pythonradex_CPU.py
 
 
