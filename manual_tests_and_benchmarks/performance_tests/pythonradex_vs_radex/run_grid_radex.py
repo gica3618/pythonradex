@@ -25,7 +25,7 @@ start = time.perf_counter()
 for coll_dens,Tkin,N in itertools.product(grid_definition.grid["coll_density_values"],
                                           grid_definition.grid["Tkin_grid"],
                                           grid_definition.grid["N_grid"]):
-    #start_setup = time.time()
+    start_setup = time.time()
     #print(N,coll_dens,Tkin)
     collider_densities = {collider:coll_dens for collider in
                           grid_definition.grid["colliders"]}
@@ -42,12 +42,12 @@ for coll_dens,Tkin,N in itertools.product(grid_definition.grid["coll_density_val
         f.write(f'{N/constants.centi**-2}\n')
         f.write(f'{width_v}\n')
         f.write('0\n')
-    #end_setup = time.time()
-    #print(f'setup: {end_setup-start_setup}')
-    #start_calc = time.time()
+    end_setup = time.time()
+    print(f'setup: {end_setup-start_setup}')
+    start_calc = time.time()
     os.system(f'{executable} < {radex_input_file} > /dev/null')
-    #end_calc = time.time()
-    #print(f'calc: {end_calc-start_calc}')
+    end_calc = time.time()
+    print(f'calc: {end_calc-start_calc}')
     #os.system(f'radex < {radex_input_file}')
 end = time.perf_counter()
 duration = end-start
