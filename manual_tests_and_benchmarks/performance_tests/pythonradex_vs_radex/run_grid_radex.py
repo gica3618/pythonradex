@@ -11,6 +11,7 @@ import itertools
 from scipy import constants
 import os
 import time
+import numpy as np
 
 radex_input_file = 'radex_test_preformance.inp'
 radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
@@ -22,6 +23,8 @@ radex_executables = {"uniform sphere":'../../../tests/Radex/bin/radex_static_sph
 width_v = grid_definition.width_v/constants.kilo
 executable = radex_executables[grid_definition.geometry]
 start = time.perf_counter()
+setup_times = []
+calc_times = []
 for coll_dens,Tkin,N in itertools.product(grid_definition.grid["coll_density_values"],
                                           grid_definition.grid["Tkin_grid"],
                                           grid_definition.grid["N_grid"]):
@@ -43,12 +46,16 @@ for coll_dens,Tkin,N in itertools.product(grid_definition.grid["coll_density_val
         f.write(f'{width_v}\n')
         f.write('0\n')
     end_setup = time.time()
-    print(f'setup: {end_setup-start_setup}')
+    setup_times.append(end_setup-start_setup)
     start_calc = time.time()
     os.system(f'{executable} < {radex_input_file} > /dev/null')
     end_calc = time.time()
-    print(f'calc: {end_calc-start_calc}')
+    calc_times.append(end_calc-start_calc)
     #os.system(f'radex < {radex_input_file}')
 end = time.perf_counter()
 duration = end-start
 print(f"duration: {duration} s")
+for ID,times in zip(("setup","calc"),(setup_times,calc_times)):
+    print(f"{ID} times: {np.mean(times):.3g} +- {np.std(times):.3g}"+
+          f" (min={np.min(times):.3g}, max={np.max(times):.3g})")
+    print(f"total {ID} time: {np.sum(times):.3g}")
