@@ -15,15 +15,16 @@ from pythonradex import radiative_transfer,helpers
 import itertools
 
 
-cloud_kwargs = {'datafilepath':general.datafilepath(grid_definition.grid["datafilename"]),
-                'geometry':grid_definition.geometry,
-                'line_profile_type':grid_definition.line_profile_type,
-                'width_v':grid_definition.width_v,'use_Ng_acceleration':True,
-                'treat_line_overlap':False,'warn_negative_tau':False}
+cloud_kwargs = {}
 
 ext_background = helpers.generate_CMB_background()
 
-cloud = radiative_transfer.Cloud(**cloud_kwargs)
+cloud = radiative_transfer.Cloud(
+          datafilepath=general.datafilepath(grid_definition.grid["datafilename"]),
+          geometry=grid_definition.geometry,
+          line_profile_type=grid_definition.line_profile_type,
+          width_v=grid_definition.width_v,use_Ng_acceleration=True,
+          treat_line_overlap=False,warn_negative_tau=False)
 #warm up
 start_warmup = time.perf_counter()
 cloud.update_parameters(
@@ -45,7 +46,6 @@ for coll_dens,Tkin,N in itertools.product(grid_definition.grid["coll_density_val
     cloud.update_parameters(ext_background=ext_background,Tkin=Tkin,
                             collider_densities=collider_densities,N=N)
     cloud.solve_radiative_transfer()
-
 end = time.perf_counter()
 duration = end-start
 print(f"duration: {duration} s")
