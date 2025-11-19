@@ -7,7 +7,7 @@ Created on Fri Sep  1 10:04:47 2023
 """
 
 import sys
-sys.path.append('..')
+sys.path.append('../..')
 import general
 from pythonradex import radiative_transfer,helpers
 from scipy import constants
@@ -17,6 +17,8 @@ import time
 import shutil
 import matplotlib.pyplot as plt
 import itertools
+
+#in this script, radex and pythonradex are directly compared
 
 
 radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
@@ -30,17 +32,17 @@ vary_only_N = False
 
 
 geometry = 'uniform sphere'
-radex_executable = '../../tests/Radex/bin/radex_static_sphere'
+radex_executable = '../../../tests/Radex/bin/radex_static_sphere'
 # geometry = 'LVG slab'
-# radex_executable = '../../tests/Radex/bin/radex_LVG_slab'
+# radex_executable = '../../../tests/Radex/bin/radex_LVG_slab'
 
 data_filename = 'co.dat'
 colliders = ['para-H2','ortho-H2']
-# log_N_limits = 13+4,18+4
-# Tmin,Tmax = 20,250
+log_N_limits = 13+4,18+4
+Tmin,Tmax = 20,250
 #narrow range where RADEX does not throw warnings:
-log_N_limits = 16+4,16.3+4
-Tmin,Tmax = 50,51
+# log_N_limits = 16+4,16.3+4
+# Tmin,Tmax = 50,51
 
 # data_filename = 'hco+.dat'
 # colliders = ['H2',]

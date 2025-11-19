@@ -8,7 +8,7 @@ Created on Mon Feb 10 20:07:06 2025
 
 import os
 
-lamda_data_folder = '../../tests/LAMDA_files'
+lamda_data_folder = '/home/gianni/science/projects/code/pythonradex/tests/LAMDA_files'
 
 def datafilepath(filename):
     return os.path.join(lamda_data_folder,filename)
