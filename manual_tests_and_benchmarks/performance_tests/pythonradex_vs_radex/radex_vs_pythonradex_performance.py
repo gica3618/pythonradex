@@ -81,7 +81,9 @@ pythonradex_grid_times = np.empty_like(pythonradex_times)
 RADEX_times = np.empty_like(pythonradex_times)
 
 def remove_pythonradex_cache():
-    cache_folder = '../../src/pythonradex/__pycache__'
+    src_folder = '../../../src/pythonradex'
+    assert os.path.exists(src_folder)
+    cache_folder = os.path.join(src_folder,'__pycache__')
     if os.path.exists(cache_folder):
         print(f'removing python cache ({cache_folder})')
         shutil.rmtree(cache_folder)
