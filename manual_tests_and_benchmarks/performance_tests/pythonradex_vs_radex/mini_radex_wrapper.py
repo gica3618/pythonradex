@@ -58,7 +58,7 @@ if __name__ == "__main__":
     Tkin = 55
     N = 1e15*constants.centi**-2
     width_v = 2.3*constants.kilo
-    input_filepath = "test_radex_mini_wrapper.in"
+    input_filepath = "test_radex_mini_wrapper.inp"
     output_filepath = "test_radex_mini_wrapper.out"
     start = time.perf_counter()
     times = run_radex(datafilename=datafilename,geometry=geometry,
