@@ -17,12 +17,11 @@ import time
 import shutil
 import matplotlib.pyplot as plt
 import itertools
+import mini_radex_wrapper
 
 #in this script, radex and pythonradex are directly compared
 
 
-radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
-                       'He':'He'}
 ext_background = helpers.generate_CMB_background(z=0)
 n_elements = [5,7,10,15,20] #for Tkin, collider and N
 #most optimistic case is if only N is varied because then rate equations don't
@@ -30,11 +29,10 @@ n_elements = [5,7,10,15,20] #for Tkin, collider and N
 #however, seems like it doesn't really change anything...
 vary_only_N = False
 
-
+#can only use LVG slab and uniform sphere, since these are the only two
+#where RADEX and pythonradex use same escape probability
 geometry = 'uniform sphere'
-radex_executable = '../../../tests/Radex/bin/radex_static_sphere'
 # geometry = 'LVG slab'
-# radex_executable = '../../../tests/Radex/bin/radex_LVG_slab'
 
 data_filename = 'co.dat'
 colliders = ['para-H2','ortho-H2']
@@ -74,7 +72,9 @@ remove_cache = True
 
 
 datafilepath = os.path.join(general.lamda_data_folder,data_filename)
+
 radex_input_file = 'radex_test_preformance.inp'
+radex_output_file = 'radex_test_preformance.out'
 
 pythonradex_times = np.empty(len(n_elements))
 pythonradex_grid_times = np.empty_like(pythonradex_times)
@@ -143,23 +143,16 @@ for i,n in enumerate(n_elements):
     start = time.time()
     for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                               Tkin_values):
-        #print(N,coll_dens,Tkin)
         collider_densities = {collider:coll_dens for collider in colliders}
-        with open(radex_input_file,mode='w') as f:
-            f.write(data_filename+'\n')
-            f.write('radex_test_performance.out\n')
-            f.write('0 0\n')
-            f.write(f'{Tkin}\n')
-            f.write(f'{len(collider_densities)}\n')
-            for collider,density in collider_densities.items():
-                f.write(radex_collider_keys[collider]+'\n')
-                f.write(f'{density/constants.centi**-3}\n')
-            f.write('2.73\n')
-            f.write(f'{N/constants.centi**-2}\n')
-            f.write(f'{width_v/constants.kilo}\n')
-            f.write('0\n')
-        os.system(f'{radex_executable} < {radex_input_file} > /dev/null')
-        #os.system(f'radex < {radex_input_file}')
+        # start_wrapper = time.perf_counter()
+        radex_times = mini_radex_wrapper.run_radex(
+                         datafilename=data_filename, geometry=geometry,
+                         collider_densities=collider_densities, Tkin=Tkin, N=N,
+                         width_v=width_v, input_filepath=radex_input_file,
+                         output_filepath=radex_output_file)
+        # end_wrapper = time.perf_counter()
+        # print(radex_times)
+        # print(f"wrapper time: {end_wrapper-start_wrapper:.3g}")
     end = time.time()
     RADEX_times[i] = end-start
     print(f'time ratio pythonradex/RADEX: {pythonradex_times[i]/RADEX_times[i]:.3g}')

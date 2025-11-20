@@ -6,6 +6,8 @@ Created on Tue Nov 18 14:50:22 2025
 @author: gianni
 """
 
+#this script is essentially a simplified version of radex_vs_pythonradex_performance.py
+
 import sys
 sys.path.append('../..')
 import general
@@ -15,26 +17,23 @@ import os
 import numpy as np
 import time
 import itertools
+import mini_radex_wrapper
 
 
-radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
-                       'He':'He'}
 ext_background = helpers.generate_CMB_background(z=0)
 
 
 #can only use LVG slab and uniform sphere, since these are the only two
 #where RADEX and pythonradex use same escape probability
 geometry = 'uniform sphere'
-radex_executable = '../../../tests/Radex/bin/radex_static_sphere'
 # geometry = 'LVG slab'
-# radex_executable = '../../../tests/Radex/bin/radex_LVG_slab'
 
-n_grid_elements = 20
+n_grid_elements = 15
 
-data_filename = 'co.dat'
-colliders = ['para-H2','ortho-H2']
-log_N_limits = 13+4,18+4
-Tmin,Tmax = 20,250
+# data_filename = 'co.dat'
+# colliders = ['para-H2','ortho-H2']
+# log_N_limits = 13+4,18+4
+# Tmin,Tmax = 20,250
 #narrow range where RADEX does not throw warnings:
 # log_N_limits = 16+4,16.3+4
 # Tmin,Tmax = 50,51
@@ -49,10 +48,10 @@ Tmin,Tmax = 20,250
 # log_N_limits = 10+4,12+4
 # Tmin,Tmax = 60,250
 
-# data_filename = 'c.dat'
-# colliders = ['para-H2','ortho-H2']
-# log_N_limits = 12+4,18+4
-# Tmin,Tmax = 60,250
+data_filename = 'c.dat'
+colliders = ['para-H2','ortho-H2']
+log_N_limits = 12+4,18+4
+Tmin,Tmax = 60,250
 
 
 # #ATTENTION: if no H2 is given, RADEX just puts 1e5 cm-3 by default! WTF!
@@ -61,12 +60,14 @@ Tmin,Tmax = 20,250
 for collider in colliders:
     assert 'H2' in collider
 
-line_profile_type = 'rectangular' #actually, RADEX assumes rectangular, but than converts it Gaussian for the line flux
+#actually, RADEX assumes rectangular, but then converts it Gaussian for the line flux
+line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
 
 datafilepath = os.path.join(general.lamda_data_folder,data_filename)
-radex_input_file = 'radex_test_preformance.inp'
 
+radex_input_file = 'radex_test_preformance.inp'
+radex_output_file = 'radex_test_preformance.out'
 
 N_values = np.logspace(*log_N_limits,n_grid_elements)
 coll_density_values = np.logspace(3,5,n_grid_elements)/constants.centi**3
@@ -111,28 +112,16 @@ print('Running RADEX')
 start = time.time()
 for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                           Tkin_values):
-    #start_setup = time.time()
-    #print(N,coll_dens,Tkin)
     collider_densities = {collider:coll_dens for collider in colliders}
-    with open(radex_input_file,mode='w') as f:
-        f.write(data_filename+'\n')
-        f.write('radex_test_performance.out\n')
-        f.write('0 0\n')
-        f.write(f'{Tkin}\n')
-        f.write(f'{len(collider_densities)}\n')
-        for collider,density in collider_densities.items():
-            f.write(radex_collider_keys[collider]+'\n')
-            f.write(f'{density/constants.centi**-3}\n')
-        f.write('2.73\n')
-        f.write(f'{N/constants.centi**-2}\n')
-        f.write(f'{width_v/constants.kilo}\n')
-        f.write('0\n')
-    #end_setup = time.time()
-    #print(f'setup: {end_setup-start_setup}')
-    #start_calc = time.time()
-    os.system(f'{radex_executable} < {radex_input_file} > /dev/null')
-    #end_calc = time.time()
-    #print(f'calc: {end_calc-start_calc}')
+    # start_wrapper = time.perf_counter()
+    radex_times = mini_radex_wrapper.run_radex(
+                    datafilename=data_filename,geometry=geometry,
+                    collider_densities=collider_densities,Tkin=Tkin,N=N,
+                    width_v=width_v,input_filepath=radex_input_file,
+                    output_filepath=radex_output_file)
+    # end_wrapper = time.perf_counter()
+    # print(radex_times)
+    # print(f"wrapper time: {end_wrapper-start_wrapper}")
 end = time.time()
 RADEX_time = end-start
 print(f'time ratio pythonradex/RADEX: {pythonradex_time/RADEX_time:.3g}')

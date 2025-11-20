@@ -8,54 +8,42 @@ Created on Tue Nov 18 21:40:27 2025
 
 import grid_definition
 import itertools
-from scipy import constants
-import os
 import time
 import numpy as np
+import mini_radex_wrapper
 
-radex_input_file = 'radex_test_preformance.inp'
-radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
-                       'He':'He'}
-radex_executables = {"uniform sphere":'../../../tests/Radex/bin/radex_static_sphere',
-                     "LVG slab":'../../../tests/Radex/bin/radex_LVG_slab'}
+input_filepath = 'radex_test_preformance.inp'
+output_filepath = 'radex_test_performance.out'
 
+width_v = grid_definition.width_v
+datafilename = grid_definition.grid["datafilename"]
+geometry = grid_definition.geometry
 
-width_v = grid_definition.width_v/constants.kilo
-executable = radex_executables[grid_definition.geometry]
-start = time.perf_counter()
+func_times = []
 setup_times = []
 calc_times = []
+assert_times = []
+start = time.perf_counter()
 for coll_dens,Tkin,N in itertools.product(grid_definition.coll_density_values,
                                           grid_definition.grid["Tkin_grid"],
                                           grid_definition.grid["N_grid"]):
-    start_setup = time.time()
-    #print(N,coll_dens,Tkin)
     collider_densities = {collider:coll_dens for collider in
                           grid_definition.grid["colliders"]}
-    with open(radex_input_file,mode='w') as f:
-        f.write(grid_definition.grid["datafilename"]+'\n')
-        f.write('radex_test_performance.out\n')
-        f.write('0 0\n')
-        f.write(f'{Tkin}\n')
-        f.write(f'{len(collider_densities)}\n')
-        for collider,density in collider_densities.items():
-            f.write(radex_collider_keys[collider]+'\n')
-            f.write(f'{density/constants.centi**-3}\n')
-        f.write('2.73\n')
-        f.write(f'{N/constants.centi**-2}\n')
-        f.write(f'{width_v}\n')
-        f.write('0\n')
-    end_setup = time.time()
-    setup_times.append(end_setup-start_setup)
-    start_calc = time.time()
-    os.system(f'{executable} < {radex_input_file} > /dev/null')
-    end_calc = time.time()
-    calc_times.append(end_calc-start_calc)
-    #os.system(f'radex < {radex_input_file}')
+    start_func = time.perf_counter()
+    times = mini_radex_wrapper.run_radex(
+              datafilename=datafilename,geometry=geometry,
+              collider_densities=collider_densities,Tkin=Tkin,N=N,width_v=width_v,
+              input_filepath=input_filepath,output_filepath=output_filepath)
+    end_func = time.perf_counter()
+    setup_times.append(times["setup"])
+    calc_times.append(times["calc"])
+    assert_times.append(times["assert"])
+    func_times.append(end_func-start_func)
 end = time.perf_counter()
 duration = end-start
 print(f"duration: {duration} s")
-for ID,times in zip(("setup","calc"),(setup_times,calc_times)):
+for ID,times in zip(("setup","calc","assert","func"),
+                    (setup_times,calc_times,assert_times,func_times)):
     print(f"{ID} times: {np.mean(times):.3g} +- {np.std(times):.3g}"+
           f" (min={np.min(times):.3g}, max={np.max(times):.3g})")
     print(f"total {ID} time: {np.sum(times):.3g}")
