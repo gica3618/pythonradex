@@ -117,7 +117,8 @@ manual_tests_and_benchmarks/benchmarking_vs_RADEX_and_LIME/*.fits
 manual_tests_and_benchmarks/performance_tests/radex_test_preformance.inp
 manual_tests_and_benchmarks/performance_tests/radex_test_performance.out
 manual_tests_and_benchmarks/performance_tests/pythonradex_vs_radex/*.out
-manual_tests_and_benchmarks/performance_tests/pythonradex_vs_radex/*.inp
+manual_tests_and_benchmarks/performance_tests/pythonradex_vs_radex/radex_test_preformance.inp
+manual_tests_and_benchmarks/performance_tests/pythonradex_vs_radex/test_radex_mini_wrapper.inp
 documents
 **/radex.out
 .pytest_cache

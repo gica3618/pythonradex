@@ -22,7 +22,7 @@ def flux_0D(tau_nu,source_function,solid_angle):
     return source_function*(1-np.exp(-tau_nu))*solid_angle
 
 
-tau_values = np.logspace(-3,3,100)
+tau_values = np.logspace(-2,2,100)
 source_function = 1
 solid_angle = 1
 
@@ -51,3 +51,10 @@ axes[2].axhline(expected_ratio_thin,color='black',linestyle='dashed')
 for ax in axes:
     ax.set_xscale('log')
     ax.set_xlabel('tau_nu')
+
+fig,ax = plt.subplots()
+fig.suptitle("Static sphere: flux comparison between pythonradex and RADEX")
+ax.plot(tau_values,relative_diff*100)
+ax.set_ylabel('$(F_\mathrm{pythonradex}-F_\mathrm{RADEX})/F_\mathrm{pythonradex}$ [%]')
+ax.set_xscale('log')
+ax.set_xlabel('optical depth')
