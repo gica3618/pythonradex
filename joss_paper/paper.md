@@ -34,7 +34,7 @@ If the medium is dense enough, local thermodynamic equilibrium (LTE) maybe be as
 
 Various codes are available to solve the radiative transfer. Codes solving the radiative transfer in 3D are used for detailed calculations of sources with well-known geometries. Examples include `RADMC-3D` [@Dullemond2012] and `LIME` [@Brinch2010]. However, a full 3D calculation is often too computationally expensive if a large parameter space needs to be explored, in particular in non-LTE. 1D codes that quickly provide an approximate solution are a commonly used alternative. In this respect, the 1D non-LTE code `RADEX` [@vanderTak2007] has gained considerable popularity: as of November 10, 2025, the paper presenting `RADEX` [@vanderTak2007] has 1431 citations. The Fortan code `RADEX` solves the radiative transfer of a uniform medium using an escape probability formalism.
 
-The python programming language is now very widely used in astronomy. Still, no python version of `RADEX` is available, although some python wrappers (for example `SpectralRadex` [@SpectralRadex] or `ndradex` [@ndradex]) and even a Julia version [@jadex] exist. Furthermore, `RADEX` cannot take into account the effects of an internal continuum field (typically arising from dust that is mixed with the gas), nor cross-excitation effects arising when transitions overlap in frequency. The `pythonradex` code addresses these concerns.
+The python programming language is now very widely used in astronomy. Still, no python version of `RADEX` is available, although some python wrappers (for example `SpectralRadex` [@SpectralRadex] or `ndradex` [@ndradex]) and even a Julia version [`Jadex`, @jadex] exist. Furthermore, `RADEX` cannot take into account the effects of an internal continuum field (typically arising from dust that is mixed with the gas), nor cross-excitation effects arising when transitions overlap in frequency. The `pythonradex` code addresses these concerns.
 
 # Implementation
 
@@ -57,7 +57,9 @@ The python programming language is now very widely used in astronomy. Still, no 
 
 # Performance advantage
 
-**Both `pythonradex` and `RADEX` are single-threaded. To compare their performance, we consider the calculation of a grid of models over a parameter space spanning 20 values in each of kinetic temperature, column density and H$_2$ density (i.e. a total of 8000 models). We consider a few different molecules: C (small number of levels and transitions), SO (large number of levels and transitions) as well as CO and HCO$^+$ (intermediate). On a laptop with i7-7700HQ cores running on Ubuntu 22.04, `pythonradex` computed the model grid faster than `RADEX` by factors 2 (C), 6 (SO), 6 (CO) and 3 (HCO$^+$). Running the same test on the Multi-wavelength Data Analysis System (MDAS) operated by the National Astronomical Observatory of Japan (Rocky Linux 8.9 with AMD EPYC 7543 CPUs) resulted in a even larger performance advantage: `pythonradex` calculated faster by factors of 18 (C), 14 (SO), 12 (CO) and 14 (HCO$^+$).**
+**Both `pythonradex` and `RADEX` are single-threaded. To compare their performance, we consider the calculation of a grid of models over a parameter space spanning 20 values in each of kinetic temperature, column density and H$_2$ density (i.e. a total of 8000 models). We consider a few different molecules: C (small number of levels and transitions), SO (large number of levels and transitions) as well as CO and HCO$^+$ (intermediate). On a laptop with i7-7700HQ cores running on Ubuntu 22.04, `pythonradex` computed the model grid faster than `RADEX` by factors 2 (C), 6 (SO), 6 (CO) and 3 (HCO$^+$). Running the same test on the Multi-wavelength Data Analysis System (MDAS) operated by the National Astronomical Observatory of Japan (Rocky Linux 8.9 with AMD EPYC 7543 CPUs) resulted in a even larger performance advantage: `pythonradex` calculated faster by factors of 18 (C), 14 (SO), 12 (CO) and 14 (HCO$^+$)[^1].**
+
+[^1]: `Jadex` [@jadex] claims a performance advantage of a factor ~110 over `RADEX`.
 
 # Additional differences between RADEX and pythonradex
 
@@ -73,6 +75,8 @@ F_\mathrm{thin} = V_\mathrm{sphere}n_2A_{21}\Delta E \frac{1}{4\pi d^2}
 \end{equation}
 with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ the volume of the sphere, $n$ the number density, $x_2$ the fractional level population of the upper level, $A_{21}$ the Einstein coefficient, $\Delta E$ the energy of the transition and $d$ the distance. `pythonradex` correctly reproduces this limiting case by using the formula by @Osterbrock1974, while `RADEX` overestimates the optically thin flux by a factor 1.5.
 
+<!-- This is a comment and will not appear in the final PDF/HTML -->
+
 # Dependencies
 
 `pythonradex` depends on the following packages:
@@ -83,6 +87,6 @@ with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ the volume of the sphere, $n$ the num
 
 # Acknowledgements
 
-I thank Simon Bruderer for his helpful clarifications about the ALI method, and Andrés Asensio Ramos for helpful discussions about the LVG geometry and the `MOLPOP-CEP` code. **Performance testing was in part carried out on the Multi-wavelength Data Analysis System operated by the Astronomy Data Center (ADC), National Astronomical Observatory of Japan.**
+I thank Simon Bruderer for his helpful clarifications about the ALI method, and Andrés Asensio Ramos for helpful discussions about the LVG approximation and the `MOLPOP-CEP` code. **Performance testing was in part carried out on the Multi-wavelength Data Analysis System operated by the Astronomy Data Center (ADC), National Astronomical Observatory of Japan.**
 
 # References
