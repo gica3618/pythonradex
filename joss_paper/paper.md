@@ -57,7 +57,7 @@ The python programming language is now very widely used in astronomy. Still, no 
 
 # Performance advantage
 
-**Both `pythonradex` and `RADEX` are single-threaded. To compare their performance, we consider the calculation of a grid of models over a parameter space spanning 20 values in each of kinetic temperature, column density and H$_2$ density (i.e. a total of 8000 models). We consider a few different molecules: C (small number of levels and transitions), SO (large number of levels and transitions) as well as CO and HCO$^+$ (intermediate). On a laptop with i7-7700HQ cores running on Ubuntu 22.04, `pythonradex` computed the model grid faster than `RADEX` by factors 2 (C), 6 (SO), 6 (CO) and 3 (HCO$^+$). Running the same test on the Multi-wavelength Data Analysis System (MDAS) operated by NAOJ (Rocky Linux 8.9 with AMD EPYC 7543 CPUs) resulted in a even larger performance advantage: `pythonradex` calculated faster by factors of 18 (C), 14 (SO), 12 (CO) and 14 (HCO$^+$).**
+**Both `pythonradex` and `RADEX` are single-threaded. To compare their performance, we consider the calculation of a grid of models over a parameter space spanning 20 values in each of kinetic temperature, column density and H$_2$ density (i.e. a total of 8000 models). We consider a few different molecules: C (small number of levels and transitions), SO (large number of levels and transitions) as well as CO and HCO$^+$ (intermediate). On a laptop with i7-7700HQ cores running on Ubuntu 22.04, `pythonradex` computed the model grid faster than `RADEX` by factors 2 (C), 6 (SO), 6 (CO) and 3 (HCO$^+$). Running the same test on the Multi-wavelength Data Analysis System (MDAS) operated by the National Astronomical Observatory of Japan (Rocky Linux 8.9 with AMD EPYC 7543 CPUs) resulted in a even larger performance advantage: `pythonradex` calculated faster by factors of 18 (C), 14 (SO), 12 (CO) and 14 (HCO$^+$).**
 
 # Additional differences between RADEX and pythonradex
 
@@ -67,14 +67,11 @@ RADEX computes line fluxes based on a "background subtracted" intensity given by
 
 ## Flux for spherical geometry
 
-Regardless of the adopted geometry, `RADEX` always uses the flux formula for a slab geometry **($F_\nu=B_\nu(T_\mathrm{ex})(1-e^{-\tau_\nu})$)**, resulting in inconsistencies. Consider the optically thin limit where the total flux (in [W/m$^2$]) for a sphere is simply given by
+Regardless of the adopted geometry, `RADEX` always uses the flux formula for a slab geometry, resulting in inconsistencies. Consider the optically thin limit where the total flux (in [W/m$^2$]) for a sphere is simply given by
 \begin{equation}
 F_\mathrm{thin} = V_\mathrm{sphere}n_2A_{21}\Delta E \frac{1}{4\pi d^2}
 \end{equation}
-with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ the volume of the sphere, $n$ the number density, $x_2$ the fractional level population of the upper level, $A_{21}$ the Einstein coefficient, $\Delta E$ the energy of the transition and $d$ the distance. `pythonradex` correctly reproduces this limiting case by using the formula by @Osterbrock1974 **($F_\nu=\frac{2B_\nu(T_\mathrm{ex})}{\tau_\nu^2}\left(\frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)\exp(-\tau_\nu)\right)$)**, while `RADEX` overestimates the optically thin flux by a factor 1.5**, as illustrated in Figure \autoref{fig:flux_static_sphere}. In the optically thick limit, both formulae give the same result.**
-
-<!-- This figure is produced from the compare_emerging_flux_formula.py under manual_tests_and_benchmarks\emerging_flux -->
-![The relative difference between the fluxes computed by `pythonradex` and `RADEX` for a static sphere as a function of optical depth.\label{fig:flux_static_sphere}](flux_static_sphere.pdf)
+with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ the volume of the sphere, $n$ the number density, $x_2$ the fractional level population of the upper level, $A_{21}$ the Einstein coefficient, $\Delta E$ the energy of the transition and $d$ the distance. `pythonradex` correctly reproduces this limiting case by using the formula by @Osterbrock1974, while `RADEX` overestimates the optically thin flux by a factor 1.5.
 
 # Dependencies
 
