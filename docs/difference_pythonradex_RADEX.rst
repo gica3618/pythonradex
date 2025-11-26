@@ -7,7 +7,7 @@ Overlapping lines and continuum
 
 Programming language and performance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-While ``RADEX`` is written in Fortran, ``pythonradex`` is written in python. Fortran is generally much faster than python. Still, in the typical use case of calculating several models over a grid of parameters (e.g. column density, temperature), ``pythonradex`` can outperform RADEX by a factor of a few, depending on the input parameters. This is achieved by an architecture that avoids unnecessary or repeating calculations as much as possible and just-in-time compilation using the `numba <https://numba.readthedocs.io>`_ package.
+While ``RADEX`` is written in Fortran, ``pythonradex`` is written in python. Simple performance tests suggest that ``pythonradex`` outperforms ``RADEX`` in the typical use case of calculating several models over a grid of parameters (e.g. column density, temperature). The speed advantage of ``pythonradex`` from these tests ranges from ~2 up to ~20, depending on the input parameters and the computing environment. To optimize its performance, ``pythonradex`` employs an architecture that avoids unnecessary or repeating calculations as much as possible. In addition, it uses just-in-time compilation using the `numba <https://numba.readthedocs.io>`_ package.
 
 Different output
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -28,3 +28,14 @@ for all geometries. However, this expression is only valid for slab geometries, 
     F_\mathrm{thin} = V_\mathrm{sphere}nx_2A_{21}\Delta E \frac{1}{4\pi d^2}
 
 where :math:`V_\mathrm{sphere}=\frac{4}{3}R^3\pi` is the volume of the sphere, :math:`n` the constant number density, :math:`x_2` the fractional level population of the upper level, :math:`A_{21}` the Einstein coefficient, :math:`\Delta E` the energy difference between the upper and lower level, and :math:`d` the distance of the source. ``pythonradex`` correctly reproduces this limiting case. On the other hand, ``RADEX`` overestimates the optically thin flux by a factor 1.5.
+
+.. figure:: images/flux_comparison_spherical_geometries.png
+   :align: center
+   :width: 80%
+   :alt: Flux comparison RADEX vs pythonradex for spherical geometries 
+
+   This is the caption for my figure. It can span multiple lines and describe the content of the image.
+
+Different escape probability for LVG sphere
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+

@@ -107,7 +107,10 @@ class UniformLVGSphere():
         #de Jong et al. (1975, Fig. 3)
         tau_factor = exp_tau_factor(tau_nu=tau_nu)
         v = constants.c*(1-nu/nu0)
-        return source_function*tau_factor*solid_angle*(1-(v/V)**2)
+        #actually, since the line profile is always rectangular for LVG, in principle
+        #there is no need to do the np.where, but it's cleaner
+        return np.where(np.abs(v)>V, 0,
+                        source_function*tau_factor*solid_angle*(1-(v/V)**2))
 
 
 class LVGSphereRADEX(Flux1D):

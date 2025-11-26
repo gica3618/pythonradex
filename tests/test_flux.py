@@ -371,6 +371,7 @@ class TestFluxesWithPhysics():
                     nu = self.get_line_covering_nu(lines=[line,],width_v=width_v)
                     fluxcalculator.set_nu(nu=nu)
                     spec = fluxcalculator.spectrum(solid_angle=self.Omega)
+                    assert np.all(spec >= 0)
                     source_func = helpers.B_nu(T=self.Tkin,nu=nu)
                     if fluxcalculator.geometry_name == 'LVG sphere':
                         LVG_kwargs = {'nu':nu,'nu0':line.nu0,'V':width_v/2}

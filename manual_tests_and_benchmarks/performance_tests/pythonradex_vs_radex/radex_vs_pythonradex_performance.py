@@ -120,6 +120,7 @@ for i,n in enumerate(n_elements):
                                 collider_densities=collider_densities,N=N,T_dust=0,
                                 tau_dust=0)
         cloud.solve_radiative_transfer()
+        cloud.fluxes_of_individual_transitions(solid_angle=1,transitions=None)
     end = time.time()
     pythonradex_times[i] = end-start
 
