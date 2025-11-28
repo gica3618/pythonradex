@@ -22,7 +22,7 @@ bibliography: paper.bib
 
 # Summary
 
-A common task in astronomical research is to estimate the physical parameters (temperature, mass, density etc.) of a gas by using observed line emission. This often requires a calculation of how the radiation propagates via emission and absorption ("radiative transfer"). In radio and infrared astronomy, the Fortran code `RADEX` [@vanderTak2007] is a popular tool to solve the non-LTE radiative transfer of a uniform medium in a simplified geometry. I present a python implementation of `RADEX`: `pythonradex`. Written in python, it provides an easy and intuitive user interface as well as additional functionality not included in `RADEX` (continuum effects and overlapping lines).
+A common task in astronomical research is to estimate the physical parameters (temperature, mass, density etc.) of a gas by using observed line emission. This often requires a calculation of how the radiation propagates via emission and absorption ("radiative transfer"). In radio and infrared astronomy, the Fortran code `RADEX` [@vanderTak2007] is a popular tool to solve the non-LTE radiative transfer of a uniform medium in a simplified geometry. I present a python implementation of `RADEX`: `pythonradex`. Written in python, it provides an easy and intuitive user interface, **improved performance** as well as additional functionality not included in `RADEX` (continuum effects and overlapping lines).
 
 # Statement of need
 
