@@ -132,6 +132,8 @@ for i,nH2 in enumerate(nH2_grid):
             pythonradex_model = pythonradex_model[0][plot_trans_index],\
                                 pythonradex_model[1][plot_trans_index]
             models = {"radex":radex_model,"pythonradex":pythonradex_model}
+            #don't take the flux from RADEX directly (since it does some corrections
+            #of rectangular to Gaussian), instead calculate it:
             for ID,model in models.items():
                 Tex,tau_nu0 = model
                 S = helpers.B_nu(nu=nu,T=Tex)

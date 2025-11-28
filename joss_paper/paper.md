@@ -40,7 +40,7 @@ The python programming language is now very widely used in astronomy. Still, no 
 
 `pythonradex` is written in python and implements the Accelerated Lambda Iteration (ALI) scheme presented by @Rybicki1992. Like `RADEX`, an escape probability equation is used to calculate the radiation field for a given level population. This allows solving the radiative transfer iteratively. To speed up the convergence, ng-acceleration [@Ng1974] is employed. Critical parts of the code are just-in-time compiled using `numba` [@Lam2015].
 
-`pythonradex` supports four geometries: **two static geometries (slab and sphere), and two large-velocity-gradient (LVG) geometries (again slab and sphere). In the LVG approximation, it is assumed that all regions of the source are Doppler shifted with respect to each other due to a velocity gradient. This means that all photons escape the source, unless absorbed locally [e.g. @Elitzur1992].**
+`pythonradex` supports four geometries: **two static geometries (slab and sphere), and two large-velocity-gradient (LVG) geometries (again slab and sphere). In the LVG approximation, it is assumed that all regions of the source are Doppler shifted with respect to each other due to a velocity gradient. This means that all photons escape the source, unless absorbed locally [i.e. close to the emission location; e.g. @Elitzur1992].**
 
 **Note that currently, effects of internal continuum and overlapping lines can only be included for the static geometries. Another limitation is that only a single molecule can be considered at the time. Thus, solving the radiative transfer of overlapping lines of different molecule is not supported yet. Also, treating overlapping lines adds considerable computational cost because averages over line profiles need to be calculated.**
 
@@ -57,25 +57,27 @@ The python programming language is now very widely used in astronomy. Still, no 
 
 # Performance advantage
 
-**Both `pythonradex` and `RADEX` are single-threaded. To compare their performance, we consider the calculation of a grid of models over a parameter space spanning 20 values in each of kinetic temperature, column density and H$_2$ density (i.e. a total of 8000 models). We consider a few different molecules: C (small number of levels and transitions), SO (large number of levels and transitions) as well as CO and HCO$^+$ (intermediate). On a laptop with i7-7700HQ cores running on Ubuntu 22.04, `pythonradex` computed the model grid faster than `RADEX` by factors 2 (C), 6 (SO), 6 (CO) and 3 (HCO$^+$). Running the same test on the Multi-wavelength Data Analysis System (MDAS) operated by the National Astronomical Observatory of Japan (Rocky Linux 8.9 with AMD EPYC 7543 CPUs) resulted in a even larger performance advantage: `pythonradex` calculated faster by factors of 18 (C), 14 (SO), 12 (CO) and 14 (HCO$^+$)[^1].**
+<!-- Numbers in this section are from performance_comparison.py -->
+**Both `pythonradex` and `RADEX` are single-threaded. To compare their performance, we consider the calculation of a grid of models over a parameter space spanning 20 values in each of kinetic temperature, column density and H$_2$ density (i.e. a total of 8000 models). We consider a few different molecules: C (small number of levels and transitions), SO (large number of levels and transitions) as well as CO and HCO$^+$ (intermediate). On a laptop with i7-7700HQ cores running on Ubuntu 22.04, `pythonradex` computed the model grid faster than `RADEX` by factors  of approximately 1.5 (C), 6 (SO), 7 (CO) and 3 (HCO$^+$). Running the same test on the Multi-wavelength Data Analysis System (MDAS) operated by the National Astronomical Observatory of Japan (Rocky Linux 8.9 with AMD EPYC 7543 CPUs) resulted in a even larger performance advantage: `pythonradex` calculated the grid faster by factors of 13 (C), 10 (SO), 13 (CO) and 12 (HCO$^+$)[^1].**
 
-[^1]: `Jadex` [@jadex] claims a performance advantage of a factor ~110 over `RADEX`.
+[^1]: **`Jadex` [@jadex] claims a performance advantage of a factor ~110 over `RADEX`.**
 
-# Additional differences between RADEX and pythonradex
+# Additional differences between `RADEX` and `pythonradex`
 
 ## Output flux
 
-RADEX computes line fluxes based on a "background subtracted" intensity given by $(B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})$, where $B_\nu$ is the Planck function, $T_\mathrm{ex}$ the excitation temperature, $I_\mathrm{bg}$ the external background and $\tau_\nu$ the optical depth. This may or may not be the right quantity to be compared to observations (for example, it is not appropriate when considering data from interferometers like ALMA). pythonradex does not apply any observational correction, giving the user the flexibility to decide how the computed fluxes are compared to observations.
+`RADEX` computes line fluxes based on a "background subtracted" intensity given by $(B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})$, where $B_\nu$ is the Planck function, $T_\mathrm{ex}$ the excitation temperature, $I_\mathrm{bg}$ the external background and $\tau_\nu$ the optical depth. This may or may not be the right quantity to be compared to observations (for example, it is not appropriate when considering data from interferometers like ALMA). `pythonradex` does not apply any observational correction, giving the user the flexibility to decide how the computed fluxes are compared to observations.
 
 ## Flux for spherical geometry
 
-Regardless of the adopted geometry, `RADEX` always uses the flux formula for a slab geometry, resulting in inconsistencies. Consider the optically thin limit where the total flux (in [W/m$^2$]) for a sphere is simply given by
-\begin{equation}
-F_\mathrm{thin} = V_\mathrm{sphere}n_2A_{21}\Delta E \frac{1}{4\pi d^2}
-\end{equation}
-with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ the volume of the sphere, $n$ the number density, $x_2$ the fractional level population of the upper level, $A_{21}$ the Einstein coefficient, $\Delta E$ the energy of the transition and $d$ the distance. `pythonradex` correctly reproduces this limiting case by using the formula by @Osterbrock1974, while `RADEX` overestimates the optically thin flux by a factor 1.5.
+**To calculate line fluxes, `pythonradex` uses different formulae depending on the geometry (slab or sphere; see the [`pythonradex` documentation](https://pythonradex.readthedocs.io/en/latest/index.html) for more details). On the other hand, `RADEX` always uses the formula for a slab. Figure \autoref{fig:flux_comparison_sphere} illustrates the consequences. For a static sphere, `RADEX` overestimates the flux by a factor 1.5[^2] in the optically thin limit. The optically thin flux can easily be computed directly[^3], confirming that the flux computed by `pythonradex` is correct. In the optically thick case, only the surface of the static sphere is visible, so both codes agree despite using different formulae. On the other hand, for the LVG sphere, the difference is always a factor 1.5 regardless of optical depth. This is a consequence of LVG assumption that photons always escape unless absorbed locally.**
 
-<!-- This is a comment and will not appear in the final PDF/HTML -->
+[^2]: **The factor 1.5 simply corresponds to the volume ratio of a "spherical slab" (i.e. a cylinder) to a sphere.**
+[^3] **In units of W/m$^2$, $F_\mathrm{thin} = V_\mathrm{sphere}n_2A_{21}\Delta E \frac{1}{4\pi d^2}$ with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ the volume of the sphere, $n$ the number density, $x_2$ the fractional level population of the upper level, $A_{21}$ the Einstein coefficient, $\Delta E$ the energy of the transition and $d$ the distance.**
+
+<!-- This figure comes from  compare_emerging_flux_formula.py -->
+![Flux ratio between `RADEX` and `pythonradex` for spherical geometries as a function of optical depth.\label{fig:flux_comparison_sphere}](flux_comparison_spherical_geometries.pdf)
+
 
 # Dependencies
 
