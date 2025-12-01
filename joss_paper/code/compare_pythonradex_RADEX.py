@@ -14,7 +14,7 @@ from pythonradex import radiative_transfer,helpers
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import LogNorm
+from matplotlib.colors import SymLogNorm
 
 
 line_profile_type = "rectangular"
@@ -98,6 +98,7 @@ plot_trans = cloud.emitting_molecule.rad_transitions[plot_trans_index]
 solid_angle = 1
 
 grid_size = 25
+#grid_size = 3
 N_grid = np.logspace(13,18,grid_size)*constants.centi**-2
 Tkin_grid = np.logspace(np.log10(5),np.log10(500),grid_size)
 N_GRID,TKIN_GRID = np.meshgrid(N_grid,Tkin_grid,indexing='ij')
@@ -108,10 +109,12 @@ flux_residuals = []
 v = np.linspace(-width_v*3,width_v*3,30)
 nu = plot_trans.nu0*(1-v/constants.c)
 
-vmin,vmax = 1,50
-cmap = plt.get_cmap("viridis").copy()
+vmin,vmax = -10,10
+cmap = plt.get_cmap("PuOr").copy()
 cmap.set_bad("red")
 
+n_fluxes = {"radex":[],"pythonradex":[]}
+n_negative_fluxes = {"radex":[],"pythonradex":[]}
 fig,axes = plt.subplots(2,2,constrained_layout=True)
 for i,nH2 in enumerate(nH2_grid):
     ax = axes.ravel()[i]
@@ -141,16 +144,21 @@ for i,nH2 in enumerate(nH2_grid):
                 tau_nu = phi_nu/np.max(phi_nu)*tau_nu0
                 flux = cloud.geometry.compute_flux_nu(
                              tau_nu=tau_nu,source_function=S,solid_angle=solid_angle)
-                flux = np.trapz(flux,nu)
+                flux = -np.trapz(flux,nu)
                 fluxes[ID][j,k] = flux
-    mean_flux = (fluxes["pythonradex"]+fluxes["radex"])/2
-    flux_residual = np.abs((fluxes["pythonradex"]-fluxes["radex"])/mean_flux)
+    # for flux in fluxes.values():
+    #     assert np.all(flux>0)
+    for code,flux in fluxes.items():
+        n_fluxes[code].append(len(flux))
+        n_negative_fluxes[code].append((flux<0).sum())
+    flux_residual = (fluxes["pythonradex"]-fluxes["radex"])/fluxes["pythonradex"]
     flux_residuals.append(flux_residual)
     masked_flux_residual = flux_residual.copy()*100
-    masked_flux_residual[masked_flux_residual < vmin] = vmin
-    masked_flux_residual[masked_flux_residual > vmax] = np.nan
+    assert -vmin == vmax
+    masked_flux_residual[np.abs(masked_flux_residual) > vmax] = np.nan
     im = ax.pcolormesh(N_GRID/constants.centi**-2,TKIN_GRID,masked_flux_residual,
-                       norm=LogNorm(vmin=vmin,vmax=vmax),shading='auto',cmap=cmap)
+                       norm=SymLogNorm(linthresh=0.1,vmin=vmin,vmax=vmax),
+                       shading='auto',cmap=cmap)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim(np.min(N_grid)/constants.centi**-2,np.max(N_GRID)/constants.centi**-2)
@@ -170,15 +178,19 @@ for i,nH2 in enumerate(nH2_grid):
 cbar = fig.colorbar(im, ax=axes.ravel(), orientation='horizontal', location='top')
 cbar.ax.xaxis.set_label_position('top')
 cbar.ax.xaxis.set_ticks_position('top')
-cbar.set_label(f"relative flux difference (CO {plot_trans.name}) [%]", labelpad=10)
+colorbar_label = f"CO {plot_trans.name}\n"\
+                +r"$(F_\mathrm{pythonradex}-F_\mathrm{RADEX})/F_\mathrm{pythonradex}$ [%]"
+cbar.set_label(colorbar_label, labelpad=10)
 # cbar_tick_labels = np.logspace(vmin,vmax,5)
 # cbar_ticks = np.log10(cbar_tick_labels)
 # cbar.set_ticks(cbar_ticks)
 # cbar.set_ticklabels([round(t) for t in cbar_tick_labels])
 
 print("max flux residual:")
-for nH2,flux_residual in zip(nH2_grid,flux_residuals):
+for i,(nH2,flux_residual) in enumerate(zip(nH2_grid,flux_residuals)):
     print(f"nH2 = {nH2/constants.centi**-3} cm-3: {np.max(flux_residual)}")
+    for code,n_neg in n_negative_fluxes.items():
+        print(f"{code}: {n_neg[i]}/{n_fluxes[code][i]} fluxes are negative")
 
 if save_figure:
     plt.savefig("pythonradex_vs_radex.pdf",format="pdf",bbox_inches="tight") 
