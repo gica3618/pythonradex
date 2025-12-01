@@ -18,7 +18,7 @@ import pytest
 tau_dust_values = {'thick':10,'thin':1e-4}
 default_T_dust = 100
 Tkin = 30
-geometries = ('uniform sphere','uniform slab')
+geometries = ('static sphere','static slab')
 line_profile_types = ('rectangular','Gaussian')
 
 

@@ -21,14 +21,14 @@ ext_background = lambda nu: helpers.B_nu(nu=nu,T=RADEX_test_cases.T_background)
 #for some unknown reason, LVG sphere RADEX shows much larger differences to pythonradex
 #than the other two geometries; to make the test pass, need to adopt more relaxed
 #conditions:
-rtol = {'uniform sphere RADEX':5e-2,
+rtol = {'static sphere RADEX':5e-2,
         'LVG slab':5e-2,
         'LVG sphere RADEX':2e-1}
-frac_max_level_pop_to_consider = {'uniform sphere RADEX':1e-5,
+frac_max_level_pop_to_consider = {'static sphere RADEX':1e-5,
                                   'LVG slab':1e-5,
                                   'LVG sphere RADEX':0.01}
 
-RADEX_geometry = {'uniform sphere RADEX':'Uniform sphere',
+RADEX_geometry = {'static sphere RADEX':'Uniform sphere',
                   'LVG slab':'Plane parallel slab',
                   'LVG sphere RADEX':'Expanding sphere'}
 

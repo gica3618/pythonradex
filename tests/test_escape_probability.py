@@ -11,7 +11,7 @@ from scipy import constants
 
 
 flux1D = escape_probability.Flux1D()
-all_fluxes = [flux1D.compute_flux_nu,escape_probability.UniformSphere.compute_flux_nu]
+all_fluxes = [flux1D.compute_flux_nu,escape_probability.StaticSphere.compute_flux_nu]
 large_tau_nu = np.array((5e2,))
 solid_angle = (100*constants.au)**2/(1*constants.parsec)**2
 
@@ -26,14 +26,14 @@ def test_fluxes():
                           solid_angle=solid_angle)
         assert np.allclose(thick_flux,test_source_func*solid_angle,rtol=1e-3,atol=0)
 
-def test_flux_uniform_sphere():
+def test_flux_static_sphere():
     limit_tau_nu = 1e-2
     epsilon_tau_nu = 0.01*limit_tau_nu
     source_function = 1
-    flux_Taylor = escape_probability.UniformSphere.compute_flux_nu(
+    flux_Taylor = escape_probability.StaticSphere.compute_flux_nu(
                        tau_nu=np.array((limit_tau_nu-epsilon_tau_nu,)),
                        source_function=source_function,solid_angle=solid_angle)
-    flux_analytical = escape_probability.UniformSphere.compute_flux_nu(
+    flux_analytical = escape_probability.StaticSphere.compute_flux_nu(
                           tau_nu=np.array((limit_tau_nu+epsilon_tau_nu,)),
                           source_function=source_function,solid_angle=solid_angle)
     assert np.isclose(flux_Taylor,flux_analytical,rtol=0.05,atol=0)
@@ -43,7 +43,7 @@ def test_flux_LVG_sphere():
     v = np.linspace(-2*V,2*V,100)
     nu0 = 100*constants.giga
     nu = nu0*(1-v/constants.c)
-    flux = escape_probability.UniformLVGSphere.compute_flux_nu(
+    flux = escape_probability.LVGSphere.compute_flux_nu(
                tau_nu=1,source_function=1,solid_angle=1,nu=nu,nu0=nu0,V=V)
     zero_region = np.abs(v) > V
     assert np.any(zero_region)

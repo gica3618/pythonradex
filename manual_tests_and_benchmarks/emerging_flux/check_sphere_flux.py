@@ -43,14 +43,14 @@ class LVGSphere1D(escape_probability.Flux1D):
     '''LVG sphere with the wrong flux calculation'''
     pass
 
-beta_funcs = {'uniform sphere':escape_probability_functions.beta_uniform_sphere,
-              'uniform sphere RADEX':escape_probability_functions.beta_uniform_sphere,
+beta_funcs = {'static sphere':escape_probability_functions.beta_static_sphere,
+              'static sphere RADEX':escape_probability_functions.beta_static_sphere,
               'LVG sphere':escape_probability_functions.beta_LVG_sphere,
               'LVG sphere 1Dflux':escape_probability_functions.beta_LVG_sphere,
               'LVG sphere RADEX':escape_probability_functions.beta_LVG_sphere_RADEX}
-geometries = {'uniform sphere':escape_probability.UniformSphere(),
-              'uniform sphere RADEX':escape_probability.UniformSphereRADEX(),
-              'LVG sphere':escape_probability.UniformLVGSphere(),
+geometries = {'static sphere':escape_probability.StaticSphere(),
+              'static sphere RADEX':escape_probability.StaticSphereRADEX(),
+              'LVG sphere':escape_probability.LVGSphere(),
               'LVG sphere 1Dflux':LVGSphere1D(),
               'LVG sphere RADEX':escape_probability.LVGSphereRADEX()}
 

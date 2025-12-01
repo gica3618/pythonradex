@@ -28,7 +28,7 @@ treat_overlap_options = (False,True)
 
 def get_general_test_cloud(specie,width_v):
     return radiative_transfer.Cloud(
-                          datafilepath=datafilepath[specie],geometry='uniform sphere',
+                          datafilepath=datafilepath[specie],geometry='static sphere',
                           line_profile_type='Gaussian',width_v=width_v)
 
 def allowed_geo_param_combination(geometry,line_profile_type,treat_line_overlap):
@@ -122,7 +122,7 @@ class TestUpdateParameters():
         def T_dust_new(nu):
             return 3*nu
         cloud = radiative_transfer.Cloud(
-                          datafilepath=datafilepath['CO'],geometry='uniform sphere',
+                          datafilepath=datafilepath['CO'],geometry='static sphere',
                           line_profile_type='Gaussian',width_v=1*constants.kilo,
                           use_Ng_acceleration=True)
         cloud.update_parameters(N=1e14,Tkin=20,collider_densities={'para-H2':1},
@@ -342,7 +342,7 @@ class TestUpdateParameters():
         def param_iterator():
             return itertools.product(N_values,ext_backgrounds,Tkins,coll_density_values,
                                      collider_cases,T_dust_cases,tau_dust_cases)
-        cloud_kwargs = {'datafilepath':datafilepath['CO'],'geometry':'uniform sphere',
+        cloud_kwargs = {'datafilepath':datafilepath['CO'],'geometry':'static sphere',
                         'line_profile_type':'rectangular','width_v':1*constants.kilo,
                         'use_Ng_acceleration':True,'treat_line_overlap':False}
         cloud_to_modify = radiative_transfer.Cloud(**cloud_kwargs)
@@ -413,7 +413,7 @@ def test_compute_residual():
 class TestModelGrid():
     
     cloud = radiative_transfer.Cloud(
-                          datafilepath=datafilepath['CO'],geometry='uniform sphere',
+                          datafilepath=datafilepath['CO'],geometry='static sphere',
                           line_profile_type='rectangular',width_v=1.4*constants.kilo,
                           use_Ng_acceleration=True,treat_line_overlap=False)
     ext_backgrounds = {'CMB':helpers.generate_CMB_background(z=2),
@@ -545,7 +545,7 @@ def test_line_profile_averaging():
     level_pops = []
     for treat_line_overlap in (True,False):
         cld = radiative_transfer.Cloud(
-                          datafilepath=datafilepath['CO'],geometry='uniform sphere',
+                          datafilepath=datafilepath['CO'],geometry='static sphere',
                           line_profile_type='rectangular',width_v=1*constants.kilo,
                           use_Ng_acceleration=True,
                           treat_line_overlap=treat_line_overlap)

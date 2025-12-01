@@ -36,11 +36,11 @@ class Cloud():
     min_iter_before_ng_acceleration = 4
     ng_acceleration_interval = 4
     slow_variation_limit = 0.1
-    geometries = {'uniform sphere':escape_probability.UniformSphere,
-                  'uniform sphere RADEX':escape_probability.UniformSphereRADEX,
-                  'uniform slab':escape_probability.UniformSlab,
-                  'LVG slab':escape_probability.UniformLVGSlab,
-                  'LVG sphere':escape_probability.UniformLVGSphere,
+    geometries = {'static sphere':escape_probability.StaticSphere,
+                  'static sphere RADEX':escape_probability.StaticSphereRADEX,
+                  'static slab':escape_probability.StaticSlab,
+                  'LVG slab':escape_probability.LVGSlab,
+                  'LVG sphere':escape_probability.LVGSphere,
                   'LVG sphere RADEX':escape_probability.LVGSphereRADEX}
     line_profiles = {'Gaussian':atomic_transition.GaussianLineProfile,
                      'rectangular':atomic_transition.RectangularLineProfile}
@@ -54,8 +54,8 @@ class Cloud():
             datafilepath (:obj:`str`): filepath to the LAMDA file that contains
                 the atomic / molecular data
             geometry (:obj:`str`): determines how the escape probability
-                and flux are calculated. Available options: "uniform sphere", 
-                "uniform sphere RADEX", "uniform slab", "LVG slab", "LVG sphere" and
+                and flux are calculated. Available options: "static sphere", 
+                "static sphere RADEX", "static slab", "LVG slab", "LVG sphere" and
                 "LVG sphere RADEX". The options containing "RADEX" are meant to
                 mimic the behaviour of the original RADEX code by using the same
                 equations as RADEX.

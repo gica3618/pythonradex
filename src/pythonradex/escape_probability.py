@@ -10,17 +10,17 @@ from pythonradex import escape_probability_functions
 from scipy import constants
 
 
-class EscapeProbabilityUniformSphere():
+class EscapeProbabilityStaticSphere():
     
-    '''Represents the escape probability from a uniform sphere.'''
+    '''Represents the escape probability from a static sphere.'''
 
     def __init__(self):
-        self.beta = escape_probability_functions.beta_uniform_sphere
+        self.beta = escape_probability_functions.beta_static_sphere
 
 
-class UniformSphere(EscapeProbabilityUniformSphere):
+class StaticSphere(EscapeProbabilityStaticSphere):
 
-    '''Represents the escape probability and emerging flux from a uniform
+    '''Represents the escape probability and emerging flux from a static
     spherical medium'''    
     
     @staticmethod
@@ -65,8 +65,8 @@ class Flux1D():
         return source_function*tau_factor*solid_angle
 
 
-class UniformSphereRADEX(EscapeProbabilityUniformSphere,Flux1D):
-    """Represents the escape probability from a uniform sphere, but uses the
+class StaticSphereRADEX(EscapeProbabilityStaticSphere,Flux1D):
+    """Represents the escape probability from a static sphere, but uses the
     single direction assumption to compute the emerging flux. This is what is
     done in the original RADEX code."""
     #see line 288 and following in io.f of RADEX
@@ -74,26 +74,26 @@ class UniformSphereRADEX(EscapeProbabilityUniformSphere,Flux1D):
     pass
 
 
-class UniformSlab(Flux1D):
+class StaticSlab(Flux1D):
     #Since I assume the source is in the far field, it is ok to calculate the flux
     #with the 1D formula
-    '''Represents the escape probability and emerging flux from a uniform
+    '''Represents the escape probability and emerging flux from a static
     slab'''
 
     def __init__(self):
-        self.beta = escape_probability_functions.beta_uniform_slab
+        self.beta = escape_probability_functions.beta_static_slab
 
 
-class UniformLVGSlab(Flux1D):
-    """The escape probability and flux for a uniform large velocity gradient (LVG)
+class LVGSlab(Flux1D):
+    """The escape probability and flux for a large velocity gradient (LVG)
     slab"""
 
     def __init__(self):
         self.beta = escape_probability_functions.beta_LVG_slab
 
 
-class UniformLVGSphere():
-    """The escape probability and flux for a uniform large velocity gradient (LVG)
+class LVGSphere():
+    """The escape probability and flux for a large velocity gradient (LVG)
     sphere"""
 
     def __init__(self):

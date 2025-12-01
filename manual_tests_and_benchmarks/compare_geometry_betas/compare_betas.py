@@ -12,11 +12,11 @@ from pythonradex import escape_probability_functions as epf
 
 tau_grid = np.logspace(-3,3,100)
 
-beta_funcs = {'uniform sphere':epf.beta_uniform_sphere, #same as 'uniform sphere RADEX'
+beta_funcs = {'static sphere':epf.beta_static_sphere, #same as 'static sphere RADEX'
               'LVG sphere':epf.beta_LVG_sphere,
               'LVG sphere RADEX':epf.beta_LVG_sphere_RADEX,
               'LVG slab':epf.beta_LVG_slab,
-              'uniform slab':epf.beta_uniform_slab
+              'static slab':epf.beta_static_slab
               }
 
 fig,ax = plt.subplots()

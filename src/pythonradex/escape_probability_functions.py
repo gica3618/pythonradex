@@ -38,8 +38,8 @@ def identify_tau_regions(tau_nu):
                 unreliable_negative_region
 
 @nb.jit(nopython=True,cache=True)
-def beta_analytical_uniform_sphere(tau_nu):
-    '''Computes the escape probability for a uniform sphere analytically,
+def beta_analytical_static_sphere(tau_nu):
+    '''Computes the escape probability for a static sphere analytically,
     given the optical depth tau_nu'''
     #see the RADEX manual for this formula; derivation is found in the old
     #Osterbrock (1974) book, appendix 2. Note that Osterbrock uses tau for
@@ -47,10 +47,10 @@ def beta_analytical_uniform_sphere(tau_nu):
     return 1.5/tau_nu*(1-2/tau_nu**2+(2/tau_nu+2/tau_nu**2)*np.exp(-tau_nu))
 
 @nb.jit(nopython=True,cache=True)
-def beta_Taylor_uniform_sphere(tau_nu):
-    '''Computes the escape probability of a uniform sphere using a Taylor expansion,
+def beta_Taylor_static_sphere(tau_nu):
+    '''Computes the escape probability of a static sphere using a Taylor expansion,
     given the optical depth tau_nu'''
-    #Taylor expansion of beta for uniform sphere is easier to evaluate numerically
+    #Taylor expansion of beta for static sphere is easier to evaluate numerically
     #(for small tau_nu)
     #Series calculated using Wolfram Alpha; not so easy analytically, to
     #calculate the limit as tau->0, use rule of L'Hopital
@@ -114,33 +114,33 @@ def generate_Taylor_beta(beta_ana,beta_Taylor):
         return clip_prob(prob)
     return beta
 
-beta_uniform_sphere = generate_Taylor_beta(beta_ana=beta_analytical_uniform_sphere,
-                                           beta_Taylor=beta_Taylor_uniform_sphere)
+beta_static_sphere = generate_Taylor_beta(beta_ana=beta_analytical_static_sphere,
+                                          beta_Taylor=beta_Taylor_static_sphere)
 beta_LVG_slab = generate_Taylor_beta(beta_ana=beta_analytical_LVG_slab,
                                      beta_Taylor=beta_Taylor_LVG_slab)
 beta_LVG_sphere = generate_Taylor_beta(beta_ana=beta_analytical_LVG_sphere,
                                        beta_Taylor=beta_Taylor_LVG_sphere)
 
-######### functions for uniform slab  ##################
+######### functions for static slab  ##################
 #see Elitzur92 (https://ui.adsabs.harvard.edu/abs/1992ASSL..170.....E/abstract,
 #Problem 2.12) for confirmation of the formulas used here
 
 @nb.jit(nopython=True,cache=True)
-def integral_term_for_uniform_slab(tau):
+def integral_term_for_static_slab(tau):
     mu = np.linspace(1e-5,1,200)
     return np.trapezoid((1-np.exp(-tau/mu))*mu,mu)
 
-tau_grid_for_UniformSlab = np.logspace(-5,2,1000)
-min_grid_tau = np.min(tau_grid_for_UniformSlab)
-max_grid_tau = np.max(tau_grid_for_UniformSlab)
+tau_grid_for_StaticSlab = np.logspace(-5,2,1000)
+min_grid_tau = np.min(tau_grid_for_StaticSlab)
+max_grid_tau = np.max(tau_grid_for_StaticSlab)
 #the expression for the flux contains an integral term;
 #here I pre-compute this term so it can be interpolated to speed up the code
-integral_term_grid = np.array([integral_term_for_uniform_slab(tau)
-                               for tau in tau_grid_for_UniformSlab])
+integral_term_grid = np.array([integral_term_for_static_slab(tau)
+                               for tau in tau_grid_for_StaticSlab])
 
 @nb.jit(nopython=True,cache=True)
 def interpolated_integral_term(tau):
-    interp = np.interp(x=tau,xp=tau_grid_for_UniformSlab,fp=integral_term_grid)
+    interp = np.interp(x=tau,xp=tau_grid_for_StaticSlab,fp=integral_term_grid)
     #limiting values:
     # -very large tau: integral term goes to 0.5
     # -very small tau: integral term goes to tau
@@ -149,7 +149,7 @@ def interpolated_integral_term(tau):
     return np.where(tau>max_grid_tau,0.5,np.where(tau<min_grid_tau,tau,interp))
 
 @nb.jit(nopython=True,cache=True)
-def beta_uniform_slab(tau_nu):
+def beta_static_slab(tau_nu):
     #for negative tau, this function will also return 1, which is fine if tau
     #is close to 0, but not correct for very negative tau; in general, results
     #should be ignored for tau < -1

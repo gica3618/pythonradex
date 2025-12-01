@@ -17,7 +17,7 @@ radex_input_filename = 'radex.in'
 radex_output_filename = 'radex.out'
 radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
                        'He':'He'}
-executables = {'uniform sphere':'radex_static_sphere',
+executables = {'static sphere':'radex_static_sphere',
                'LVG sphere RADEX':'radex_LVG_sphere',
                'LVG slab RADEX':'radex_LVG_slab'}
 
@@ -46,7 +46,7 @@ for test_case in RADEX_test_cases.test_cases:
                      itertools.product(test_case['collider_densities_values'],
                                        test_case['N_values'],
                                        test_case['Tkin_values']):
-        for geo in ('uniform sphere','LVG sphere RADEX','LVG slab RADEX'):
+        for geo in ('static sphere','LVG sphere RADEX','LVG slab RADEX'):
             write_RADEX_input_file( 
                    mol_data_filename=filename,Tkin=Tkin,
                    collider_densities=collider_densities,

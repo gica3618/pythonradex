@@ -1,6 +1,6 @@
 * Radex version        : 30nov2011
 * Geometry             : Expanding sphere
-* Molecular data file  : ../../tests/LAMDA_files/ocs@xpol.dat                                            
+* Molecular data file  : /home/gianni/science/projects/code/pythonradex/tests/LAMDA_files/ocs@xpol.dat   
 * T(kin)            [K]:   97.000
 * Density of H2  [cm-3]:  1.000E+02
 * T(background)     [K]:    2.730

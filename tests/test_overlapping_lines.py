@@ -27,7 +27,7 @@ class Test_Overlapping():
          #'intermediate':1e16/constants.centi**2,
          'thick':1e21/constants.centi**2}
     solid_angle = 1
-    geometries = ('uniform sphere','uniform slab')
+    geometries = ('static sphere','static slab')
 
     def generate_cloud(self,N,line_profile_type,treat_line_overlap,coll_dens,
                        geometry):

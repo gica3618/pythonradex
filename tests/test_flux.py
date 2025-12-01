@@ -113,7 +113,7 @@ class TestFastFlux():
         nu = np.append(nu,(test_line.nu0-width_nu/2,test_line.nu0+width_nu/2))
         nu.sort()
         expected_tau_nu = test_line.tau_nu(N1=N1,N2=N2,nu=nu)
-        geo_name = 'uniform slab'
+        geo_name = 'static slab'
         geo = radiative_transfer.Cloud.geometries[geo_name]
         tau_nu0_individual_transitions = mol.get_tau_nu0_lines(
                                              N=N,level_population=level_pop)
@@ -146,8 +146,8 @@ class TestInvalidFluxRequest():
     def generate_test_flux_calculator(self,emitting_molecule,
                                       tau_nu0_individual_transitions,tau_dust,
                                       S_dust):
-        geometry_name = 'uniform sphere'
-        geometry = escape_probability.UniformSphere()
+        geometry_name = 'static sphere'
+        geometry = escape_probability.StaticSphere()
         level_population = emitting_molecule.LTE_level_pop(T=45)
         fluxcalculator = flux.FluxCalculator(
                            emitting_molecule=emitting_molecule,
@@ -218,7 +218,7 @@ def test_tau_nu_constructor():
     width_v = 1*constants.kilo
     N = 1e12/constants.centi**2
     T = 344
-    geo_name = 'uniform sphere'
+    geo_name = 'static sphere'
     geo = radiative_transfer.Cloud.geometries[geo_name]
     test_transitions = [0,3,10]
     for lp in ('rectangular','Gaussian'):
@@ -309,7 +309,7 @@ class TestFluxesWithPhysics():
             expected_fluxes = []
             for i,line in enumerate(fluxcalculator.emitting_molecule.rad_transitions):
                 up_level_pop = level_pop[line.up.number]
-                if fluxcalculator.geometry_name in ('uniform sphere','LVG sphere'):
+                if fluxcalculator.geometry_name in ('static sphere','LVG sphere'):
                     #in the case of spheres, we can do an elegant test
                     #using physics
                     number_density = N/(2*self.sphere_radius)

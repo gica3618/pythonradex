@@ -10,9 +10,9 @@ from pythonradex import escape_probability_functions as epf
 import numpy as np
 
 
-Taylor_geometries = [{'analytical':epf.beta_analytical_uniform_sphere,
-                      'Taylor':epf.beta_Taylor_uniform_sphere,
-                      'beta':epf.beta_uniform_sphere},
+Taylor_geometries = [{'analytical':epf.beta_analytical_static_sphere,
+                      'Taylor':epf.beta_Taylor_static_sphere,
+                      'beta':epf.beta_static_sphere},
                      {'analytical':epf.beta_analytical_LVG_slab,
                       'Taylor':epf.beta_Taylor_LVG_slab,
                       'beta':epf.beta_LVG_slab},
@@ -82,14 +82,14 @@ def test_integral_term_interpolation():
     assert np.min(tau_values) < epf.min_grid_tau
     assert np.max(tau_values) > epf.max_grid_tau
     interp_values = epf.interpolated_integral_term(tau_values)
-    computed_values = [epf.integral_term_for_uniform_slab(t) for t in tau_values]
+    computed_values = [epf.integral_term_for_static_slab(t) for t in tau_values]
     assert np.allclose(interp_values,computed_values,rtol=1e-2,atol=0)
 
-def test_uniform_slab_beta():
-    assert epf.beta_uniform_slab(small_tau) >= 0.99
-    assert epf.beta_uniform_slab(medium_tau) > 0 and epf.beta_uniform_slab(medium_tau) < 1
-    assert epf.beta_uniform_slab(large_tau) < 0.02
-    assert epf.beta_uniform_slab(unreliable_tau) == 1
+def test_static_slab_beta():
+    assert epf.beta_static_slab(small_tau) >= 0.99
+    assert epf.beta_static_slab(medium_tau) > 0 and epf.beta_static_slab(medium_tau) < 1
+    assert epf.beta_static_slab(large_tau) < 0.02
+    assert epf.beta_static_slab(unreliable_tau) == 1
 
 def test_LVG_sphere_RADEX_beta():
     assert epf.beta_LVG_sphere_RADEX(small_tau) >= 0.99

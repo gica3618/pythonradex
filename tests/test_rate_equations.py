@@ -15,7 +15,7 @@ import pytest
 
 here = os.path.dirname(os.path.abspath(__file__))
 cmb = helpers.generate_CMB_background()
-geometry = escape_probability.UniformSphere()
+geometry = escape_probability.StaticSphere()
 
 Tkin = 150
 N = 1e15/constants.centi**-2
@@ -99,7 +99,7 @@ class TestGeneral():
     def test_const_nu_functions(self):
         kwargs = {'molecule':self.test_molecule,
                   'collider_densities':self.collider_densities,'Tkin':123,
-                  'treat_line_overlap':False,'geometry':'uniform sphere',
+                  'treat_line_overlap':False,'geometry':'static sphere',
                   'N':1e12/constants.centi**2}
         valid_const_values = [0,1.2,3]
         for const_value in valid_const_values:

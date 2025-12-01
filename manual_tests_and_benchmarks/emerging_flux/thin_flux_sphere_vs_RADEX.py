@@ -61,9 +61,9 @@ thin_flux = volume*n*level_pop[trans.up.number]*trans.A21*trans.Delta_E/(4*np.pi
 print(f"analytical flux: {thin_flux:.3g} W/m2")
 source_func = helpers.B_nu(nu=nu,T=Tex)
 
-geometries = {"uniform sphere":escape_probability.UniformSphere(),
-              "lvg sphere":escape_probability.UniformLVGSphere(),
-              "uniform sphere RADEX":escape_probability.UniformSphereRADEX(),
+geometries = {"static sphere":escape_probability.StaticSphere(),
+              "lvg sphere":escape_probability.LVGSphere(),
+              "static sphere RADEX":escape_probability.StaticSphereRADEX(),
               "lvg sphere RADEX":escape_probability.LVGSphereRADEX()}
 flux_kwargs_template = {'tau_nu':tau_nu,'source_function':source_func,
                         'solid_angle':solid_angle}
