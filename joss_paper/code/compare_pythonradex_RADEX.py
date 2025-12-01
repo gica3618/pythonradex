@@ -165,7 +165,7 @@ for i,nH2 in enumerate(nH2_grid):
     ax.set_ylim(np.min(Tkin_grid),np.max(Tkin_grid))
     nH2_string = f"{nH2/constants.centi**-3:.1e}" # '2.3e+02'
     mant, exp = nH2_string.split("e")
-    nH2_latex_str = rf"$n(H_2) = {mant}\times10^{{{int(exp)}}}$"
+    nH2_latex_str = rf"$n(H_2) = {mant}\times10^{{{int(exp)}}}$ cm$^{-3}$"
     ax.set_title(nH2_latex_str)
     if i in (0,1):
         ax.set_xticklabels([])
