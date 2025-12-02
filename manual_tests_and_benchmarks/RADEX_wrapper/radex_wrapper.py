@@ -83,10 +83,11 @@ class RadexOutput():
             error_message = "Error: Ambiguous line selection (no line or more than one line)\n"\
                             + "See {:s} to find out".format(self.output_filepath)
             raise RuntimeError(error_message)
-        results=output_lines[-1].split()
+        results = output_lines[-1].split()
         output = {'flux':float(results[-1])*constants.erg/constants.centi**2,
                   'tau':float(results[-6]), 'Tex':float(results[-7]),
-                  'TR':float(results[-5])}
+                  'TR':float(results[-5]),"pop_up":float(results[-4]),
+                  "pop_low":float(results[-3])}
         # flux in W/m2; to get the observed flux, one has to divide by 4*pi and
         # multiply by the solid angle of the target; see 
         # https://personal.sron.nl/~vdtak/radex/index.shtml#output

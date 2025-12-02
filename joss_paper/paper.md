@@ -50,7 +50,7 @@ The python programming language is now very widely used in astronomy. Still, no 
 
 `pythonradex` was benchmarked against `RADEX` for a number of example problems, generally with excellent agreement **(see \autoref{fig:pythonradex_vs_radex} for an example).** To test the treatment of overlapping lines, `pythonradex` was tested against the `MOLPOP-CEP` code [@AsensioRamos2018], again showing good agreement, **as illustrated in \autoref{fig:HCN_spectrum}.**
 
-![**The relative difference between the CO 2-1 fluxes computed with `pythonradex` and `RADEX` for an LVG slab. Each panel shows a parameter space of column density and kinetic temperature with a fixed H$_2$ density. Values above $\pm10$% are shown in red. Significant differences in the predicted fluxes are found for high column densities and temperatures paired with low H$_2$ densities**.\label{fig:pythonradex_vs_radex}](code/pythonradex_vs_radex.pdf)
+![**The relative difference between the excitation temperatures of CO 2-1 computed with `pythonradex` and `RADEX` for an LVG slab. Each panel shows a parameter space of column density and kinetic temperature with a fixed H$_2$ density. Values above $\pm10$% are shown in red.**.\label{fig:pythonradex_vs_radex}](code/pythonradex_vs_radex.pdf)
 
 ![Spectrum of HCN around 177.3 GHz computed with `pythonradex` **and `MOLPOP-CEP` for a static slab. Good agreement is found when treating line overlap. Interestingly, the spectra differ somewhat when ignoring overlap.** The positions and widths of the individual hyperfine components are illustrated by the black dotted lines.\label{fig:HCN_spectrum}](code/HCN_spec.pdf)
 
