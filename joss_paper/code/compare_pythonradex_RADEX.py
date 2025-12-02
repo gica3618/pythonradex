@@ -33,8 +33,8 @@ plot_trans_index = 1
 grid_size = 25
 #grid_size = 3
 
-vmin = {"Tex":-10,"flux":-10}
-vmax = {"Tex":10,"flux":10}
+vmin,vmax = -100,100
+linthresh = 1
 cmap = plt.get_cmap("PuOr").copy()
 cmap.set_bad("red")
 
@@ -173,9 +173,10 @@ for quantity,values in zip(("flux","Tex"),(flux,excitation_temp)):
         print(f"{quantity} {code}: {n_negative}/{val.size} are negative")
     residual = (values["pythonradex"]-values["radex"])/values["pythonradex"]
     masked_residual = residual.copy()*100
-    assert -vmin[quantity] == vmax[quantity]
-    mask = np.abs(masked_residual) > vmax[quantity]
+    assert -vmin == vmax
+    mask = np.abs(masked_residual) > vmax
     masked_residual[mask] = np.nan
+    print(f"{quantity} with large difference between pythonradex and RADEX")
     for i,j,k in zip(*mask.nonzero()):
         print(f"nH2={nH2_grid[i]/constants.centi**-3} cm-3, "
               +f"N={N_grid[j]/constants.centi**-2} cm-2, Tkin={Tkin_grid[k]:.3} K")
@@ -183,7 +184,7 @@ for quantity,values in zip(("flux","Tex"),(flux,excitation_temp)):
             print(f"{code}: {quantity} = {val[i,j,k]:.3g}")
     for i,nH2 in enumerate(nH2_grid):
         ax = axes.ravel()[i]
-        norm = SymLogNorm(linthresh=0.1,vmin=vmin[quantity],vmax=vmax[quantity])
+        norm = SymLogNorm(linthresh=linthresh,vmin=vmin,vmax=vmax)
         im = ax.pcolormesh(N_GRID/constants.centi**-2,TKIN_GRID,masked_residual[i,:,:],
                            norm=norm,shading='auto',cmap=cmap)
         ax.set_xscale("log")
