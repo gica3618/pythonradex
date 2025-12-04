@@ -11,7 +11,6 @@ Created on Tue Nov 18 14:50:22 2025
 #run this in an environment where pythonradex is installed in editable mode, e.g.
 #the virtual environment virt_env_for_testing
 
-#TODO average over geometry and line profile (latter only for uniform sphere)
 
 import sys
 sys.path.append('../..')
