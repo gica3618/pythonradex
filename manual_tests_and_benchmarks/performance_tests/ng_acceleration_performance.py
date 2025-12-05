@@ -24,7 +24,7 @@ collider_densities = {'para-H2':1e4/constants.centi**3}
 
 data_folder = '../../tests/LAMDA_files'
 datafilepath = general.datafilepath(data_filename)
-geometry = 'uniform sphere'
+geometry = 'static sphere'
 ext_background = helpers.generate_CMB_background(z=0)
 #ext_background = helpers.zero_background
 

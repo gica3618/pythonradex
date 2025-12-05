@@ -22,7 +22,7 @@ def FWHM(Doppler_param):
 datafilepath = general.datafilepath('co.dat')
 width_v = FWHM(1*constants.kilo)
 cloud = radiative_transfer.Cloud(
-                      datafilepath=datafilepath,geometry='uniform slab',
+                      datafilepath=datafilepath,geometry='static slab',
                       line_profile_type='rectangular',width_v=width_v)
 
 n = 1e4/constants.centi**3

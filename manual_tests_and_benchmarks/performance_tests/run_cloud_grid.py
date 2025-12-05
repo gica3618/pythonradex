@@ -25,7 +25,7 @@ ext_background = helpers.generate_CMB_background(z=0)
 
 cloud = radiative_transfer.Cloud(
                 datafilepath=general.datafilepath('co.dat'),
-                geometry='uniform sphere',line_profile_type='Gaussian',
+                geometry='static sphere',line_profile_type='Gaussian',
                 width_v=1*constants.kilo,use_Ng_acceleration=True,
                 treat_line_overlap=False,warn_negative_tau=False)
 #solve a first time to compile the functions:

@@ -24,7 +24,7 @@ collider_densities = {'H2':1e3/constants.centi**3}
 #                       'ortho-H2':1e3/constants.centi**3}
 
 datafilepath = general.datafilepath(data_filename)
-geometry = 'uniform sphere'
+geometry = 'static sphere'
 ext_background = 0
 N = 1e16/constants.centi**2
 line_profile_type = 'Gaussian'

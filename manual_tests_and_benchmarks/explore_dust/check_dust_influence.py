@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 
 datafilepath = general.datafilepath('co.dat')
-geometry = 'uniform sphere'
+geometry = 'static sphere'
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
 use_Ng_acceleration = True

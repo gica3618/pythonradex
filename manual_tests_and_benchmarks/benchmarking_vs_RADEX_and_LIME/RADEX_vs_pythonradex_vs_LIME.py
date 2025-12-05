@@ -52,7 +52,7 @@ suppress_LIME_stdout_stderr = True
 '''
 ################################################################
 general_geometry = 'slab'
-geometries = ['uniform slab','LVG slab']
+geometries = ['static slab','LVG slab']
 slab_size = 100*constants.au
 slab_surface = slab_size**2
 Omega = slab_surface/distance**2
@@ -73,7 +73,7 @@ def density(N):
 '''
 ################################################################
 general_geometry = 'sphere'
-geometries = ['uniform sphere','uniform sphere RADEX']
+geometries = ['static sphere','static sphere RADEX']
 r = 100*constants.au
 Omega = np.pi*r**2/distance**2
 x = np.linspace(-2*r,2*r,60)

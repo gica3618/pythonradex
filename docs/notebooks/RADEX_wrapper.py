@@ -9,7 +9,6 @@ Created on Wed Dec  3 18:19:04 2025
 import os
 from scipy import constants
 import subprocess
-import time
 import pandas as pd
 
 
@@ -36,18 +35,8 @@ def write_radex_input_file(datafilename,collider_densities,Tkin,T_background,
         f.write(f'{width_v/constants.kilo}\n')
         f.write('0\n')
 
-def run_radex(input_filepath,output_filepath,verbose=False):
-    start = time.time()
-    if os.path.exists(output_filepath):
-        os.remove(output_filepath)
-    execution_start = time.time
+def run_radex(input_filepath):
     subprocess.run(f'{radex_path} < {input_filepath} > radex_log.txt', shell=True)
-    execution_end = time.time()
-    assert os.path.exists(output_filepath),"Radex crashed?"
-    end = time.time()
-    if verbose:
-        print(f"execution time: {execution_end-execution_start:.2g}")
-        print(f"total run time: {end-start:.2g}")
 
 def read_radex_output(output_filepath):
     rows = []
@@ -78,7 +67,10 @@ def run(datafilename,collider_densities,Tkin,T_background,N,width_v,input_filepa
           datafilename=datafilename,collider_densities=collider_densities,
           Tkin=Tkin,T_background=T_background,N=N,width_v=width_v,input_filepath=input_filepath,
           output_filepath=output_filepath)
-    run_radex(input_filepath=input_filepath,output_filepath=output_filepath)
+    if os.path.exists(output_filepath):
+        os.remove(output_filepath)
+    run_radex(input_filepath=input_filepath)
+    assert os.path.exists(output_filepath),"Radex crashed?"
     return read_radex_output(output_filepath=output_filepath)
 
 

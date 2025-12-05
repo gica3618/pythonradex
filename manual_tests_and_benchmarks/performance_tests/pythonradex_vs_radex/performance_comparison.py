@@ -27,9 +27,9 @@ import shutil
 ext_background = helpers.generate_CMB_background(z=0)
 
 
-#can only use LVG slab and uniform sphere, since these are the only two
+#can only use LVG slab and static sphere, since these are the only two
 #where RADEX and pythonradex use same escape probability
-geometries = ['uniform sphere', 'LVG slab']
+geometries = ['static sphere', 'LVG slab']
 
 n_grid_elements = 20
 

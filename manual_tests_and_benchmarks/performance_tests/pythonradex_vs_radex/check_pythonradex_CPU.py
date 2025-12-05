@@ -24,7 +24,7 @@ datafilepath = os.path.join(general.lamda_data_folder,"c+.dat")
 collider_densities = {"e":1e4*constants.centi**-3}
 
 cloud_kwargs = {}
-cloud = radiative_transfer.Cloud(datafilepath=datafilepath,geometry="uniform sphere",
+cloud = radiative_transfer.Cloud(datafilepath=datafilepath,geometry="static sphere",
                                  line_profile_type="Gaussian",width_v=1*constants.kilo)
 ext_background = helpers.generate_CMB_background()
 

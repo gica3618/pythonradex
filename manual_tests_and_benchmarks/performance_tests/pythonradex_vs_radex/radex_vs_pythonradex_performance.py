@@ -29,9 +29,9 @@ n_elements = [5,7,10,15,20] #for Tkin, collider and N
 #however, seems like it doesn't really change anything...
 vary_only_N = False
 
-#can only use LVG slab and uniform sphere, since these are the only two
+#can only use LVG slab and static sphere, since these are the only two
 #where RADEX and pythonradex use same escape probability
-geometry = 'uniform sphere'
+geometry = 'static sphere'
 # geometry = 'LVG slab'
 
 data_filename = 'co.dat'

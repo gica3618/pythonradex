@@ -16,7 +16,7 @@ from scipy import constants
 
 radex_collider_keys = {'H2':'H2','para-H2':'p-H2','ortho-H2':'o-H2','e':'e',
                        'He':'He'}
-radex_executables = {"uniform sphere":'../../../tests/Radex/bin/radex_static_sphere',
+radex_executables = {"static sphere":'../../../tests/Radex/bin/radex_static_sphere',
                      "LVG slab":'../../../tests/Radex/bin/radex_LVG_slab',
                      "LVG sphere":'../../../tests/Radex/bin/radex_LVG_sphere'}
 
@@ -51,7 +51,7 @@ def run_radex(datafilename,geometry,collider_densities,Tkin,N,width_v,
 if __name__ == "__main__":
     datafilename = "c.dat"
     #datafilename = "co.dat"
-    geometry = "uniform sphere"
+    geometry = "static sphere"
     collider_densities = {"ortho-H2":1e4*constants.centi**-3,
                           "para-H2":5e5*constants.centi**-3}
    

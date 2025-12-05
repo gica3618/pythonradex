@@ -23,7 +23,7 @@ line_profile_type = 'rectangular'
 
 datafilepath = general.datafilepath('oh@hfs_modified.dat')
 
-cloud_kwargs = {'datafilepath':datafilepath,'geometry':'uniform slab',
+cloud_kwargs = {'datafilepath':datafilepath,'geometry':'static slab',
                 'line_profile_type':line_profile_type,'warn_negative_tau':False}
 param_kwargs = {'Tkin':100,'ext_background':helpers.generate_CMB_background(),
                 'T_dust':0,'tau_dust':0}

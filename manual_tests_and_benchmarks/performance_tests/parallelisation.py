@@ -37,7 +37,7 @@ chunk_sizes = [100,]
 def generate_new_cloud():
     return radiative_transfer.Cloud(
                     datafilepath=general.datafilepath('co.dat'),
-                    geometry='uniform sphere',line_profile_type='Gaussian',
+                    geometry='static sphere',line_profile_type='Gaussian',
                     width_v=1*constants.kilo,use_Ng_acceleration=True,
                     treat_line_overlap=False)
 

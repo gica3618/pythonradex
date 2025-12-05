@@ -27,7 +27,7 @@ ext_background = helpers.generate_CMB_background()
 for treat_line_overlap in (True,False):
     print(f'treat_line_overlap={treat_line_overlap}')
     cloud = radiative_transfer.Cloud(
-                          datafilepath=datafilepath,geometry='uniform slab',
+                          datafilepath=datafilepath,geometry='static slab',
                           line_profile_type='rectangular',width_v=width_v,
                           treat_line_overlap=treat_line_overlap,warn_negative_tau=False)
     for i in ref_transitions:

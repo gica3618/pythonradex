@@ -12,9 +12,9 @@ import numpy as np
 #actually, RADEX assumes rectangular, but than converts it Gaussian for the line flux
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
-#can only use LVG slab and uniform sphere, since these are the only two
+#can only use LVG slab and static sphere, since these are the only two
 #where RADEX and pythonradex use same escape probability
-#geometry = 'uniform sphere'
+#geometry = 'static sphere'
 geometry = 'LVG slab'
 n = 10
 coll_density_values = np.logspace(3,5,n)/constants.centi**3
