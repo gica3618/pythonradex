@@ -21,6 +21,7 @@ Please see the :ref:`example notebooks<examples>` for an overview of the functio
 
    installation
    examples
+   benchmark_vs_RADEX
    theory
    geometry
    difference_pythonradex_RADEX
