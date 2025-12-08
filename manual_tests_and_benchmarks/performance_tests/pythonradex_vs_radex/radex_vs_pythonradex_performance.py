@@ -109,18 +109,18 @@ for i,n in enumerate(n_elements):
     if remove_cache:
         remove_pythonradex_cache()
     start = time.time()
-    cloud = radiative_transfer.Cloud(**cloud_kwargs)
+    source = radiative_transfer.Source(**cloud_kwargs)
     #IMPORTANT: here I put N in the outer loop on purpose to have the worst case
     #if I put N in the innermost loop, performance will be better because
     #rate equations don't need to be re-computed for every iteration
     for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                               Tkin_values):
         collider_densities = {collider:coll_dens for collider in colliders}
-        cloud.update_parameters(ext_background=ext_background,Tkin=Tkin,
+        source.update_parameters(ext_background=ext_background,Tkin=Tkin,
                                 collider_densities=collider_densities,N=N,T_dust=0,
                                 tau_dust=0)
-        cloud.solve_radiative_transfer()
-        cloud.fluxes_of_individual_transitions(solid_angle=1,transitions=None)
+        source.solve_radiative_transfer()
+        source.fluxes_of_individual_transitions(solid_angle=1,transitions=None)
     end = time.time()
     pythonradex_times[i] = end-start
 
@@ -128,12 +128,12 @@ for i,n in enumerate(n_elements):
     if remove_cache:
         remove_pythonradex_cache()
     start = time.time()
-    cloud = radiative_transfer.Cloud(**cloud_kwargs)
+    source = radiative_transfer.Source(**cloud_kwargs)
     requested_output=['level_pop','Tex','tau_nu0_individual_transitions',
                       'fluxes_of_individual_transitions']
     collider_densities_values={collider:coll_density_values for collider in
                                colliders}
-    grid = cloud.model_grid(ext_backgrounds={'extbg':ext_background},N_values=N_values,
+    grid = source.model_grid(ext_backgrounds={'extbg':ext_background},N_values=N_values,
                             Tkin_values=Tkin_values,
                             collider_densities_values=collider_densities_values,
                             requested_output=requested_output,solid_angle=1)

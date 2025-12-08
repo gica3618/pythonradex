@@ -54,7 +54,7 @@ class TestFastFlux():
 
     def test_fast_fluxes(self):
         for (geo_name,geo),lp in itertools.product(
-                        radiative_transfer.Cloud.geometries.items(),
+                        radiative_transfer.Source.geometries.items(),
                         ('Gaussian','rectangular')):
             if not allowed_param_combination(geometry=geo_name,line_profile_type=lp):
                 continue
@@ -114,7 +114,7 @@ class TestFastFlux():
         nu.sort()
         expected_tau_nu = test_line.tau_nu(N1=N1,N2=N2,nu=nu)
         geo_name = 'static slab'
-        geo = radiative_transfer.Cloud.geometries[geo_name]
+        geo = radiative_transfer.Source.geometries[geo_name]
         tau_nu0_individual_transitions = mol.get_tau_nu0_lines(
                                              N=N,level_population=level_pop)
         flux_calculator = flux.FluxCalculator(
@@ -219,7 +219,7 @@ def test_tau_nu_constructor():
     N = 1e12/constants.centi**2
     T = 344
     geo_name = 'static sphere'
-    geo = radiative_transfer.Cloud.geometries[geo_name]
+    geo = radiative_transfer.Source.geometries[geo_name]
     test_transitions = [0,3,10]
     for lp in ('rectangular','Gaussian'):
         mol = molecule.EmittingMolecule(datafilepath=CO_datafilepath,
@@ -283,7 +283,7 @@ class TestFluxesWithPhysics():
         for lp,mol in molecules.items():
             level_pop = mol.LTE_level_pop(self.Tkin)
             tau_nu0 = mol.get_tau_nu0_lines(N=N,level_population=level_pop)
-            for geo_name,geo in radiative_transfer.Cloud.geometries.items():
+            for geo_name,geo in radiative_transfer.Source.geometries.items():
                 if not allowed_param_combination(geometry=geo_name,
                                                  line_profile_type=lp):
                     continue

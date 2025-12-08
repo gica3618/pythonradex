@@ -26,16 +26,16 @@ def generate_cloud(datafilename,geometry,line_profile_type,width_v,
                    treat_line_overlap,N,collider_densities,tau_dust,T_dust):
     here = os.path.dirname(os.path.abspath(__file__))
     datafilepath = os.path.join(here,f'LAMDA_files/{datafilename}')
-    cld = radiative_transfer.Cloud(
+    src = radiative_transfer.Source(
                           datafilepath=datafilepath,geometry=geometry,
                           line_profile_type=line_profile_type,
                           width_v=width_v,use_Ng_acceleration=True,
                           treat_line_overlap=treat_line_overlap)
-    cld.update_parameters(ext_background=0,N=N,Tkin=Tkin,
+    src.update_parameters(ext_background=0,N=N,Tkin=Tkin,
                           collider_densities=collider_densities,T_dust=T_dust,
                           tau_dust=tau_dust)
-    cld.solve_radiative_transfer()
-    return cld
+    src.solve_radiative_transfer()
+    return src
 
 
 class TestDust():
@@ -85,11 +85,11 @@ class TestDust():
                       'cn':{'N':1e11/constants.centi**2,
                             'collider_densities':{'e':1e-1/constants.centi**3}}}
         for mol_name,params in gas_params.items():
-            cld_iter = self.cloud_iterator(**params,tau_dust=tau_dust,
+            src_iter = self.cloud_iterator(**params,tau_dust=tau_dust,
                                            T_dust=T_dust,molecule_name=mol_name)
-            for cloud in cld_iter:
-                assert cloud.rate_equations.Tkin != T_dust,\
+            for source in src_iter:
+                assert source.rate_equations.Tkin != T_dust,\
                             'if Tkin=Tdust, cannot say if LTE is caused by gas or dust'
-                expected_level_pop = cloud.emitting_molecule.LTE_level_pop(
+                expected_level_pop = source.emitting_molecule.LTE_level_pop(
                                                               T=T_dust)
-                assert np.allclose(cloud.level_pop,expected_level_pop,atol=5e-2)
+                assert np.allclose(source.level_pop,expected_level_pop,atol=5e-2)

@@ -26,18 +26,18 @@ collider_densities = {'H2':1e5/constants.centi**3}
 ext_background = helpers.generate_CMB_background()
 for treat_line_overlap in (True,False):
     print(f'treat_line_overlap={treat_line_overlap}')
-    cloud = radiative_transfer.Cloud(
+    source = radiative_transfer.Source(
                           datafilepath=datafilepath,geometry='static slab',
                           line_profile_type='rectangular',width_v=width_v,
                           treat_line_overlap=treat_line_overlap,warn_negative_tau=False)
     for i in ref_transitions:
-        assert cloud.emitting_molecule.any_line_has_overlap(line_indices=[i,])
-    cloud.update_parameters(N=N,Tkin=Tkin,collider_densities=collider_densities,
+        assert source.emitting_molecule.any_line_has_overlap(line_indices=[i,])
+    source.update_parameters(N=N,Tkin=Tkin,collider_densities=collider_densities,
                             ext_background=ext_background,T_dust=0,tau_dust=0)
-    cloud.solve_radiative_transfer()
+    source.solve_radiative_transfer()
     for counter,i in enumerate(ref_transitions):
         Tex_molpop = molpop_cep_Tex[f'treat overlap {treat_line_overlap}'][counter]
         print(f'trans {i}:')
-        print(f'Tex={cloud.Tex[i]:.3g} K (molpop: {Tex_molpop:.3g} K)')
-        print(f'tau_nu0={cloud.tau_nu0_individual_transitions[i]:.3g}')
+        print(f'Tex={source.Tex[i]:.3g} K (molpop: {Tex_molpop:.3g} K)')
+        print(f'tau_nu0={source.tau_nu0_individual_transitions[i]:.3g}')
     print('\n')

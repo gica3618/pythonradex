@@ -34,8 +34,8 @@ import os
 #chunk_sizes = [1,5,10,50,100,300,800]
 chunk_sizes = [100,]
 
-def generate_new_cloud():
-    return radiative_transfer.Cloud(
+def generate_new_source():
+    return radiative_transfer.Source(
                     datafilepath=general.datafilepath('co.dat'),
                     geometry='static sphere',line_profile_type='Gaussian',
                     width_v=1*constants.kilo,use_Ng_acceleration=True,
@@ -54,23 +54,23 @@ print(f'chunk sizes: {chunk_sizes}')
 print(f'n_processes: {n_processes}')
 
 #need to do a first calculation to compile everything
-cloud = generate_new_cloud()
-cloud.update_parameters(
+source = generate_new_source()
+source.update_parameters(
       ext_background=ext_background,Tkin=20,
       collider_densities={collider:1e4/constants.centi**3},N=1e13/constants.centi**2,
       T_dust=0,tau_dust=0)
-cloud.solve_radiative_transfer()
+source.solve_radiative_transfer()
 
 print('running without multiprocessing')
 start = time.time()
-cloud = generate_new_cloud()
+source = generate_new_source()
 for N,coll_dens,Tkin in itertools.product(N_values,coll_density_values,
                                              Tkin_values):
     collider_densities = {collider:coll_dens}
-    cloud.update_parameters(
+    source.update_parameters(
          ext_background=ext_background,Tkin=Tkin,
          collider_densities=collider_densities,N=N,T_dust=0,tau_dust=0)
-    cloud.solve_radiative_transfer()
+    source.solve_radiative_transfer()
 end = time.time()
 time_without_multiprocessing = end-start
 print(f'without multiprocessing: {time_without_multiprocessing:.3g}')
@@ -82,14 +82,14 @@ for chunksize in chunk_sizes:
         print(f'doing n_proc = {n_proc}')
         param_iterator = itertools.product(N_values,coll_density_values,Tkin_values)
         start = time.time()
-        cloud = generate_new_cloud()
+        source = generate_new_source()
         def wrapper(params):
             N,coll_dens,Tkin = params
             collider_densities = {collider:coll_dens}
-            cloud.update_parameters(
+            source.update_parameters(
                   ext_background=ext_background,Tkin=Tkin,
                   collider_densities=collider_densities,N=N,T_dust=0,tau_dust=0)
-            cloud.solve_radiative_transfer()
+            source.solve_radiative_transfer()
         if __name__ == '__main__':
             p = Pool(n_proc)
             p.map(wrapper,param_iterator,chunksize=chunksize)

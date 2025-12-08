@@ -85,7 +85,7 @@ for grid_name,grid in grids.items():
             remove_pythonradex_cache()
             print(f'running pythonradex ({geometry}, {line_profile_type})')
             start = time.time()
-            cloud = radiative_transfer.Cloud(
+            source = radiative_transfer.Source(
                         datafilepath=datafilepath,geometry=geometry,
                         line_profile_type=line_profile_type,width_v=width_v,
                         use_Ng_acceleration=True,treat_line_overlap=False,
@@ -93,11 +93,11 @@ for grid_name,grid in grids.items():
             #IMPORTANT: put N in innermost loop to improve performance
             for coll_dens,Tkin,N in itertools.product(coll_density_values,Tkin_values,N_values):
                 collider_densities = {collider:coll_dens for collider in grid['colliders']}
-                cloud.update_parameters(ext_background=ext_background,Tkin=Tkin,
+                source.update_parameters(ext_background=ext_background,Tkin=Tkin,
                                         collider_densities=collider_densities,N=N,T_dust=0,
                                         tau_dust=0)
-                cloud.solve_radiative_transfer()
-                cloud.fluxes_of_individual_transitions(solid_angle=1,transitions=None)
+                source.solve_radiative_transfer()
+                source.fluxes_of_individual_transitions(solid_angle=1,transitions=None)
             end = time.time()
             pythonradex_time = end-start
             print(f"time: {pythonradex_time:.3g}")

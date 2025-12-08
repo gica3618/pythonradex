@@ -123,31 +123,31 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
     lineprofile_nu0 = {}
     for geo,line_profile_type in itertools.product(geometries,line_profile_types):
         try:
-            cloud = radiative_transfer.Cloud(
+            source = radiative_transfer.Source(
                         datafilepath=filepath,geometry=geo,
                         line_profile_type=line_profile_type,width_v=width_v)
         except ValueError:
             continue
-        cloud.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
+        source.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
                                 collider_densities=coll_partner_densities,
                                 T_dust=0,tau_dust=0)
-        cloud.solve_radiative_transfer()
+        source.solve_radiative_transfer()
         #differs slightly from the nu0 given in the LAMDA file, because I calculate it
         #if I use the nu0 from LAMDA file, the line profile is 0 at nu0
-        pythonradex_nu0 =  cloud.emitting_molecule.rad_transitions[trans_number].\
+        pythonradex_nu0 =  source.emitting_molecule.rad_transitions[trans_number].\
                               line_profile.nu0
         lineprofile_nu0[line_profile_type] =\
-                           cloud.emitting_molecule.rad_transitions[trans_number].\
+                           source.emitting_molecule.rad_transitions[trans_number].\
                             line_profile.phi_nu(pythonradex_nu0)
         key = '{:s} {:s}'.format(geo,line_profile_type)
-        tau[key] = cloud.tau_nu0_individual_transitions[trans_number]
-        Tex[key] = cloud.Tex[trans_number] 
-        obs_flux[key] = cloud.fluxes_of_individual_transitions(
+        tau[key] = source.tau_nu0_individual_transitions[trans_number]
+        Tex[key] = source.Tex[trans_number] 
+        obs_flux[key] = source.fluxes_of_individual_transitions(
                                    solid_angle=Omega,transitions=[trans_number,])
-        nu0 = cloud.emitting_molecule.rad_transitions[trans_number].nu0
+        nu0 = source.emitting_molecule.rad_transitions[trans_number].nu0
         width_nu = width_v/constants.c*nu0
         nu = np.linspace(nu0-width_nu,nu0+width_nu,100)
-        spec = cloud.spectrum(solid_angle=Omega,nu=nu)
+        spec = source.spectrum(solid_angle=Omega,nu=nu)
         obs_flux_density[key] = np.max(spec)
 
     radex_input = radex_wrapper.RadexInput(
@@ -195,7 +195,7 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
                                  output_flux.x,axis=0)
     obs_flux_density['Lime'] = np.max(lime_flux_density)
     level_pop = pyLime.LimeLevelPopOutput('levelpop.fits').levelpops['CO']
-    transition = cloud.emitting_molecule.rad_transitions[trans_number]
+    transition = source.emitting_molecule.rad_transitions[trans_number]
     up = transition.up
     low = transition.low
     up_pop = level_pop[:,up.number]
@@ -212,7 +212,7 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
         obs_flux_density[bb_key] = black_body_flux_density
         obs_flux[bb_key] = black_body_flux_density*width_nu
     elif N_case == 'thin' and LTE_case=='LTE':
-        up_level_pop = cloud.emitting_molecule.LTE_level_pop(Tkin)[up.number]
+        up_level_pop = source.emitting_molecule.LTE_level_pop(Tkin)[up.number]
         if general_geometry == 'slab':
             thin_LTE_flux = up_level_pop*N*slab_surface*transition.A21*Delta_E\
                              /(4*np.pi*slab_surface)*Omega

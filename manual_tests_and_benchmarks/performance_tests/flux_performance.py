@@ -27,28 +27,28 @@ N = 1e17/constants.centi**2
 collider_densities = {'para-H2':1e3/constants.centi**3}
 
 start = time.time()
-cloud = radiative_transfer.Cloud(
+source = radiative_transfer.Source(
                     datafilepath=datafilepath,geometry=geometry,
                     line_profile_type=line_profile_type,width_v=width_v,
                     use_Ng_acceleration=use_Ng_acceleration)
-cloud.update_parameters(ext_background=ext_background,N=N,
+source.update_parameters(ext_background=ext_background,N=N,
                         Tkin=Tkin,collider_densities=collider_densities,
                         T_dust=0,tau_dust=0)
 end = time.time()
 print(f'setup time: {end-start}')
 start = time.time()
-cloud.solve_radiative_transfer()
+source.solve_radiative_transfer()
 end = time.time()
 print(f'solve time: {end-start}')
 start = time.time()
-cloud.solve_radiative_transfer()
+source.solve_radiative_transfer()
 end = time.time()
 print(f'solve time again: {end-start}')
 start = time.time()
-fluxes = cloud.fluxes_of_individual_transitions(solid_angle=0.1,transitions=None)
+fluxes = source.fluxes_of_individual_transitions(solid_angle=0.1,transitions=None)
 end = time.time()
 print(f'flux time: {end-start}')
 start = time.time()
-fluxes = cloud.fluxes_of_individual_transitions(solid_angle=0.1,transitions=None)
+fluxes = source.fluxes_of_individual_transitions(solid_angle=0.1,transitions=None)
 end = time.time()
 print(f'flux time again: {end-start}')

@@ -13,7 +13,7 @@ import os
 import itertools
 
 here = os.path.dirname(os.path.abspath(__file__))
-geometries = list(radiative_transfer.Cloud.geometries.keys())
+geometries = list(radiative_transfer.Source.geometries.keys())
 
 def test_negative_tau():
     #Previously, I found that Tkin=130, width_v=0.5 km/s, N=[1e24.2,1e25,1e26] and
@@ -28,10 +28,10 @@ def test_negative_tau():
         for ncoll,Tkin,width_v,N in itertools.product(ncoll_values,Tkin_values,
                                                       width_v_values,N_values):
             collider_densities = {'ortho-H2':ncoll}
-            cloud = radiative_transfer.Cloud(
+            source = radiative_transfer.Source(
                             datafilepath=os.path.join(here,'LAMDA_files/co.dat'),
                             geometry=geo,line_profile_type='rectangular',width_v=width_v)
-            cloud.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
+            source.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
                                     collider_densities=collider_densities,
                                     T_dust=0,tau_dust=0)
-            cloud.solve_radiative_transfer()
+            source.solve_radiative_transfer()

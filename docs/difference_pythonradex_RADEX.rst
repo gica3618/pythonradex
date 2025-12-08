@@ -31,7 +31,7 @@ for all geometries. However, this expression is only valid for slab geometries, 
 
    Flux ratio between `RADEX` and `pythonradex` for spherical geometries as a function of optical depth.
 
-To verify that ``pythonradex`` calculates the flux correctly, one may consider the optically thin limit where the flux can be calculated directly. In this limit, each photon escapes from the cloud. The total flux (in [W/m\ :sup:`2`]) is then simply given by
+To verify that ``pythonradex`` calculates the flux correctly, one may consider the optically thin limit where the flux can be calculated directly. In this limit, all photons escape the source. The total flux (in [W/m\ :sup:`2`]) is then simply given by
 
 .. math::
     F_\mathrm{thin} = V_\mathrm{sphere}nx_2A_{21}\Delta E \frac{1}{4\pi d^2}

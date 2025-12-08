@@ -111,17 +111,17 @@ def test_vs_RADEX():
                                                test_case['N_values'],
                                                test_case['Tkin_values']):
                 #need to enter test mode to allow Gaussian line profile with LVG slab:
-                cloud = radiative_transfer.Cloud(
+                source = radiative_transfer.Source(
                            datafilepath=datafilepath,geometry=geo,
                            line_profile_type=line_profile_type,width_v=width_v,
                            use_Ng_acceleration=True,
                            treat_line_overlap=False,test_mode=True)
-                cloud.update_parameters(
+                source.update_parameters(
                        ext_background=ext_background,N=N,Tkin=Tkin,
                        collider_densities=collider_densities,T_dust=0,
                        tau_dust=0)
-                cloud.solve_radiative_transfer()
-                #print(f'tau: {np.min(cloud.tau_nu0)}, {np.max(cloud.tau_nu0)}')
+                source.solve_radiative_transfer()
+                #print(f'tau: {np.min(source.tau_nu0)}, {np.max(source.tau_nu0)}')
                 RADEX_output_filename = RADEX_test_cases.RADEX_out_filename(
                                          radex_geometry=geo_RADEX,specie=specie,
                                          Tkin=Tkin,N=N,
@@ -129,7 +129,7 @@ def test_vs_RADEX():
                 RADEX_results_filepath = os.path.join(RADEX_output_folder,
                                                       RADEX_output_filename)
                 RADEX_results = read_RADEX_output(filepath=RADEX_results_filepath,
-                                                  molecule=cloud.emitting_molecule)
+                                                  molecule=source.emitting_molecule)
                 assert RADEX_results['Tkin'] == Tkin
                 #if collider is ortho-H2 or para-H2, RADEX automatically also
                 #adds H2, although it will not use it (as long as H2 is not defined
@@ -143,17 +143,17 @@ def test_vs_RADEX():
                 assert RADEX_results['column_density'] == N
                 assert RADEX_results['width_v'] == width_v
                 level_pop_selection =\
-                    cloud.level_pop > frac_max_level_pop_to_consider[geo]*np.max(cloud.level_pop)
+                    source.level_pop > frac_max_level_pop_to_consider[geo]*np.max(source.level_pop)
                 taus = []
-                for i,trans in enumerate(cloud.emitting_molecule.rad_transitions):
+                for i,trans in enumerate(source.emitting_molecule.rad_transitions):
                     if level_pop_selection[trans.up.number]:
-                        taus.append(cloud.tau_nu0_individual_transitions[i])
+                        taus.append(source.tau_nu0_individual_transitions[i])
                 if len(taus) > 0:
                     max_taus.append(np.max(taus))
                 print(specie)
                 print(geo)
                 print(N,Tkin,collider_densities)
                 assert np.allclose(RADEX_results['level_pop'][level_pop_selection],
-                                   cloud.level_pop[level_pop_selection],atol=0,
+                                   source.level_pop[level_pop_selection],atol=0,
                                    rtol=rtol[geo])
     print(f'max(taus): {np.max(max_taus)}')

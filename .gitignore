@@ -122,6 +122,8 @@ manual_tests_and_benchmarks/performance_tests/pythonradex_vs_radex/test_radex_mi
 docs/notebooks/test.inp
 docs/notebooks/test.out
 docs/notebooks/radex_log.txt
+docs/notebooks/grid.inp
+docs/notebooks/grid.out
 documents
 **/radex.out
 .pytest_cache

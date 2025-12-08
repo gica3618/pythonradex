@@ -33,15 +33,15 @@ def run_models(width_v,collider_densities,N,run_only_with_overlap_treatment=Fals
         if run_only_with_overlap_treatment and not treat_line_overlap:
             continue
         print(f'line overlap: {treat_line_overlap}')
-        cloud = radiative_transfer.Cloud(**cloud_kwargs,width_v=width_v,
+        source = radiative_transfer.Source(**cloud_kwargs,width_v=width_v,
                                          treat_line_overlap=treat_line_overlap)
-        cloud.update_parameters(**param_kwargs,collider_densities=collider_densities,
+        source.update_parameters(**param_kwargs,collider_densities=collider_densities,
                                 N=N)
-        cloud.solve_radiative_transfer()
+        source.solve_radiative_transfer()
         for i in ref_transitions:
             print(f'trans {i}:')
-            print(f'Tex={cloud.Tex[i]:.3g} K')
-            print(f'tau_nu0={cloud.tau_nu0_individual_transitions[i]:.3g}')
+            print(f'Tex={source.Tex[i]:.3g} K')
+            print(f'tau_nu0={source.tau_nu0_individual_transitions[i]:.3g}')
         print('\n')
     print('\n\n')
 

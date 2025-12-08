@@ -31,23 +31,23 @@ class Test_Overlapping():
 
     def generate_cloud(self,N,line_profile_type,treat_line_overlap,coll_dens,
                        geometry):
-        cld = radiative_transfer.Cloud(
+        src = radiative_transfer.Source(
                               datafilepath=self.datafilepath,geometry=geometry,
                               line_profile_type=line_profile_type,
                               width_v=1000*constants.kilo,
                               use_Ng_acceleration=True,
                               treat_line_overlap=treat_line_overlap)
-        cld.update_parameters(ext_background=0,N=N,Tkin=self.Tkin,
+        src.update_parameters(ext_background=0,N=N,Tkin=self.Tkin,
                               collider_densities=coll_dens,T_dust=0,tau_dust=0)
-        self.check_overlapping(cld)
-        cld.solve_radiative_transfer()
-        return cld
+        self.check_overlapping(src)
+        src.solve_radiative_transfer()
+        return src
     
     @staticmethod
-    def check_overlapping(cloud):
-        assert cloud.emitting_molecule.overlapping_lines[8] == [9,10]
-        assert cloud.emitting_molecule.overlapping_lines[9] == [8,10]
-        assert cloud.emitting_molecule.overlapping_lines[10] == [8,9]
+    def check_overlapping(source):
+        assert source.emitting_molecule.overlapping_lines[8] == [9,10]
+        assert source.emitting_molecule.overlapping_lines[9] == [8,10]
+        assert source.emitting_molecule.overlapping_lines[10] == [8,9]
 
     @pytest.mark.filterwarnings("ignore:some lines are overlapping")
     def test_optically_thin(self):
@@ -56,14 +56,14 @@ class Test_Overlapping():
         for treat_line_overlap,lp,geo\
                   in itertools.product((True,False),self.line_profile_types,
                                         self.geometries):
-            cloud = self.generate_cloud(N=self.N['thin'],line_profile_type=lp,
+            source = self.generate_cloud(N=self.N['thin'],line_profile_type=lp,
                                         treat_line_overlap=treat_line_overlap,
                                         coll_dens=self.collider_densities['non-LTE'],
                                         geometry=geo)
-            assert np.all(cloud.tau_nu0_individual_transitions[:3] < 1e-2)
+            assert np.all(source.tau_nu0_individual_transitions[:3] < 1e-2)
             #make sure we are in non-LTE:
-            LTE_level_pop = cloud.emitting_molecule.LTE_level_pop(T=self.Tkin)
-            assert not np.allclose(cloud.level_pop,LTE_level_pop,rtol=0,atol=1e-2)
+            LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=self.Tkin)
+            assert not np.allclose(source.level_pop,LTE_level_pop,rtol=0,atol=1e-2)
         for level_pop in level_pops:
             assert np.allclose(level_pops[0],level_pop,atol=0,rtol=1e-2)
     
@@ -72,27 +72,27 @@ class Test_Overlapping():
         for lp,(ID,Nvalue),geo in\
                   itertools.product(self.line_profile_types,self.N.items(),
                                     self.geometries):
-            cloud = self.generate_cloud(N=Nvalue,line_profile_type=lp,
+            source = self.generate_cloud(N=Nvalue,line_profile_type=lp,
                                         treat_line_overlap=True,
                                         coll_dens=self.collider_densities['LTE'],
                                         geometry=geo)
             if ID == 'thin':
-                assert np.all(cloud.tau_nu0_individual_transitions[:3] < 1e-2)
+                assert np.all(source.tau_nu0_individual_transitions[:3] < 1e-2)
             elif ID == 'thick':
-                assert np.all(cloud.tau_nu0_individual_transitions[:3] > 10)
+                assert np.all(source.tau_nu0_individual_transitions[:3] > 10)
             else:
                 raise ValueError
-            LTE_level_pop = cloud.emitting_molecule.LTE_level_pop(T=self.Tkin)
-            assert np.allclose(cloud.level_pop,LTE_level_pop,atol=0,rtol=1e-2)
+            LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=self.Tkin)
+            assert np.allclose(source.level_pop,LTE_level_pop,atol=0,rtol=1e-2)
 
     @staticmethod
-    def generate_nu_for_spectrum(cloud):
+    def generate_nu_for_spectrum(source):
         #cover transitions 8,9 and 10
-        nu0 = cloud.emitting_molecule.rad_transitions[9].nu0
+        nu0 = source.emitting_molecule.rad_transitions[9].nu0
         width_nu = 1500*constants.kilo/constants.c*nu0
         nu = np.linspace(nu0-width_nu/2,nu0+width_nu/2,2000)
         min_nu,max_nu = np.min(nu),np.max(nu)
-        for line in cloud.emitting_molecule.rad_transitions[8:11]:
+        for line in source.emitting_molecule.rad_transitions[8:11]:
             assert min_nu < line.nu0 < max_nu
         return nu
 
@@ -103,16 +103,16 @@ class Test_Overlapping():
         for lp,geo in itertools.product(self.line_profile_types,self.geometries):
             spectra = []
             for treat_line_overlap in (True,False):
-                cloud = self.generate_cloud(N=self.N['thin'],line_profile_type=lp,
+                source = self.generate_cloud(N=self.N['thin'],line_profile_type=lp,
                                             treat_line_overlap=treat_line_overlap,
                                             coll_dens=self.collider_densities['non-LTE'],
                                             geometry=geo)
-                assert np.all(cloud.tau_nu0_individual_transitions[:3] < 1e-2)
+                assert np.all(source.tau_nu0_individual_transitions[:3] < 1e-2)
                 #make sure we are in non-LTE:
-                LTE_level_pop = cloud.emitting_molecule.LTE_level_pop(T=self.Tkin)
-                assert not np.allclose(cloud.level_pop,LTE_level_pop,rtol=0,atol=1e-2)
-                nu = self.generate_nu_for_spectrum(cloud=cloud)
-                spectra.append(cloud.spectrum(solid_angle=self.solid_angle,nu=nu))
+                LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=self.Tkin)
+                assert not np.allclose(source.level_pop,LTE_level_pop,rtol=0,atol=1e-2)
+                nu = self.generate_nu_for_spectrum(source=source)
+                spectra.append(source.spectrum(solid_angle=self.solid_angle,nu=nu))
             assert np.allclose(*spectra,atol=0,rtol=3e-2)
 
     @pytest.mark.filterwarnings("ignore:some lines are overlapping")
@@ -122,16 +122,16 @@ class Test_Overlapping():
         #since the source functions will all be B_nu(Tkin), the spectrum should
         #be a black body whether line overlap is treated or not
         for treat_line_overlap,geo in itertools.product((True,False),self.geometries):
-            cloud = self.generate_cloud(N=self.N['thick'],line_profile_type='rectangular',
+            source = self.generate_cloud(N=self.N['thick'],line_profile_type='rectangular',
                                         treat_line_overlap=treat_line_overlap,
                                         coll_dens=self.collider_densities['LTE'],
                                         geometry=geo)
-            nu = self.generate_nu_for_spectrum(cloud=cloud)
-            spectrum = cloud.spectrum(solid_angle=self.solid_angle,nu=nu)
+            nu = self.generate_nu_for_spectrum(source=source)
+            spectrum = source.spectrum(solid_angle=self.solid_angle,nu=nu)
             black_body = helpers.B_nu(nu=nu,T=self.Tkin)
             bb_flux = black_body*self.solid_angle
-            overlapping_lines = cloud.emitting_molecule.rad_transitions[8:11]
-            assert cloud.emitting_molecule.line_profile_type == 'rectangular'
+            overlapping_lines = source.emitting_molecule.rad_transitions[8:11]
+            assert source.emitting_molecule.line_profile_type == 'rectangular'
             summed_phi_nu = np.zeros_like(nu)
             for line in overlapping_lines:
                 summed_phi_nu += line.line_profile.phi_nu(nu)

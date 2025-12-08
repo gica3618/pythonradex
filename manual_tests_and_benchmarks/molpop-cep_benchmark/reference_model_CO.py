@@ -21,7 +21,7 @@ def FWHM(Doppler_param):
 
 datafilepath = general.datafilepath('co.dat')
 width_v = FWHM(1*constants.kilo)
-cloud = radiative_transfer.Cloud(
+source = radiative_transfer.Source(
                       datafilepath=datafilepath,geometry='static slab',
                       line_profile_type='rectangular',width_v=width_v)
 
@@ -31,11 +31,11 @@ ext_background = helpers.generate_CMB_background()
 collider_densities = {'para-H2':n/2,'ortho-H2':n/2}
 for N in np.array([1e16,1e17,1e18,1e19])/constants.centi**2:
     print(f'N={N/constants.centi**-2:.1g} cm-2')
-    cloud.update_parameters(N=N,Tkin=Tkin,collider_densities=collider_densities,
+    source.update_parameters(N=N,Tkin=Tkin,collider_densities=collider_densities,
                             ext_background=ext_background,T_dust=0,tau_dust=0)
-    cloud.solve_radiative_transfer()
+    source.solve_radiative_transfer()
     for i in ref_transitions:
         print(f'trans {i}:')
-        print(f'Tex={cloud.Tex[i]:.3g} K')
-        print(f'tau_nu0={cloud.tau_nu0_individual_transitions[i]}')
+        print(f'Tex={source.Tex[i]:.3g} K')
+        print(f'tau_nu0={source.tau_nu0_individual_transitions[i]}')
     print('\n')

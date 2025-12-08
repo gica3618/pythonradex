@@ -8,7 +8,7 @@ import numbers
 import traceback
 
 
-class Cloud():
+class Source():
 
     '''
     Solving the non-LTE radiative transfer using escape probabilities.
@@ -48,7 +48,7 @@ class Cloud():
     def __init__(self,datafilepath,geometry,line_profile_type,width_v,
                  use_Ng_acceleration=True,treat_line_overlap=False,
                  warn_negative_tau=True,verbose=False,test_mode=False):
-        '''Initialises a new instance of the Cloud class.
+        '''Initialises a new instance of the Source class.
 
         Args:
             datafilepath (:obj:`str`): filepath to the LAMDA file that contains
@@ -68,7 +68,7 @@ class Cloud():
                 geometries, width_v is the width of the intrinsic emission profile.
                 On the other hand, for LVG geometries (for which the line profile
                 is rectangular), width_v corresponds to the total velocity width
-                of the cloud. So, for "LVG sphere", width_v=2*V, where V is the
+                of the source. So, for "LVG sphere", width_v=2*V, where V is the
                 velocity at the surface of the sphere. In terms of the constant
                 velocity gradient dv/dr=V/R (with R the radius of the sphere),
                 we can also say width_v=dv/dr*2*R. For "LVG slab", width_v=dv/dz*Z
@@ -102,7 +102,7 @@ class Cloud():
         if self.treat_line_overlap:
             if 'LVG' in self.geometry_name:
                 #this is because in LVG, the assumption is that once the radiation
-                #escapes from a local slab, it also escapes the cloud. With overlapping
+                #escapes from a local slab, it also escapes the source. With overlapping
                 #lines this assumption breaks down
                 raise ValueError('treatment of overlapping lines currently not'
                                  +' supported for LVG geometries')
@@ -140,7 +140,7 @@ class Cloud():
         if 'LVG' in self.geometry_name:
             if not (T_dust in (None,0) and tau_dust in (None,0)):
                 #this is because for LVG, it is assumed that radiation escaping
-                #the local slab will escape the entire cloud, which is not true
+                #the local slab will escape the entire source, which is not true
                 #if there is dust
                 raise ValueError('including dust continuum is currently not'
                                  +' supported for LVG geometries')
@@ -354,7 +354,7 @@ class Cloud():
             The flux of individual lines is the amount of
             energy per time reaching the telescope via photons emitted by the molecule.
             This calculation is only easily possible if the dust is optically thin (i.e.
-            the dust does not hinder line photons from escaping the cloud). Thus, this
+            the dust does not hinder line photons from escaping the source). Thus, this
             function throws an error if the dust is not optically thin. Similarly,
             the calculation is not possible when lines are overlapping and are not
             optically thin. It is the responsibility of the user to choose an

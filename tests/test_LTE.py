@@ -31,7 +31,7 @@ ext_background = helpers.generate_CMB_background()
 
 filenames = ['co.dat','hcl.dat','ocs@xpol.dat','c.dat']
 line_profile_types = ('rectangular','Gaussian')
-geometries = tuple(radiative_transfer.Cloud.geometries.keys())
+geometries = tuple(radiative_transfer.Source.geometries.keys())
 use_ng_options = (True,False)
 treat_line_overlap_options = (True,False)
 
@@ -56,7 +56,7 @@ def test_LTE():
             continue
         specie = filename.split('.')[0]
         datafilepath = os.path.join(datafolder,filename)
-        cloud = radiative_transfer.Cloud(
+        source = radiative_transfer.Source(
                             datafilepath=datafilepath,geometry=geo,
                             line_profile_type=lp,width_v=width_v,
                             use_Ng_acceleration=ng,treat_line_overlap=treat_overlap)
@@ -65,11 +65,11 @@ def test_LTE():
                         'T_dust':0,'tau_dust':0}
         for N in N_values[specie]:
             cloud_params['N'] = N
-            cloud.update_parameters(**cloud_params)
-            cloud.solve_radiative_transfer()
-            LTE_level_pop = cloud.emitting_molecule.LTE_level_pop(T=Tkin)
+            source.update_parameters(**cloud_params)
+            source.solve_radiative_transfer()
+            LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=Tkin)
             selection = LTE_level_pop > min_level_pop[specie]*np.max(LTE_level_pop)
-            assert np.allclose(cloud.level_pop[selection],LTE_level_pop[selection],
+            assert np.allclose(source.level_pop[selection],LTE_level_pop[selection],
                                atol=1e-6,rtol=1e-2)
-            max_taus.append(np.max(cloud.tau_nu0_individual_transitions))
+            max_taus.append(np.max(source.tau_nu0_individual_transitions))
     print(f'max tau: {np.max(max_taus)}')
