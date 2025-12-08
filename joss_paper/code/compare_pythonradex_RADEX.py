@@ -207,12 +207,11 @@ for column,(quantity,values) in enumerate(zip(("Tex","flux"),(excitation_temp,fl
     cbar.ax.xaxis.set_label_position('top')
     cbar.ax.xaxis.set_ticks_position('top')
     if quantity == "flux":
-        quantity_symb = "F"
+        colorbar_label = "$F_\mathrm{{pythonradex}}/F_\mathrm{{RADEX}}$"
     elif quantity == "Tex":
-        quantity_symb = "T_\mathrm{ex}"
+        colorbar_label = "$T_\mathrm{{ex}}^\mathrm{{pythonradex}}/T_\mathrm{{ex}}^\mathrm{{RADEX}}$"
     else:
         raise RuntimeError
-    colorbar_label = f"${quantity_symb}^\mathrm{{pythonradex}}/{quantity_symb}^\mathrm{{RADEX}}$"
     cbar.set_label(colorbar_label, labelpad=10)
 if True:
     plt.savefig("pythonradex_vs_radex.pdf",format="pdf",bbox_inches="tight")
