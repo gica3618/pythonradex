@@ -119,3 +119,6 @@ manual_tests_and_benchmarks/performance_tests/radex_test_performance.out
 documents
 **/radex.out
 .pytest_cache
+joss_paper/code/co.inp
+joss_paper/code/co.out
+joss_paper/code/radex_log.txt

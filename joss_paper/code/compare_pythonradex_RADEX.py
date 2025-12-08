@@ -14,12 +14,7 @@ from pythonradex import radiative_transfer,helpers
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import SymLogNorm
 
-#TODO either plot Tex instead of flux, or calculate the flux by using the level
-#populations, not tau (since tau given by RADEX contains a "correction" for
-#Gaussian line shape
-#TODO: check the values in the region where there is strong disagreement
 
 data_filename = "co.dat"
 #can only use LVG slab and uniform sphere
@@ -28,13 +23,12 @@ geometry_radex = "LVG slab"
 # geometry = "uniform sphere"
 # geometry_radex = "static sphere"
 
-#grid flux comparison
+#for grid comparison:
 plot_trans_index = 1
 grid_size = 25
-#grid_size = 3
+#grid_size = 5
 
-vmin,vmax = -100,100
-linthresh = 1
+vmin,vmax = 0.95,1.05
 cmap = plt.get_cmap("PuOr").copy()
 cmap.set_bad("red")
 
@@ -53,7 +47,7 @@ datafilepath = os.path.join("../../tests/LAMDA_files",data_filename)
 #don't use LVG sphere because RADEX uses a different formula for the escape
 #probability
 assert geometry != "LVG sphere" and geometry_radex != "LVG sphere"
-#also RADEX does not support uniform slab
+#also, RADEX does not support uniform slab
 assert geometry != "uniform slab"
 
 
@@ -126,7 +120,7 @@ N_grid = np.logspace(13,18,grid_size)*constants.centi**-2
 Tkin_grid = np.logspace(np.log10(5),np.log10(500),grid_size)
 N_GRID,TKIN_GRID = np.meshgrid(N_grid,Tkin_grid,indexing='ij')
 
-nH2_grid = np.array((1e2,2e3,5e4,1e6))*constants.centi**-3
+nH2_grid = np.array((1e3,1e4,1e5))*constants.centi**-3
 residuals = {"Tex":[],"flux":[]}
 
 v = np.linspace(-width_v*3,width_v*3,30)
@@ -165,28 +159,34 @@ for i,nH2 in enumerate(nH2_grid):
                 flux[ID][i,j,k] = f
                 excitation_temp[ID][i,j,k] = Tex
 
-for quantity,values in zip(("flux","Tex"),(flux,excitation_temp)):
+nrows = nH2_grid.size
+ncols = 2
+fig,axes = plt.subplots(nrows=nrows,ncols=ncols,constrained_layout=True,
+                        figsize=(6,8))
+fig.suptitle(f"CO {plot_trans.name}")
+
+for column,(quantity,values) in enumerate(zip(("Tex","flux"),(excitation_temp,flux))):
     print(quantity)
-    fig,axes = plt.subplots(2,2,constrained_layout=True)
     for code,val in values.items():
         n_negative = (val<0).sum()
         print(f"{quantity} {code}: {n_negative}/{val.size} are negative")
-    residual = (values["pythonradex"]-values["radex"])/values["pythonradex"]
-    masked_residual = residual.copy()*100
-    assert -vmin == vmax
-    mask = np.abs(masked_residual) > vmax
-    masked_residual[mask] = np.nan
-    print(f"{quantity} with large difference between pythonradex and RADEX")
+        n_zero = (val==0).sum()
+        print(f"{quantity} {code}: {n_zero}/{val.size} are 0")
+    ratio = values["pythonradex"]/values["radex"]
+    #assert np.all(np.isfinite(ratio))
+    masked_ratio = ratio.copy()
+    mask = (masked_ratio < vmin) | (masked_ratio > vmax)
+    masked_ratio[mask] = np.nan
+    print(f"{quantity} with large difference between pythonradex and RADEX:")
     for i,j,k in zip(*mask.nonzero()):
-        print(f"nH2={nH2_grid[i]/constants.centi**-3} cm-3, "
-              +f"N={N_grid[j]/constants.centi**-2} cm-2, Tkin={Tkin_grid[k]:.3} K")
+        print(f"nH2={nH2_grid[i]/constants.centi**-3:.3g} cm-3, "
+              +f"N={N_grid[j]/constants.centi**-2:.3g} cm-2, Tkin={Tkin_grid[k]:.3} K")
         for code,val in values.items():
             print(f"{code}: {quantity} = {val[i,j,k]:.3g}")
-    for i,nH2 in enumerate(nH2_grid):
-        ax = axes.ravel()[i]
-        norm = SymLogNorm(linthresh=linthresh,vmin=vmin,vmax=vmax)
-        im = ax.pcolormesh(N_GRID/constants.centi**-2,TKIN_GRID,masked_residual[i,:,:],
-                           norm=norm,shading='auto',cmap=cmap)
+    for row,nH2 in enumerate(nH2_grid):
+        ax = axes[row,column]
+        im = ax.pcolormesh(N_GRID/constants.centi**-2,TKIN_GRID,masked_ratio[row,:,:],
+                           shading='auto',cmap=cmap,vmin=vmin,vmax=vmax)
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.set_xlim(np.min(N_grid)/constants.centi**-2,np.max(N_GRID)/constants.centi**-2)
@@ -195,15 +195,15 @@ for quantity,values in zip(("flux","Tex"),(flux,excitation_temp)):
         mant, exp = nH2_string.split("e")
         nH2_latex_str = rf"$n(H_2) = {mant}\times10^{{{int(exp)}}}$ cm$^{{-3}}$"
         ax.set_title(nH2_latex_str)
-        if i in (0,1):
+        if row < nrows-1:
             ax.set_xticklabels([])
-        if i in (1,3):
+        if column > 0:
             ax.set_yticklabels([])
-        if i in (0,2):
-            ax.set_ylabel("$T_\mathrm{kin}$ [K]")
-        if i in (2,3):
+        if column == 0:
+            ax.set_ylabel("kinetic temperature [K]")
+        if row == nrows-1:
             ax.set_xlabel("CO column density [cm$^{-2}$]")
-    cbar = fig.colorbar(im, ax=axes.ravel(), orientation='horizontal', location='top')
+    cbar = fig.colorbar(im, ax=axes[:,column], orientation='horizontal', location='top')
     cbar.ax.xaxis.set_label_position('top')
     cbar.ax.xaxis.set_ticks_position('top')
     if quantity == "flux":
@@ -212,95 +212,7 @@ for quantity,values in zip(("flux","Tex"),(flux,excitation_temp)):
         quantity_symb = "T_\mathrm{ex}"
     else:
         raise RuntimeError
-    colorbar_label = f"CO {plot_trans.name}\n"\
-                    +f"$({quantity_symb}^\mathrm{{pythonradex}}"\
-                    +f"-{quantity_symb}^\mathrm{{RADEX}})/{quantity_symb}^\mathrm{{pythonradex}}$ [%]"
+    colorbar_label = f"${quantity_symb}^\mathrm{{pythonradex}}/{quantity_symb}^\mathrm{{RADEX}}$"
     cbar.set_label(colorbar_label, labelpad=10)
-    if True:
-        plt.savefig(f"{quantity}_pythonradex_vs_radex.pdf",format="pdf",
-                    bbox_inches="tight")
-
-
-"""
-n_fluxes = {"radex":[],"pythonradex":[]}
-n_negative_fluxes = {"radex":[],"pythonradex":[]}
-fig,axes = plt.subplots(2,2,constrained_layout=True)
-for i,nH2 in enumerate(nH2_grid):
-    ax = axes.ravel()[i]
-    fluxes = {"radex":np.empty((N_grid.size,Tkin_grid.size)),
-              "pythonradex":np.empty((N_grid.size,Tkin_grid.size))}
-    coll_densities = {'ortho-H2':nH2/2,'para-H2':nH2/2}
-    for j,N in enumerate(N_grid):
-        for k,Tkin in enumerate(Tkin_grid):
-            print(f"nH2 = {nH2/constants.centi**-3:.2g} cm-3,"
-                  +f" N = {N/constants.centi**-2:.2g}, Tkin={Tkin:.2g} K")
-            radex_model = compute_RADEX_model(
-                              N=N,Tkin=Tkin,coll_partner_densities=coll_densities,
-                              transitions=[plot_trans,])
-            radex_model = radex_model[0][0],radex_model[1][0]
-            pythonradex_model = compute_pythonradex_model(
-                                     N=N,Tkin=Tkin,
-                                     coll_partner_densities=coll_densities)
-            pythonradex_model = pythonradex_model[0][plot_trans_index],\
-                                pythonradex_model[1][plot_trans_index]
-            models = {"radex":radex_model,"pythonradex":pythonradex_model}
-            #don't take the flux from RADEX directly (since it does some corrections
-            #of rectangular to Gaussian), instead calculate it:
-            for ID,model in models.items():
-                Tex,tau_nu0 = model
-                S = helpers.B_nu(nu=nu,T=Tex)
-                phi_nu = plot_trans.line_profile.phi_nu(nu)
-                #tau_nu = phi_nu/np.max(phi_nu)*tau_nu0
-                flux = cloud.geometry.compute_flux_nu(
-                             tau_nu=tau_nu,source_function=S,solid_angle=solid_angle)
-                flux = -np.trapz(flux,nu) #nu is decreasing, so need to take minus
-                fluxes[ID][j,k] = flux
-    # for flux in fluxes.values():
-    #     assert np.all(flux>0)
-    for code,flux in fluxes.items():
-        n_fluxes[code].append(len(flux))
-        n_negative_fluxes[code].append((flux<0).sum())
-    flux_residual = (fluxes["pythonradex"]-fluxes["radex"])/fluxes["pythonradex"]
-    flux_residuals.append(flux_residual)
-    masked_flux_residual = flux_residual.copy()*100
-    assert -vmin == vmax
-    masked_flux_residual[np.abs(masked_flux_residual) > vmax] = np.nan
-    im = ax.pcolormesh(N_GRID/constants.centi**-2,TKIN_GRID,masked_flux_residual,
-                       norm=SymLogNorm(linthresh=0.1,vmin=vmin,vmax=vmax),
-                       shading='auto',cmap=cmap)
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlim(np.min(N_grid)/constants.centi**-2,np.max(N_GRID)/constants.centi**-2)
-    ax.set_ylim(np.min(Tkin_grid),np.max(Tkin_grid))
-    nH2_string = f"{nH2/constants.centi**-3:.1e}" # '2.3e+02'
-    mant, exp = nH2_string.split("e")
-    nH2_latex_str = rf"$n(H_2) = {mant}\times10^{{{int(exp)}}}$ cm$^{{-3}}$"
-    ax.set_title(nH2_latex_str)
-    if i in (0,1):
-        ax.set_xticklabels([])
-    if i in (1,3):
-        ax.set_yticklabels([])
-    if i in (0,2):
-        ax.set_ylabel("$T_\mathrm{kin}$ [K]")
-    if i in (2,3):
-        ax.set_xlabel("CO column density [cm$^{-2}$]")
-cbar = fig.colorbar(im, ax=axes.ravel(), orientation='horizontal', location='top')
-cbar.ax.xaxis.set_label_position('top')
-cbar.ax.xaxis.set_ticks_position('top')
-colorbar_label = f"CO {plot_trans.name}\n"\
-                +r"$(F_\mathrm{pythonradex}-F_\mathrm{RADEX})/F_\mathrm{pythonradex}$ [%]"
-cbar.set_label(colorbar_label, labelpad=10)
-# cbar_tick_labels = np.logspace(vmin,vmax,5)
-# cbar_ticks = np.log10(cbar_tick_labels)
-# cbar.set_ticks(cbar_ticks)
-# cbar.set_ticklabels([round(t) for t in cbar_tick_labels])
-
-print("max flux residual:")
-for i,(nH2,flux_residual) in enumerate(zip(nH2_grid,flux_residuals)):
-    print(f"nH2 = {nH2/constants.centi**-3} cm-3: {np.max(flux_residual)}")
-    for code,n_neg in n_negative_fluxes.items():
-        print(f"{code}: {n_neg[i]}/{n_fluxes[code][i]} fluxes are negative")
-
 if True:
     plt.savefig("pythonradex_vs_radex.pdf",format="pdf",bbox_inches="tight")
-"""
