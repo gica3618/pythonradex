@@ -262,51 +262,6 @@ def test_GammaC():
             GammaC = mol.get_GammaC(Tkin=Tkin,collider_densities=collider_densities)
             assert np.all(expected_GammaC == GammaC)
 
-# def test_K_cube():
-#     #basically just copying the code, could not come up with a nice test
-#     for mol in emitting_molecules.values():
-#         for collider,coll_transitions in mol.coll_transitions.items():
-#             K_cube = np.zeros((mol.n_levels,mol.n_levels,
-#                                mol.Tkin_data[collider].size))
-#             for i,Tkin in enumerate(mol.Tkin_data[collider]):
-#                 for coll_trans in coll_transitions:
-#                     K12,K21 = coll_trans.coeffs(Tkin=Tkin)
-#                     n_low = coll_trans.low.number
-#                     n_up = coll_trans.up.number
-#                     K_cube[n_up,n_low,i] += K12
-#                     K_cube[n_low,n_low,i] += -K12
-#                     K_cube[n_low,n_up,i] += K21
-#                     K_cube[n_up,n_up,i] += -K21
-#             assert np.all(K_cube==mol.K_cube[collider])
-
-# def test_get_GammaC_edge_cases():
-#     collider_densities = {'para-H2':10,'ortho-H2':321}
-#     for mol in emitting_molecules.values():
-#         test_indices = [0,-1,3]
-#         for i in test_indices:
-#             Tkin = mol.Tkin_data['para-H2'][i] #arbitrarily choose para-H2
-#             GammaC = mol.get_GammaC(Tkin=Tkin,
-#                                     collider_densities=collider_densities)
-#             expected_GammaC = np.zeros((mol.n_levels,)*2)
-#             for collider,coll_dens in collider_densities.items():
-#                 expected_GammaC += mol.K_cube[collider][:,:,i]*coll_dens
-#             assert np.allclose(GammaC,expected_GammaC,atol=0,rtol=1e-10)
-
-# def test_get_GammaC_interpolation():
-#     collider_densities_cases = [{'para-H2':10,'ortho-H2':321},{'para-H2':10}]
-#     for collider_densities in collider_densities_cases:
-#         for mol in emitting_molecules.values():
-#             #test also the interpolation:
-#             Tkin = 128.6
-#             GammaC = mol.get_GammaC(Tkin=Tkin,collider_densities=collider_densities)
-#             expected_GammaC = np.zeros((mol.n_levels,)*2)
-#             for i,j in itertools.product(range(mol.n_levels),range(mol.n_levels)):
-#                 for collider,coll_dens in collider_densities.items():
-#                     interp_K = np.interp(np.log(Tkin),np.log(mol.Tkin_data[collider]),
-#                                          mol.K_cube[collider][i,j,:])
-#                     expected_GammaC[i,j] += coll_dens*interp_K
-#             assert np.allclose(GammaC,expected_GammaC,atol=0,rtol=1e-10)
-
 def get_molecule(line_profile_type,width_v,datafilename):
     return molecule.EmittingMolecule(
                datafilepath=os.path.join(here,'LAMDA_files',datafilename),

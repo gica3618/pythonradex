@@ -90,6 +90,7 @@ class RadexOutput():
         # flux in W/m2; to get the observed flux, one has to divide by 4*pi and
         # multiply by the solid angle of the target; see 
         # https://personal.sron.nl/~vdtak/radex/index.shtml#output
+        #see also hand notes RADEX_output.jpg
         return output
                 
 

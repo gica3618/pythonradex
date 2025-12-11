@@ -251,24 +251,14 @@ class EmittingMolecule(Molecule):
     def identify_overlapping_lines(self):
         self.overlapping_lines = []
         for i,line in enumerate(self.rad_transitions):
-            width_nu = self.width_v/constants.c*line.nu0
             overlapping_lines = []
             for j,overlap_line in enumerate(self.rad_transitions):
                 if j == i:
                     continue
-                nu0_overlap_line = overlap_line.nu0
-                width_nu_overlap_line = self.width_v/constants.c*nu0_overlap_line
-                if self.line_profile_type == 'rectangular':
-                    if np.abs(line.nu0-nu0_overlap_line)\
-                                         <= width_nu/2 + width_nu_overlap_line/2:
-                        overlapping_lines.append(j)
-                elif self.line_profile_type == 'Gaussian':
-                    #here I need to be conservative because the Gaussian profile can,
-                    #in theory, be arbitrarily broad (for arbitrarily high optical depth)
-                    #take +- 1.57 FWHM, where the Gaussian is 0.1% of the peak
-                    if np.abs(line.nu0-nu0_overlap_line)\
-                                    <= 1.57*width_nu + 1.57*width_nu_overlap_line:
-                        overlapping_lines.append(j)
+                no_overlap = overlap_line.line_profile.nu_min > line.line_profile.nu_max\
+                             or overlap_line.line_profile.nu_max < line.line_profile.nu_min
+                if not no_overlap:
+                    overlapping_lines.append(j)
             self.overlapping_lines.append(overlapping_lines)
 
     def any_line_has_overlap(self,line_indices):

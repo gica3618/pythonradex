@@ -128,6 +128,7 @@ class FluxCalculator():
         return np.squeeze(fast_flux)
 
     def set_nu(self,nu):
+        #TODO check that the dimension of nu is <=1?
         self.nu = nu
         self.nu_selected_lines,self.nu_selected_line_indices = self.identify_lines()
         self.tau_dust_nu = self.tau_dust(self.nu)
@@ -139,7 +140,9 @@ class FluxCalculator():
         selected_lines = []
         selected_line_indices = []
         for i,line in enumerate(self.emitting_molecule.rad_transitions):
-            if nu_min <= line.nu0 and line.nu0 <= nu_max:
+            no_coverage = nu_min > line.line_profile.nu_max\
+                            or nu_max < line.line_profile.nu_min
+            if not no_coverage:
                 selected_line_indices.append(i)
                 selected_lines.append(line)
         return selected_lines,selected_line_indices

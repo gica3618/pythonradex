@@ -349,7 +349,7 @@ class Source():
                                  tau_dust=self.rate_equations.tau_dust,
                                  S_dust=self.rate_equations.S_dust)
 
-    def fluxes_of_individual_transitions(self,solid_angle,transitions):
+    def fluxes_of_individual_transitions(self,solid_angle,transitions=None):
         r''' Calculate the fluxes of individual lines.
             The flux of individual lines is the amount of
             energy per time reaching the telescope via photons emitted by the molecule.
@@ -401,7 +401,7 @@ class Source():
 
         Args:
             solid_angle (:obj:`float`): The solid angle of the source in [sr].
-            nu (numpy.ndarray): The frequencies in [Hz] for which the optical depth
+            nu (numpy.ndarray): The frequencies in [Hz] for which the spectrum
                 should be calculated
         
         Returns:

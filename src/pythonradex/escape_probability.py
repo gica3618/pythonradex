@@ -44,6 +44,7 @@ class StaticSphere(EscapeProbabilityStaticSphere):
         #=F_surface*Omega*4/(4*pi)
         return flux_nu*solid_angle/np.pi
 
+
 @nb.jit(nopython=True,cache=True)
 def exp_tau_factor(tau_nu):
     #for very small tau, the exp can introduce numerical errors, so we

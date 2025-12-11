@@ -37,8 +37,7 @@ class LineProfile():
         self.width_v = width_v
         self.width_nu = helpers.Delta_nu(Delta_v=self.width_v,nu0=self.nu0)
         self.initialise_phi_nu_params()
-        # self.initialise_coarse_nu_array()
-        # self.coarse_phi_nu_array = self.phi_nu(nu=self.coarse_nu_array)
+        self.set_nu_extent()
         self.phi_nu0 = self.phi_nu(nu=self.nu0)
 
     def initialise_phi_nu_params(self):
@@ -73,6 +72,15 @@ class LineProfile():
 
     def average_over_phi_nu(self,func):
         raise NotImplementedError
+
+    def set_nu_extent(self):
+        #this function should calculate the min and max frequency covered by the
+        #profile; this is used to calculate overlapping lines
+        raise NotImplementedError
+
+    def covers_frequency(self,nu):
+        #check if the line profile covers a given frequency
+        return self.nu_min <= nu <= self.nu_max
 
 
 class GaussianLineProfile(LineProfile):
@@ -118,6 +126,12 @@ class GaussianLineProfile(LineProfile):
             niter += 1
         return new_average
 
+    def set_nu_extent(self):
+        #a Gaussian is never zero, so I choose +- 1.57 FWHM, where the Gaussian
+        #is 0.1% of the peak
+        self.nu_min = self.nu0 - 1.57*self.width_nu
+        self.nu_max = self.nu0 + 1.57*self.width_nu
+
 
 class RectangularLineProfile(LineProfile):
 
@@ -127,7 +141,7 @@ class RectangularLineProfile(LineProfile):
         self.normalisation = 1/self.width_nu
 
     def phi_nu(self,nu):
-        inside_line = (nu>=self.nu0-self.width_nu/2) & (nu<=self.nu0+self.width_nu/2)
+        inside_line = (nu>=self.nu_min) & (nu<=self.nu_max)
         return np.where(inside_line,self.normalisation,0)
 
     def average_over_phi_nu(self,func):
@@ -138,8 +152,7 @@ class RectangularLineProfile(LineProfile):
         old_average = np.inf
         residual = np.inf
         while residual > 1e-2:
-            nu = np.linspace(self.nu0-self.width_nu/2,self.nu0+self.width_nu/2,
-                             n_elements)
+            nu = np.linspace(self.nu_min,self.nu_max,n_elements)
             phi_nu = self.phi_nu(nu)
             norm = np.trapezoid(y=phi_nu,x=nu)
             new_average = np.trapezoid(y=func(nu)*phi_nu,x=nu)/norm
@@ -148,6 +161,11 @@ class RectangularLineProfile(LineProfile):
             old_average = new_average
             n_elements += 15
         return new_average
+
+    def set_nu_extent(self):
+        self.nu_min = self.nu0-self.width_nu/2
+        self.nu_max = self.nu0+self.width_nu/2
+
 
 line_profiles = {'Gaussian':GaussianLineProfile,'rectangular':RectangularLineProfile}
 
