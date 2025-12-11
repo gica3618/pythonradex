@@ -37,16 +37,16 @@ def construct_old_GammaC(mol,Tkin,collider_densities):
             # K12 = np.interp(Tkin,coll_trans.Tkin_data,K12_data)
 
             #K12 and K21 are 1D arrays because Tkin is a 1D array
-            n_low = coll_trans.low.number
-            n_up = coll_trans.up.number
-            GammaC[n_up,n_low] += K12*coll_dens
-            GammaC[n_low,n_low] -= K12*coll_dens
-            GammaC[n_low,n_up] += K21*coll_dens
-            GammaC[n_up,n_up] -= K21*coll_dens
-            elements[n_up,n_low] += 1
-            elements[n_low,n_low] += 1
-            elements[n_low,n_up] += 1
-            elements[n_up,n_up] += 1
+            i_low = coll_trans.low.index
+            i_up = coll_trans.up.index
+            GammaC[i_up,i_low] += K12*coll_dens
+            GammaC[i_low,i_low] -= K12*coll_dens
+            GammaC[i_low,i_up] += K21*coll_dens
+            GammaC[i_up,i_up] -= K21*coll_dens
+            elements[i_up,i_low] += 1
+            elements[i_low,i_low] += 1
+            elements[i_low,i_up] += 1
+            elements[i_up,i_up] += 1
     return GammaC,elements
 
 def compute_K_cube(mol):
@@ -60,16 +60,16 @@ def compute_K_cube(mol):
                 K12 = atomic_transition.compute_K12(
                           K21=K21,g_up=coll_trans.up.g,g_low=coll_trans.low.g,
                           Delta_E=coll_trans.Delta_E,Tkin=Tkin)
-                n_low = coll_trans.low.number
-                n_up = coll_trans.up.number
+                i_low = coll_trans.low.index
+                i_up = coll_trans.up.index
                 #production of upper level from lower level:
-                K_cube[collider][n_up,n_low,i] += K12
+                K_cube[collider][i_up,i_low,i] += K12
                 #destruction of lower level by transitions to upper level:
-                K_cube[collider][n_low,n_low,i] += -K12
+                K_cube[collider][i_low,i_low,i] += -K12
                 #production lower level from upper level:
-                K_cube[collider][n_low,n_up,i] += K21
+                K_cube[collider][i_low,i_up,i] += K21
                 #destruction of upper level by transition to lower level:
-                K_cube[collider][n_up,n_up,i] += -K21
+                K_cube[collider][i_up,i_up,i] += -K21
         assert np.all(np.isfinite(K_cube[collider]))
     return K_cube
 

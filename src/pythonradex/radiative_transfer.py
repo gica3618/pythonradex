@@ -542,10 +542,10 @@ class Source():
         print('  up   low      nu0 [GHz]    T_ex [K]      poplow         popup'\
               +'         tau_nu0')
         for i,line in enumerate(self.emitting_molecule.rad_transitions):
-            output = f'{line.up.number:>4d} {line.low.number:>4d} '\
+            output = f'{line.up.index:>4d} {line.low.index:>4d} '\
                      +f'{line.nu0/constants.giga:>14.6f} {self.Tex[i]:>10.2f} '\
-                     +f'{self.level_pop[line.low.number]:>14g} '\
-                     +f'{self.level_pop[line.up.number]:>14g} '\
+                     +f'{self.level_pop[line.low.index]:>14g} '\
+                     +f'{self.level_pop[line.up.index]:>14g} '\
                      +f'{self.tau_nu0_individual_transitions[i]:>14g}'
             print(output)
         print('\n')

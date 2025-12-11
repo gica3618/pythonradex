@@ -63,9 +63,9 @@ class Molecule():
         self.nu0 = np.array([line.nu0 for line in self.rad_transitions])
         self.gup_rad_transitions = np.array([line.up.g for line in self.rad_transitions])
         self.glow_rad_transitions = np.array([line.low.g for line in self.rad_transitions])
-        self.nlow_rad_transitions = np.array([line.low.number for line in
+        self.ilow_rad_transitions = np.array([line.low.index for line in
                                               self.rad_transitions])
-        self.nup_rad_transitions = np.array([line.up.number for line in
+        self.iup_rad_transitions = np.array([line.up.index for line in
                                              self.rad_transitions])
         self.Delta_E_rad_transitions = np.array([line.Delta_E for line in
                                                  self.rad_transitions])
@@ -124,8 +124,8 @@ class Molecule():
         Tex = atomic_transition.Tex(
                    Delta_E=self.Delta_E_rad_transitions,g_up=self.gup_rad_transitions,
                    g_low=self.glow_rad_transitions,
-                   x1=level_population[self.nlow_rad_transitions],
-                   x2=level_population[self.nup_rad_transitions])
+                   x1=level_population[self.ilow_rad_transitions],
+                   x2=level_population[self.iup_rad_transitions])
         return Tex
 
     def get_rad_transition_number(self,transition_name):
@@ -204,15 +204,15 @@ class EmittingMolecule(Molecule):
         self.coll_gups = {}
         self.coll_glows = {}
         self.coll_DeltaEs = {}
-        self.coll_nup = {}
-        self.coll_nlow = {}
+        self.coll_iup = {}
+        self.coll_ilow = {}
         for collider,coll_transitions in self.coll_transitions.items():
             self.coll_glows[collider] = np.array([c.low.g for c in coll_transitions])
             self.coll_gups[collider] = np.array([c.up.g for c in coll_transitions])
             self.coll_DeltaEs[collider] = np.array([c.Delta_E for c in
                                                     coll_transitions])
-            self.coll_nlow[collider] = np.array([c.low.number for c in coll_transitions])
-            self.coll_nup[collider] = np.array([c.up.number for c in coll_transitions])
+            self.coll_ilow[collider] = np.array([c.low.index for c in coll_transitions])
+            self.coll_iup[collider] = np.array([c.up.index for c in coll_transitions])
 
     def get_tau_nu0_lines(self,N,level_population):
         r'''Compute the optical depth at the rest frequency of all lines (dust
@@ -226,8 +226,8 @@ class EmittingMolecule(Molecule):
         Returns:
             numpy.ndarray: the optical depth at the rest frequency
         '''
-        N1 = level_population[self.nlow_rad_transitions]*N
-        N2 = level_population[self.nup_rad_transitions]*N
+        N1 = level_population[self.ilow_rad_transitions]*N
+        N2 = level_population[self.iup_rad_transitions]*N
         tau_nu0 = atomic_transition.tau_nu(
                          A21=self.A21,phi_nu=self.phi_nu0,
                          g_up=self.gup_rad_transitions,g_low=self.glow_rad_transitions,
@@ -270,8 +270,8 @@ class EmittingMolecule(Molecule):
     def get_tau_line_nu(self,line_index,level_population,N):
         line = self.rad_transitions[line_index]
         def tau_line_nu(nu):
-            return line.tau_nu(N1=N*level_population[line.low.number],
-                               N2=N*level_population[line.up.number],nu=nu)
+            return line.tau_nu(N1=N*level_population[line.low.index],
+                               N2=N*level_population[line.up.index],nu=nu)
         return tau_line_nu
 
     def get_tau_tot_nu(self,line_index,level_population,N,tau_dust):
@@ -279,11 +279,11 @@ class EmittingMolecule(Molecule):
         line = self.rad_transitions[line_index]
         overlapping_lines = [self.rad_transitions[i] for i in overlapping_indices]
         def tau_tot_nu(nu):
-            tau_tot = line.tau_nu(N1=N*level_population[line.low.number],
-                                  N2=N*level_population[line.up.number],nu=nu)
+            tau_tot = line.tau_nu(N1=N*level_population[line.low.index],
+                                  N2=N*level_population[line.up.index],nu=nu)
             for ovl_line in overlapping_lines:
-                x1 = level_population[ovl_line.low.number]
-                x2 = level_population[ovl_line.up.number]
+                x1 = level_population[ovl_line.low.index]
+                x2 = level_population[ovl_line.up.index]
                 tau_tot += ovl_line.tau_nu(N1=x1*N,N2=x2*N,nu=nu)
             tau_tot += tau_dust(nu)
             return tau_tot
@@ -300,19 +300,19 @@ class EmittingMolecule(Molecule):
     
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def construct_K_matrix(n_levels,K12,K21,nlow,nup):
+    def construct_K_matrix(n_levels,K12,K21,ilow,iup):
         K = np.zeros((n_levels,n_levels))
         for i in range(len(K12)):
-            nl = nlow[i]
-            nu = nup[i]
+            il = ilow[i]
+            iu = iup[i]
             #production of upper level from lower level:
-            K[nu,nl] += K12[i]
+            K[iu,il] += K12[i]
             #destruction of lower level by transitions to upper level:
-            K[nl,nl] += -K12[i]
+            K[il,il] += -K12[i]
             #production lower level from upper level:
-            K[nl,nu] += K21[i]
+            K[il,iu] += K21[i]
             #destruction of upper level by transition to lower level:
-            K[nu,nu] += -K21[i]
+            K[iu,iu] += -K21[i]
         return K
 
     def interpolate_K(self,Tkin,collider):
@@ -345,6 +345,6 @@ class EmittingMolecule(Molecule):
             interpK = self.interpolate_K(Tkin=Tkin,collider=collider)
             K = self.construct_K_matrix(
                      n_levels=self.n_levels,K12=interpK['K12'],K21=interpK['K21'],
-                     nlow=self.coll_nlow[collider],nup=self.coll_nup[collider])
+                     ilow=self.coll_ilow[collider],iup=self.coll_iup[collider])
             GammaC += K*coll_dens
         return GammaC

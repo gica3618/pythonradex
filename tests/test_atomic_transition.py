@@ -178,7 +178,7 @@ class TestLevel():
 
     g = 2
     E = 3
-    level = atomic_transition.Level(g=g,E=E,number=1)
+    level = atomic_transition.Level(g=g,E=E,index=1)
 
     def test_LTE_level_pop(self):
         T = 50
@@ -195,8 +195,8 @@ class TestLevel():
 
 class TestTransition():
 
-    up = atomic_transition.Level(g=1,E=1,number=1)
-    low = atomic_transition.Level(g=1,E=0,number=0)
+    up = atomic_transition.Level(g=1,E=1,index=1)
+    low = atomic_transition.Level(g=1,E=0,index=0)
     line_profile_type = 'rectangular'
     A21 = 1
     general_transition = atomic_transition.Transition(up=up,low=low)

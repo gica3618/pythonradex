@@ -44,8 +44,8 @@ mol = molecule.EmittingMolecule(
             width_v=width_v)
 level_pop = mol.LTE_level_pop(T=Tex)
 trans = mol.rad_transitions[trans_index]
-N1 = n*level_pop[trans.low.number]*2*r
-N2 = n*level_pop[trans.up.number]*2*r
+N1 = n*level_pop[trans.low.index]*2*r
+N2 = n*level_pop[trans.up.index]*2*r
 width_nu = width_v/constants.c*trans.nu0
 nu = np.linspace(trans.nu0-2*width_nu,trans.nu0+2*width_nu,500)
 phi_nu = trans.line_profile.phi_nu(nu)
@@ -57,7 +57,7 @@ print(f'max tau nu: {np.max(tau_nu):.3g}')
 volume = 4/3*r**3*np.pi
 solid_angle = r**2*np.pi/d**2
 #W/m2
-thin_flux = volume*n*level_pop[trans.up.number]*trans.A21*trans.Delta_E/(4*np.pi*d**2)
+thin_flux = volume*n*level_pop[trans.up.index]*trans.A21*trans.Delta_E/(4*np.pi*d**2)
 print(f"analytical flux: {thin_flux:.3g} W/m2")
 source_func = helpers.B_nu(nu=nu,T=Tex)
 

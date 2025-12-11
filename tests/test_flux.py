@@ -104,8 +104,8 @@ class TestFastFlux():
         test_line = mol.rad_transitions[line_index]
         N = 1e12/constants.centi**2
         level_pop = mol.LTE_level_pop(33)
-        N1 = N*level_pop[test_line.low.number]
-        N2 = N*level_pop[test_line.up.number]
+        N1 = N*level_pop[test_line.low.index]
+        N2 = N*level_pop[test_line.up.index]
         width_nu = mol.width_v/constants.c*test_line.nu0
         #make nu asymmetric on purpose...
         nu = np.linspace(test_line.nu0-2*width_nu,test_line.nu0+width_nu,400)
@@ -246,8 +246,8 @@ class TestVarious():
                 nu = np.linspace(line.nu0-2*width_nu,line.nu0+2*width_nu,200)
                 constructed_tau_nu = f["fluxcalculator"].construct_tau_nu_individual_line(
                                         line=line,nu=nu,tau_nu0=f["tau_nu0"][t])
-                N1 = self.N*f["level_population"][line.low.number]
-                N2 = self.N*f["level_population"][line.up.number]
+                N1 = self.N*f["level_population"][line.low.index]
+                N2 = self.N*f["level_population"][line.up.index]
                 expected_tau_nu = line.tau_nu(N1=N1,N2=N2,nu=nu)
                 assert np.allclose(constructed_tau_nu,expected_tau_nu,atol=0,rtol=1e-3)
     
@@ -414,7 +414,7 @@ class TestFluxesWithPhysics():
             fluxes = fluxcalculator.fluxes_of_individual_transitions(solid_angle=self.Omega)
             expected_fluxes = []
             for i,line in enumerate(fluxcalculator.emitting_molecule.rad_transitions):
-                up_level_pop = level_pop[line.up.number]
+                up_level_pop = level_pop[line.up.index]
                 if fluxcalculator.geometry_name in ('static sphere','LVG sphere'):
                     #in the case of spheres, we can do an elegant test
                     #using physics
@@ -483,8 +483,8 @@ class TestFluxesWithPhysics():
                         LVG_kwargs = {'nu':nu,'nu0':line.nu0,'V':width_v/2}
                     else:
                         LVG_kwargs = {}
-                    N1 = level_pop[line.low.number]*N
-                    N2 = level_pop[line.up.number]*N
+                    N1 = level_pop[line.low.index]*N
+                    N2 = level_pop[line.up.index]*N
                     expected_tau_nu = line.tau_nu(N1,N2,nu)
                     expected_spec = fluxcalculator.compute_flux_nu(
                                         tau_nu=expected_tau_nu,source_function=source_func,
@@ -512,8 +512,8 @@ class TestFluxesWithPhysics():
             expected_spec = np.zeros_like(spec)
             expected_tau_nu = np.zeros_like(spec)
             for line in lines:
-                N1 = level_pop[line.low.number]*N
-                N2 = level_pop[line.up.number]*N
+                N1 = level_pop[line.low.index]*N
+                N2 = level_pop[line.up.index]*N
                 tau_nu_line = line.tau_nu(N1,N2,nu)
                 expected_tau_nu += tau_nu_line
                 source_func = helpers.B_nu(T=self.Tkin,nu=nu)
@@ -562,8 +562,8 @@ class TestFluxesWithPhysics():
                                 tau_nu0_alllines = 0
                                 for lineline in lines:
                                     tau_nu0_alllines += lineline.tau_nu(
-                                                              N1=N*level_pop[lineline.low.number],
-                                                              N2=N*level_pop[lineline.up.number],
+                                                              N1=N*level_pop[lineline.low.index],
+                                                              N2=N*level_pop[lineline.up.index],
                                                               nu=line.nu0)
                                 S_dust_nu0 = helpers.B_nu(nu=line.nu0,T=self.T_dust)
                                 tau_dust_nu0 = tau_dust(line.nu0)

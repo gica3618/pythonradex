@@ -170,8 +170,8 @@ class FluxCalculator():
     def get_S_tot(self):
         S_nu = np.zeros_like(self.nu)
         for i,line in enumerate(self.nu_selected_lines):
-            x1 = self.level_population[line.low.number]
-            x2 = self.level_population[line.up.number]
+            x1 = self.level_population[line.low.index]
+            x2 = self.level_population[line.up.index]
             S_line = line.source_function(x1=x1,x2=x2)
             S_nu += self.tau_nu_lines[i]*S_line
         S_nu += self.S_dust(self.nu)*self.tau_dust_nu

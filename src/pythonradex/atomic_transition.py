@@ -176,13 +176,13 @@ class Level():
     Attributes:
         g (:obj:`float`): the statistical weight of the level
         E (:obj:`float`): the energy of the level in [J]
-        number (:obj:`int`): the number of the level
+        index (:obj:`int`): the index of the level
     '''
 
-    def __init__(self,g,E,number):
+    def __init__(self,g,E,index):
         self.g = g
         self.E = E
-        self.number = number
+        self.index = index
 
     def LTE_level_pop(self,Z,T):
         '''Calculates the fractional population of the level in LTE.
@@ -205,7 +205,7 @@ class Transition():
         self.up = up
         self.low = low
         self.Delta_E = self.up.E-self.low.E
-        self.name = f'{self.up.number}-{self.low.number}'
+        self.name = f'{self.up.index}-{self.low.index}'
 
     def Tex(self,x1,x2):
         '''Computes the excitation temperature.

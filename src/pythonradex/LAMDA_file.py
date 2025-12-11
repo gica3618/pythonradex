@@ -69,11 +69,11 @@ def read(datafilepath,read_frequencies,read_quantum_numbers=False):
             leveldata = [float(string) for string in line_entries[:3]]
             assert int(leveldata[0]) == i-2-comment_offset,\
                                      'level numeration not consistent'
-            #transforming energy from cm-1 to J; level numbers starting from 0:
+            #transforming energy from cm-1 to J; level indices starting from 0:
             lev = atomic_transition.Level(
                         g=leveldata[2],
                         E=constants.c*constants.h*leveldata[1]/constants.centi,
-                        number=int(leveldata[0])-1)
+                        index=int(leveldata[0])-1)
             levels.append(lev)
             if read_quantum_numbers:
                 quantum_numbers.append(line_entries[3])
@@ -83,8 +83,8 @@ def read(datafilepath,read_frequencies,read_quantum_numbers=False):
             continue
         if 4+comment_offset+n_levels <= i < 4+comment_offset+n_levels+n_rad_transitions:
             radtransdata = [float(string) for string in line.split()]
-            up = next(level for level in levels if level.number==radtransdata[1]-1)
-            low = next(level for level in levels if level.number==radtransdata[2]-1)
+            up = next(level for level in levels if level.index==radtransdata[1]-1)
+            low = next(level for level in levels if level.index==radtransdata[2]-1)
             rad_trans_kwargs = {'up':up,'low':low,'A21':radtransdata[3]}
             if read_frequencies:
                 nu0 = radtransdata[4]*constants.giga
@@ -115,8 +115,8 @@ def read(datafilepath,read_frequencies,read_quantum_numbers=False):
         if 9+comment_offset+n_levels+n_rad_transitions+coll_partner_offset <= i <=\
                  last_coll_trans_i:
             coll_trans_data = [float(string) for string in line.split()]
-            up = next(level for level in levels if level.number==coll_trans_data[1]-1)
-            low = next(level for level in levels if level.number==coll_trans_data[2]-1)
+            up = next(level for level in levels if level.index==coll_trans_data[1]-1)
+            low = next(level for level in levels if level.index==coll_trans_data[2]-1)
             K21_data = np.array(coll_trans_data[3:])*constants.centi**3
             coll_trans = atomic_transition.CollisionalTransition(
                                   up=up,low=low,K21_data=K21_data,

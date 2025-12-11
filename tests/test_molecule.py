@@ -35,7 +35,7 @@ def test_Molecule_levels():
     for ID,td in test_data.items():
         for i,level in enumerate(td['levels']):
             for mol in test_molecules[ID]:
-                for attribute in ('g','E','number'):
+                for attribute in ('g','E','index'):
                     assert getattr(level,attribute)\
                                       == getattr(mol.levels[i],attribute)
 
@@ -101,10 +101,10 @@ def test_tau():
             tau_nu0 = mol.get_tau_nu0_lines(N=N,level_population=level_population)
             expected_tau_nu0 = []
             for i,rad_trans in enumerate(mol.rad_transitions):
-                n_up = rad_trans.up.number
-                N2 = N*level_population[n_up]
-                n_low = rad_trans.low.number
-                N1 = N*level_population[n_low]
+                i_up = rad_trans.up.index
+                N2 = N*level_population[i_up]
+                i_low = rad_trans.low.index
+                N1 = N*level_population[i_low]
                 t = atomic_transition.tau_nu(
                          A21=rad_trans.A21,phi_nu=rad_trans.line_profile.phi_nu(
                                          rad_trans.nu0),
@@ -122,10 +122,10 @@ def test_tau_LTE():
             tau_nu0_LTE = mol.get_tau_nu0_lines_LTE(N=N,T=T)
             expected_tau_nu0 = []
             for i,rad_trans in enumerate(mol.rad_transitions):
-                n_up = rad_trans.up.number
-                N2 = N*level_population[n_up]
-                n_low = rad_trans.low.number
-                N1 = N*level_population[n_low]
+                i_up = rad_trans.up.index
+                N2 = N*level_population[i_up]
+                i_low = rad_trans.low.index
+                N1 = N*level_population[i_low]
                 t = atomic_transition.tau_nu(
                          A21=rad_trans.A21,phi_nu=rad_trans.line_profile.phi_nu(rad_trans.nu0),
                          g_low=rad_trans.low.g,g_up=rad_trans.up.g,N1=N1,N2=N2,nu=rad_trans.nu0)
@@ -148,8 +148,8 @@ def test_get_tau_line_nu():
         for i,line in enumerate(mol.rad_transitions):
             width_nu = width_v/constants.c*line.nu0
             nu = np.linspace(line.nu0-width_nu,line.nu0+width_nu,100)
-            expected_tau = line.tau_nu(N1=N*level_pop[line.low.number],
-                                       N2=N*level_pop[line.up.number],nu=nu)
+            expected_tau = line.tau_nu(N1=N*level_pop[line.low.index],
+                                       N2=N*level_pop[line.up.index],nu=nu)
             assert np.all(expected_tau==tau_line_funcs[i](nu))
 
 def test_Tex():
@@ -159,10 +159,10 @@ def test_Tex():
         Tex = mol.get_Tex(level_population=level_population)
         expected_Tex = []
         for i,rad_trans in enumerate(mol.rad_transitions):
-            n_up = rad_trans.up.number
-            x2 = level_population[n_up]
-            n_low = rad_trans.low.number
-            x1 = level_population[n_low]
+            i_up = rad_trans.up.index
+            x2 = level_population[i_up]
+            i_low = rad_trans.low.index
+            x1 = level_population[i_low]
             tex = atomic_transition.Tex(
                         Delta_E=rad_trans.Delta_E,g_low=rad_trans.low.g,
                         g_up=rad_trans.up.g,x1=x1,x2=x2)
@@ -195,15 +195,15 @@ def test_K_matrix():
                        Tkin=mol.Tkin_data[collider][T_index])
             K_contribution = mol.construct_K_matrix(
                              n_levels=mol.n_levels,K12=K12,K21=K21,
-                             nlow=mol.coll_nlow[collider],nup=mol.coll_nup[collider])
+                             ilow=mol.coll_ilow[collider],iup=mol.coll_iup[collider])
             expected_K = np.zeros((mol.n_levels,)*2)
             for i in range(len(K12)):
-                nl = mol.coll_nlow[collider][i]
-                nu = mol.coll_nup[collider][i]
-                expected_K[nu,nl] += K12[i]
-                expected_K[nl,nl] += -K12[i]
-                expected_K[nl,nu] += K21[i]
-                expected_K[nu,nu] += -K21[i]
+                il = mol.coll_ilow[collider][i]
+                iu = mol.coll_iup[collider][i]
+                expected_K[iu,il] += K12[i]
+                expected_K[il,il] += -K12[i]
+                expected_K[il,iu] += K21[i]
+                expected_K[iu,iu] += -K21[i]
             assert np.all(K_contribution==expected_K)
 
 def test_K_interpolation():
@@ -257,7 +257,7 @@ def test_GammaC():
                 interpK = mol.interpolate_K(Tkin=Tkin,collider=collider)
                 K = mol.construct_K_matrix(
                          n_levels=mol.n_levels,K12=interpK['K12'],K21=interpK['K21'],
-                         nlow=mol.coll_nlow[collider],nup=mol.coll_nup[collider])
+                         ilow=mol.coll_ilow[collider],iup=mol.coll_iup[collider])
                 expected_GammaC += K*coll_dens
             GammaC = mol.get_GammaC(Tkin=Tkin,collider_densities=collider_densities)
             assert np.all(expected_GammaC == GammaC)
@@ -365,15 +365,15 @@ class TestTotalQuantities():
         width_nu = line.line_profile.width_nu
         nu = np.linspace(line.nu0-3*width_nu,line.nu0+3*width_nu,200)
         level_population = self.CO_molecule.LTE_level_pop(T=23)
-        x1 = level_population[line.low.number]
-        x2 = level_population[line.up.number]
+        x1 = level_population[line.low.index]
+        x2 = level_population[line.up.index]
         tau_line = line.tau_nu(nu=nu,N1=x1*self.N_CO,N2=x2*self.N_CO)
         for tau_d,tau_dust in self.tau_dust_iterator():
             tau_tot = self.CO_molecule.get_tau_tot_nu(
                           line_index=line_index,level_population=level_population,
                           N=self.N_CO,tau_dust=tau_dust)(nu)
-            x1 = level_population[line.low.number]
-            x2 = level_population[line.up.number]
+            x1 = level_population[line.low.index]
+            x2 = level_population[line.up.index]
             expected_tau_tot = tau_line + tau_d
             assert np.all(tau_tot==expected_tau_tot)
 
@@ -394,8 +394,8 @@ class TestTotalQuantities():
             expected_tau_tot = np.zeros_like(nu)
             for i in (0,1,2):
                 line_i = self.HCl_molecule.rad_transitions[i]
-                x1 = level_population[line_i.low.number]
-                x2 = level_population[line_i.up.number]
+                x1 = level_population[line_i.low.index]
+                x2 = level_population[line_i.up.index]
                 expected_tau_tot += line_i.tau_nu(N1=self.N_HCl*x1,N2=self.N_HCl*x2,
                                                   nu=nu)
             expected_tau_tot += tau_d

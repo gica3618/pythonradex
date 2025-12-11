@@ -119,15 +119,15 @@ class TestGeneral():
     def test_U_nu0(self):
         expected_U = np.zeros((self.test_molecule.n_levels,)*2)
         for trans in self.test_molecule.rad_transitions:
-            expected_U[trans.up.number,trans.low.number] = trans.A21
+            expected_U[trans.up.index,trans.low.index] = trans.A21
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             assert np.all(expected_U==rate_eq.U_nu0)
 
     def test_V_nu0(self):
         expected_V = np.zeros((self.test_molecule.n_levels,)*2)
         for trans in self.test_molecule.rad_transitions:
-            expected_V[trans.up.number,trans.low.number] = trans.B21
-            expected_V[trans.low.number,trans.up.number] = trans.B12
+            expected_V[trans.up.index,trans.low.index] = trans.B21
+            expected_V[trans.low.index,trans.up.index] = trans.B12
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             assert np.all(expected_V==rate_eq.V_nu0)
 
@@ -136,8 +136,8 @@ class TestGeneral():
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             tau_line_nu0 = rate_eq.tau_line_nu0(
                                level_population=level_pop,
-                               trans_low_number=rate_eq.molecule.nlow_rad_transitions,
-                               trans_up_number=rate_eq.molecule.nup_rad_transitions,
+                               trans_low_index=rate_eq.molecule.ilow_rad_transitions,
+                               trans_up_index=rate_eq.molecule.iup_rad_transitions,
                                N=rate_eq.N,A21=rate_eq.molecule.A21,
                                phi_nu0=rate_eq.molecule.phi_nu0,
                                gup_rad_transitions=rate_eq.molecule.gup_rad_transitions,
@@ -149,8 +149,8 @@ class TestGeneral():
 
     def test_Ieff_nu0(self):
         general_kwargs = {'n_levels':self.test_molecule.n_levels,
-                          'trans_low_number':self.test_molecule.nlow_rad_transitions,
-                          'trans_up_number':self.test_molecule.nup_rad_transitions}
+                          'trans_low_index':self.test_molecule.ilow_rad_transitions,
+                          'trans_up_index':self.test_molecule.iup_rad_transitions}
         level_pop = self.LTE_level_pop
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             Iext_nu0 = rate_eq.ext_background(self.test_molecule.nu0)
@@ -169,16 +169,16 @@ class TestGeneral():
                                     tau_tot_nu0=tau_tot_nu0,no_dust=no_dust)
             expected_Ieff = np.zeros((self.test_molecule.n_levels,)*2)
             for t,trans in enumerate(self.test_molecule.rad_transitions):
-                nup,nlow = trans.up.number,trans.low.number
-                expected_Ieff[nup,nlow] = expected_Ieff[nlow,nup]\
+                iup,ilow = trans.up.index,trans.low.index
+                expected_Ieff[iup,ilow] = expected_Ieff[ilow,iup]\
                       = beta_nu0[t]*Iext_nu0[t]\
                             + (1-beta_nu0[t])*S_dust_nu0[t]*tau_dust_nu0[t]/tau_tot_nu0[t]
             assert np.all(Ieff==expected_Ieff)
 
     def test_Ieff_nu0_zero_tau(self):
         general_kwargs = {'n_levels':self.test_molecule.n_levels,
-                          'trans_low_number':self.test_molecule.nlow_rad_transitions,
-                          'trans_up_number':self.test_molecule.nup_rad_transitions}
+                          'trans_low_index':self.test_molecule.ilow_rad_transitions,
+                          'trans_up_index':self.test_molecule.iup_rad_transitions}
         rate_eq = self.rate_eq_generator.get_zero_tau_rate_eq(ext_background=cmb)
         Iext_nu0 = rate_eq.ext_background(self.test_molecule.nu0)
         tau_tot_nu0 = np.zeros(rate_eq.molecule.n_rad_transitions)
@@ -192,17 +192,17 @@ class TestGeneral():
                   tau_tot_nu0=tau_tot_nu0,no_dust=no_dust)
         expected_Ieff = np.zeros((self.test_molecule.n_levels,)*2)
         for line in rate_eq.molecule.rad_transitions:
-            nup,nlow = line.up.number,line.low.number
-            expected_Ieff[nup,nlow] = cmb(line.nu0)
-            expected_Ieff[nlow,nup] = expected_Ieff[nup,nlow]
+            iup,ilow = line.up.index,line.low.index
+            expected_Ieff[iup,ilow] = cmb(line.nu0)
+            expected_Ieff[ilow,iup] = expected_Ieff[iup,ilow]
         assert np.all(Ieff==expected_Ieff)
 
     def test_mixed_term_nu0(self):
         A21 = self.test_molecule.A21
         level_pop = self.LTE_level_pop
         general_kwargs = {'n_levels':self.test_molecule.n_levels,'A21':A21,
-                          'trans_low_number':self.test_molecule.nlow_rad_transitions,
-                          'trans_up_number':self.test_molecule.nup_rad_transitions}
+                          'trans_low_index':self.test_molecule.ilow_rad_transitions,
+                          'trans_up_index':self.test_molecule.iup_rad_transitions}
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             tau_tot_kwargs = {'level_population':level_pop,'N':N,
                               'tau_dust':rate_eq.tau_dust}
@@ -217,8 +217,8 @@ class TestGeneral():
                                              beta_nu0=beta_nu0,tau_line_nu0=tau_line_nu0)
             expected_mixed_term = np.zeros((self.test_molecule.n_levels,)*2)
             for t,trans in enumerate(self.test_molecule.rad_transitions):
-                nup,nlow = trans.up.number,trans.low.number
-                expected_mixed_term[nup,nlow] = (1-beta_nu0[t])/tau_tot_nu0[t]\
+                iup,ilow = trans.up.index,trans.low.index
+                expected_mixed_term[iup,ilow] = (1-beta_nu0[t])/tau_tot_nu0[t]\
                                                         *tau_line_nu0[t]*A21[t]
             assert np.all(mixed_term==expected_mixed_term)
             assert np.all(mixed_term.diagonal()==0)
@@ -227,8 +227,8 @@ class TestGeneral():
         rate_eq = self.rate_eq_generator.get_zero_tau_rate_eq(ext_background=cmb)
         A21 = self.test_molecule.A21
         general_kwargs = {'n_levels':self.test_molecule.n_levels,'A21':A21,
-                          'trans_low_number':self.test_molecule.nlow_rad_transitions,
-                          'trans_up_number':self.test_molecule.nup_rad_transitions}
+                          'trans_low_index':self.test_molecule.ilow_rad_transitions,
+                          'trans_up_index':self.test_molecule.iup_rad_transitions}
         tau_tot_nu0 = np.zeros((self.test_molecule.n_rad_transitions)*2)
         beta_nu0 = geometry.beta(tau_tot_nu0)
         tau_line_nu0 = tau_tot_nu0.copy()
@@ -264,10 +264,10 @@ class TestGeneral():
         V_Ieff = rate_eq.V_Ieff_averaged(tau_tot_functions=tau_tot_functions)
         expected_V_Ieff = np.zeros((self.test_molecule.n_levels,)*2)
         for line in self.test_molecule.rad_transitions:
-            nup,nlow = line.up.number,line.low.number
+            iup,ilow = line.up.index,line.low.index
             Ieff = line.line_profile.average_over_phi_nu(cmb)
-            expected_V_Ieff[nup,nlow] = Ieff*line.B21
-            expected_V_Ieff[nlow,nup] = Ieff*line.B12
+            expected_V_Ieff[iup,ilow] = Ieff*line.B21
+            expected_V_Ieff[ilow,iup] = Ieff*line.B12
         assert np.all(V_Ieff==expected_V_Ieff)
 
     def test_V_Ieff_averaged(self):
@@ -284,10 +284,10 @@ class TestGeneral():
                     return np.where(tau_tot==0,betaIext,betaIext
                                     +(1-beta)*rate_eq.S_dust(nu)*rate_eq.tau_dust(nu)/tau_tot)
                 Ieff_averaged = trans.line_profile.average_over_phi_nu(Ieff)
-                n_low = trans.low.number
-                n_up = trans.up.number
-                expected_V_Ieff[n_low,n_up] = trans.B12*Ieff_averaged
-                expected_V_Ieff[n_up,n_low] = trans.B21*Ieff_averaged
+                i_low = trans.low.index
+                i_up = trans.up.index
+                expected_V_Ieff[i_low,i_up] = trans.B12*Ieff_averaged
+                expected_V_Ieff[i_up,i_low] = trans.B21*Ieff_averaged
             assert np.all(V_Ieff==expected_V_Ieff)
 
 
@@ -333,9 +333,9 @@ class TestOverlapStuff():
             down_transitions = []
             level_transitions_i = []
             for j,trans in enumerate(self.test_molecule.rad_transitions):
-                if trans.up.number == i:
+                if trans.up.index == i:
                     down_transitions.append(j)
-                if trans.up.number == i or trans.low.number == i:
+                if trans.up.index == i or trans.low.index == i:
                     level_transitions_i.append(j)
             downward_rad_transitions.append(down_transitions)
             level_transitions.append(level_transitions_i)
@@ -360,7 +360,7 @@ class TestOverlapStuff():
         #term where the transition in the lprimeprime and lprimeprimeprime is
         #the same)
         for downward_trans in downward_transitions_from_lprime:
-            if self.test_molecule.rad_transitions[downward_trans].low.number == l:
+            if self.test_molecule.rad_transitions[downward_trans].low.index == l:
                 transition_pairs_to_consider.append([downward_trans,]*2)
         return transition_pairs_to_consider
 
@@ -391,10 +391,10 @@ class TestOverlapStuff():
                     A21 = self.test_molecule.rad_transitions[trans_pair[1]].A21
                     return np.where(tau_tot==0,0,(1-beta)*tau_line/tau_tot*A21)
                 trans0 = self.test_molecule.rad_transitions[trans_pair[0]]
-                if trans0.up.number == l:
+                if trans0.up.index == l:
                     sign = -1
                 else:
-                    assert trans0.low.number == l
+                    assert trans0.low.index == l
                     sign = 1
                 #need to average over the line profile of the
                 #lprime -> lprimeprimeprime transition!
@@ -438,8 +438,8 @@ class TestGammaR():
             if not rate_eq.treat_line_overlap:
                 tau_line_nu0 = rate_eq.tau_line_nu0(
                                    level_population=level_pop,
-                                   trans_low_number=rate_eq.molecule.nlow_rad_transitions,
-                                   trans_up_number=rate_eq.molecule.nup_rad_transitions,
+                                   trans_low_index=rate_eq.molecule.ilow_rad_transitions,
+                                   trans_up_index=rate_eq.molecule.iup_rad_transitions,
                                    N=rate_eq.N,A21=rate_eq.molecule.A21,
                                    phi_nu0=rate_eq.molecule.phi_nu0,
                                    gup_rad_transitions=rate_eq.molecule.gup_rad_transitions,
@@ -448,20 +448,20 @@ class TestGammaR():
                 tau_tot_nu0 = tau_line_nu0 + rate_eq.tau_dust_nu0
                 n_levels = rate_eq.molecule.n_levels
                 beta_nu0 = rate_eq.geometry.beta(tau_tot_nu0)
-                trans_low_number = rate_eq.molecule.nlow_rad_transitions
-                trans_up_number = rate_eq.molecule.nup_rad_transitions
+                trans_low_index = rate_eq.molecule.ilow_rad_transitions
+                trans_up_index = rate_eq.molecule.iup_rad_transitions
                 no_dust = check_no_dust(rate_eq)
                 Ieff_nu0 = rate_eq.Ieff_nu0(
                               n_levels=n_levels,Iext_nu0=rate_eq.Iext_nu0,
                               beta_nu0=beta_nu0,S_dust_nu0=rate_eq.S_dust_nu0,
-                              trans_low_number=trans_low_number,
-                              trans_up_number=trans_up_number,
+                              trans_low_index=trans_low_index,
+                              trans_up_index=trans_up_index,
                               tau_dust_nu0=rate_eq.tau_dust_nu0,
                               tau_tot_nu0=tau_tot_nu0,no_dust=no_dust)
                 mixed_term_nu0  = rate_eq.mixed_term_nu0(
                                      n_levels=n_levels,beta_nu0=beta_nu0,
-                                     trans_low_number=trans_low_number,
-                                     trans_up_number=trans_up_number,
+                                     trans_low_index=trans_low_index,
+                                     trans_up_index=trans_up_index,
                                      tau_tot_nu0=tau_tot_nu0,tau_line_nu0=tau_line_nu0,
                                      A21=rate_eq.molecule.A21)
                 expected_GammaR = rate_eq.U_nu0+rate_eq.V_nu0*Ieff_nu0-mixed_term_nu0
@@ -502,8 +502,8 @@ def test_square_line_profile_averaging():
     level_pop = test_molecule.LTE_level_pop(20)
     tau_line_nu0 = rate_eq_nu0.tau_line_nu0(
                        level_population=level_pop,
-                       trans_low_number=rate_eq_nu0.molecule.nlow_rad_transitions,
-                       trans_up_number=rate_eq_nu0.molecule.nup_rad_transitions,
+                       trans_low_index=rate_eq_nu0.molecule.ilow_rad_transitions,
+                       trans_up_index=rate_eq_nu0.molecule.iup_rad_transitions,
                        N=rate_eq_nu0.N,A21=rate_eq_nu0.molecule.A21,
                        phi_nu0=rate_eq_nu0.molecule.phi_nu0,
                        gup_rad_transitions=rate_eq_nu0.molecule.gup_rad_transitions,
@@ -512,13 +512,13 @@ def test_square_line_profile_averaging():
     tau_tot_nu0 = tau_line_nu0 + rate_eq_nu0.tau_dust_nu0
     beta_nu0 = rate_eq_nu0.geometry.beta(tau_tot_nu0)
     n_levels = rate_eq_nu0.molecule.n_levels
-    trans_low_number = rate_eq_nu0.molecule.nlow_rad_transitions
-    trans_up_number = rate_eq_nu0.molecule.nup_rad_transitions
+    trans_low_index = rate_eq_nu0.molecule.ilow_rad_transitions
+    trans_up_index = rate_eq_nu0.molecule.iup_rad_transitions
     no_dust = check_no_dust(rate_eq_nu0)
     Ieff_nu0 = rate_eq_nu0.Ieff_nu0(
                   n_levels=n_levels,Iext_nu0=rate_eq_nu0.Iext_nu0,beta_nu0=beta_nu0,
-                  S_dust_nu0=rate_eq_nu0.S_dust_nu0,trans_low_number=trans_low_number,
-                  trans_up_number=trans_up_number,tau_dust_nu0=rate_eq_nu0.tau_dust_nu0,
+                  S_dust_nu0=rate_eq_nu0.S_dust_nu0,trans_low_index=trans_low_index,
+                  trans_up_index=trans_up_index,tau_dust_nu0=rate_eq_nu0.tau_dust_nu0,
                   tau_tot_nu0=tau_tot_nu0,no_dust=no_dust)
     V_Ieff_nu0 = rate_eq_nu0.V_nu0*Ieff_nu0
     tau_tot_functions = rate_eq_avg.get_tau_tot_functions(
@@ -526,8 +526,8 @@ def test_square_line_profile_averaging():
     V_Ieff_averaged = rate_eq_avg.V_Ieff_averaged(tau_tot_functions=tau_tot_functions)
     mixed_term_nu0  = rate_eq_nu0.mixed_term_nu0(
                          n_levels=n_levels,beta_nu0=beta_nu0,
-                         trans_low_number=trans_low_number,
-                         trans_up_number=trans_up_number,
+                         trans_low_index=trans_low_index,
+                         trans_up_index=trans_up_index,
                          tau_tot_nu0=tau_tot_nu0,tau_line_nu0=tau_line_nu0,
                          A21=rate_eq_nu0.molecule.A21)
     tau_line_functions = rate_eq_avg.get_tau_line_functions(

@@ -78,14 +78,14 @@ def read_RADEX_output(filepath,molecule):
             assert np.isclose(trans.nu0,freq,atol=0,rtol=1e-3)
             trans_up_x = float(linedata[-4])
             trans_low_x = float(linedata[-3])
-            if np.isfinite(level_pop[trans.up.number]):
-                assert level_pop[trans.up.number] == trans_up_x
+            if np.isfinite(level_pop[trans.up.index]):
+                assert level_pop[trans.up.index] == trans_up_x
             else:
-                level_pop[trans.up.number] = trans_up_x
-            if np.isfinite(level_pop[trans.low.number]):
-                assert level_pop[trans.low.number] == trans_low_x
+                level_pop[trans.up.index] = trans_up_x
+            if np.isfinite(level_pop[trans.low.index]):
+                assert level_pop[trans.low.index] == trans_low_x
             else:
-                level_pop[trans.low.number] = trans_low_x
+                level_pop[trans.low.index] = trans_low_x
             trans_counter += 1
     assert np.all(np.isfinite(level_pop))
     return {'Tkin':Tkin,'column_density':column_density,'width_v':width_v,
@@ -146,7 +146,7 @@ def test_vs_RADEX():
                     source.level_pop > frac_max_level_pop_to_consider[geo]*np.max(source.level_pop)
                 taus = []
                 for i,trans in enumerate(source.emitting_molecule.rad_transitions):
-                    if level_pop_selection[trans.up.number]:
+                    if level_pop_selection[trans.up.index]:
                         taus.append(source.tau_nu0_individual_transitions[i])
                 if len(taus) > 0:
                     max_taus.append(np.max(taus))
