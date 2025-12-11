@@ -214,34 +214,140 @@ class TestInvalidFluxRequest():
                    fluxcalculator.fluxes_of_individual_transitions(solid_angle=1)
 
 
-def test_tau_nu_constructor():
+class TestVarious():
+
     width_v = 1*constants.kilo
     N = 1e12/constants.centi**2
     T = 344
-    geo_name = 'static sphere'
-    geo = radiative_transfer.Source.geometries[geo_name]
-    test_transitions = [0,3,10]
-    for lp in ('rectangular','Gaussian'):
-        mol = molecule.EmittingMolecule(datafilepath=CO_datafilepath,
-                                        line_profile_type=lp,width_v=width_v)
-        level_population = mol.LTE_level_pop(T)
-        tau_nu0 = mol.get_tau_nu0_lines(N=N,level_population=level_population)
-        fluxcalculator = flux.FluxCalculator(
-                                 emitting_molecule=mol,level_population=level_population,
-                                 geometry_name=geo_name,
-                                 compute_flux_nu=geo.compute_flux_nu,
-                                 tau_nu0_individual_transitions=tau_nu0,
-                                 tau_dust=zero,S_dust=zero,V_LVG_sphere=mol.width_v/2)
-        for t in test_transitions:
-            line = mol.rad_transitions[t]
-            width_nu = mol.width_v/constants.c * line.nu0
-            nu = np.linspace(line.nu0-2*width_nu,line.nu0+2*width_nu,200)
-            constructed_tau_nu = fluxcalculator.construct_tau_nu_individual_line(
-                                    line=line,nu=nu,tau_nu0=tau_nu0[t])
-            N1 = N*level_population[line.low.number]
-            N2 = N*level_population[line.up.number]
-            expected_tau_nu = line.tau_nu(N1=N1,N2=N2,nu=nu)
-            assert np.allclose(constructed_tau_nu,expected_tau_nu,atol=0,rtol=1e-3)
+
+    def generate_flux_calculator(self,geo_name,tau_dust,S_dust):
+        geo = radiative_transfer.Source.geometries[geo_name]
+        for lp in ('rectangular','Gaussian'):
+            mol = molecule.EmittingMolecule(datafilepath=CO_datafilepath,
+                                            line_profile_type=lp,width_v=self.width_v)
+            level_population = mol.LTE_level_pop(self.T)
+            tau_nu0 = mol.get_tau_nu0_lines(N=self.N,level_population=level_population)
+            fluxcalculator = flux.FluxCalculator(
+                                     emitting_molecule=mol,level_population=level_population,
+                                     geometry_name=geo_name,
+                                     compute_flux_nu=geo.compute_flux_nu,
+                                     tau_nu0_individual_transitions=tau_nu0,
+                                     tau_dust=tau_dust,S_dust=S_dust,V_LVG_sphere=mol.width_v/2)
+            yield {"mol":mol,"fluxcalculator":fluxcalculator,"tau_nu0":tau_nu0,
+                   "level_population":level_population}
+    
+    def test_tau_nu_constructor(self):
+        test_transitions = [0,3,10]
+        for f in self.generate_flux_calculator(geo_name="static sphere",tau_dust=zero,
+                                               S_dust=zero):
+            for t in test_transitions:
+                line = f["mol"].rad_transitions[t]
+                width_nu = f["mol"].width_v/constants.c * line.nu0
+                nu = np.linspace(line.nu0-2*width_nu,line.nu0+2*width_nu,200)
+                constructed_tau_nu = f["fluxcalculator"].construct_tau_nu_individual_line(
+                                        line=line,nu=nu,tau_nu0=f["tau_nu0"][t])
+                N1 = self.N*f["level_population"][line.low.number]
+                N2 = self.N*f["level_population"][line.up.number]
+                expected_tau_nu = line.tau_nu(N1=N1,N2=N2,nu=nu)
+                assert np.allclose(constructed_tau_nu,expected_tau_nu,atol=0,rtol=1e-3)
+    
+    def test_line_identification(self):
+        trans_indices = [2,3]
+        for f in self.generate_flux_calculator(geo_name="static sphere",tau_dust=zero,
+                                               S_dust=zero):
+            fluxcalculator = f["fluxcalculator"]
+            transitions = [f["mol"].rad_transitions[i] for i in trans_indices]
+            freq_widths = [helpers.Delta_nu(Delta_v=self.width_v,nu0=t.nu0) for t in transitions]
+            for i,trans,width_nu in zip(trans_indices,transitions,freq_widths):
+                include = [np.array((trans.nu0,)),
+                           np.array((trans.nu0-0.1*width_nu,trans.nu0+0.1*width_nu)),
+                           #now ranges that do not include nu0:
+                           np.array((trans.nu0+0.1*width_nu,trans.nu0+0.4*width_nu)),
+                           np.array((trans.line_profile.nu_max-width_nu/30,)),
+                           np.array((trans.line_profile.nu_min+width_nu/100)),
+                           #now a range broader than nu_min,nu_max:
+                           np.array((trans.line_profile.nu_min-width_nu,
+                                     trans.line_profile.nu_max+width_nu))
+                           ]
+                for nu in include:
+                    fluxcalculator.set_nu(nu=nu)
+                    assert len(fluxcalculator.nu_selected_line_indices) == 1
+                    assert i in fluxcalculator.nu_selected_line_indices
+                not_included = [np.array((1.01*trans.line_profile.nu_max,)),
+                                np.array((0.99*trans.line_profile.nu_min,)),
+                                np.array((trans.line_profile.nu_min-0.001*width_nu,)),
+                                np.array((trans.line_profile.nu_max+0.001*width_nu))]
+                for nu in not_included:
+                    fluxcalculator.set_nu(nu=nu)
+                    assert len(fluxcalculator.nu_selected_line_indices) == 0
+            #test also ranges that cover both
+            both = [np.array((transitions[0].nu0,transitions[1].nu0)),
+                    np.array((transitions[0].line_profile.nu_min-width_nu,
+                              transitions[0].nu0,transitions[1].nu0,
+                              transitions[1].line_profile.nu_max+width_nu)),
+                    np.array((transitions[0].nu0,transitions[1].line_profile.nu_max-width_nu/100))]
+            for nu in both:
+                fluxcalculator.set_nu(nu=nu)
+                assert len(fluxcalculator.nu_selected_line_indices) == 2
+                for i in trans_indices:
+                    assert i in fluxcalculator.nu_selected_line_indices
+    
+    @staticmethod
+    def get_no_line_nu(trans,width_nu):
+        return [np.array((trans.line_profile.nu_min-width_nu,
+                          trans.line_profile.nu_min-0.5*width_nu)),
+                np.array((trans.line_profile.nu_max+0.5*width_nu,
+                          trans.line_profile.nu_max+width_nu))]
+
+    def check_no_line_spectrum(self,fluxcalculator,trans,expected_spec):
+        width_nu = self.width_v/constants.c*trans.nu0
+        no_line = self.get_no_line_nu(trans=trans,width_nu=width_nu)
+        for nu in no_line:
+            fluxcalculator.set_nu(nu=nu)
+            assert len(fluxcalculator.nu_selected_lines) == 0
+            spec = fluxcalculator.spectrum(solid_angle=1)
+            assert np.all(spec==expected_spec(nu))
+
+    @pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
+    def test_no_line_spectrum(self):
+        #if no lines are detected, spectrum should be zero
+        def zero_spec(nu):
+            return np.zeros_like(nu)
+        for geo_name in ("static sphere", "LVG sphere"):
+            for f in self.generate_flux_calculator(geo_name=geo_name,tau_dust=zero,
+                                                   S_dust=zero):
+                self.check_no_line_spectrum(
+                        fluxcalculator=f["fluxcalculator"],
+                        trans=f["mol"].rad_transitions[1],expected_spec=zero_spec)
+        #test with dust:
+        def S_dust(nu):
+            return helpers.B_nu(nu=nu,T=123)
+        def tau_dust(nu):
+            return np.ones_like(nu)*0.56
+        def dust_spec(nu):
+            return S_dust(nu)*(1-np.exp(-tau_dust(nu)))
+        for f in self.generate_flux_calculator(geo_name="static slab",tau_dust=tau_dust,
+                                               S_dust=S_dust):
+                self.check_no_line_spectrum(
+                        fluxcalculator=f["fluxcalculator"],
+                        trans=f["mol"].rad_transitions[1],expected_spec=dust_spec)
+
+    def test_single_nu_spectrum(self):
+        for geo_name in ("static sphere", "LVG sphere"):
+            for f in self.generate_flux_calculator(geo_name=geo_name,tau_dust=zero,
+                                                   S_dust=zero):
+                fluxcalculator = f["fluxcalculator"]
+                trans = f["mol"].rad_transitions[5]
+                width_nu = self.width_v/constants.c*trans.nu0
+                single_nu = np.array((trans.nu0-width_nu/6,))
+                multi_nu = np.array((trans.line_profile.nu_min,single_nu[0],
+                                     trans.line_profile.nu_max))
+                Omega = 1
+                fluxcalculator.set_nu(nu=single_nu)
+                single_spec = fluxcalculator.spectrum(solid_angle=Omega)
+                fluxcalculator.set_nu(nu=multi_nu)
+                multi_spec = fluxcalculator.spectrum(solid_angle=Omega)
+                assert single_spec[0] == multi_spec[1]
 
 
 ###### tests using physics ###################
