@@ -80,7 +80,9 @@ class LineProfile():
 
     def covers_frequency(self,nu):
         #check if the line profile covers a given frequency
-        return self.nu_min <= nu <= self.nu_max
+        #don't do self.nu_min <= nu <= self.nu_max, otherwise it does not work
+        #if nu is an array
+        return (self.nu_min <= nu) & (nu <= self.nu_max)
 
 
 class GaussianLineProfile(LineProfile):

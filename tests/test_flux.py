@@ -261,13 +261,16 @@ class TestVarious():
             for i,trans,width_nu in zip(trans_indices,transitions,freq_widths):
                 include = [np.array((trans.nu0,)),
                            np.array((trans.nu0-0.1*width_nu,trans.nu0+0.1*width_nu)),
-                           #now ranges that do not include nu0:
+                           #now ranges that do not enclose nu0:
                            np.array((trans.nu0+0.1*width_nu,trans.nu0+0.4*width_nu)),
-                           np.array((trans.line_profile.nu_max-width_nu/30,)),
-                           np.array((trans.line_profile.nu_min+width_nu/100)),
-                           #now a range broader than nu_min,nu_max:
-                           np.array((trans.line_profile.nu_min-width_nu,
-                                     trans.line_profile.nu_max+width_nu))
+                           #include nu outside of nu_min,nu_max:
+                           np.array((trans.nu0+0.1*width_nu,trans.nu0+0.4*width_nu,
+                                     trans.nu0+100*width_nu)),
+                           np.array((trans.line_profile.nu_min-width_nu/3,
+                                     trans.nu0+0.1*width_nu,trans.nu0+0.4*width_nu,
+                                     trans.nu0+100*width_nu)),
+                           np.array((trans.line_profile.nu_max-width_nu/300,)),
+                           np.array((trans.line_profile.nu_min+width_nu/100,)),
                            ]
                 for nu in include:
                     fluxcalculator.set_nu(nu=nu)
@@ -276,22 +279,35 @@ class TestVarious():
                 not_included = [np.array((1.01*trans.line_profile.nu_max,)),
                                 np.array((0.99*trans.line_profile.nu_min,)),
                                 np.array((trans.line_profile.nu_min-0.001*width_nu,)),
-                                np.array((trans.line_profile.nu_max+0.001*width_nu))]
+                                np.array((trans.line_profile.nu_max+0.001*width_nu,)),
+                                #broad range
+                                np.array((trans.line_profile.nu_min-3*width_nu,
+                                          trans.line_profile.nu_max+3*width_nu))]
                 for nu in not_included:
                     fluxcalculator.set_nu(nu=nu)
                     assert len(fluxcalculator.nu_selected_line_indices) == 0
-            #test also ranges that cover both
-            both = [np.array((transitions[0].nu0,transitions[1].nu0)),
-                    np.array((transitions[0].line_profile.nu_min-width_nu,
+            #test also ranges that cover both transitions
+            both = [np.array((transitions[0].nu0,transitions[1].nu0,)),
+                    np.array((transitions[0].line_profile.nu_min-5*width_nu,
                               transitions[0].nu0,transitions[1].nu0,
-                              transitions[1].line_profile.nu_max+width_nu)),
+                              transitions[1].line_profile.nu_max+5*width_nu)),
                     np.array((transitions[0].nu0,transitions[1].line_profile.nu_max-width_nu/100))]
             for nu in both:
                 fluxcalculator.set_nu(nu=nu)
                 assert len(fluxcalculator.nu_selected_line_indices) == 2
                 for i in trans_indices:
                     assert i in fluxcalculator.nu_selected_line_indices
-    
+            #nu that should include all transitions:
+            all_inclusive_nu = [np.array([t.nu0 for t in f["mol"].rad_transitions]),
+                                np.array([t.nu0+t.line_profile.width_nu/6 for t
+                                          in f["mol"].rad_transitions])]
+            for nu in all_inclusive_nu:
+                fluxcalculator.set_nu(nu=nu)
+                assert len(fluxcalculator.nu_selected_line_indices)\
+                                                 == len(f["mol"].rad_transitions)
+                assert np.all(fluxcalculator.nu_selected_line_indices
+                              ==np.array(range(len(f["mol"].rad_transitions))))
+
     @staticmethod
     def get_no_line_nu(trans,width_nu):
         return [np.array((trans.line_profile.nu_min-width_nu,

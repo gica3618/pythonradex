@@ -173,6 +173,18 @@ class TestLineProfile():
                 assert lp.covers_frequency(nu_i)
             for nu_o in outside:
                 assert not lp.covers_frequency(nu_o)
+            inside_array = np.array((inside))
+            assert np.all(lp.covers_frequency(inside_array))
+            outside_array = np.array(outside)
+            assert not np.any(lp.covers_frequency(outside_array))
+            mixed = []
+            expected_mixed_answer = []
+            for nu_i,nu_o in zip(inside,outside):
+                mixed += [nu_i,nu_o]
+                expected_mixed_answer += [True,False]
+            assert np.all(lp.covers_frequency(np.array(mixed))
+                          ==np.array(expected_mixed_answer))
+
 
 class TestLevel():
 

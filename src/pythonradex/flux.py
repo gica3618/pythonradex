@@ -136,13 +136,10 @@ class FluxCalculator():
         self.set_tau_nu_tot()
 
     def identify_lines(self):
-        nu_min,nu_max = np.min(self.nu),np.max(self.nu)
         selected_lines = []
         selected_line_indices = []
         for i,line in enumerate(self.emitting_molecule.rad_transitions):
-            no_coverage = nu_min > line.line_profile.nu_max\
-                            or nu_max < line.line_profile.nu_min
-            if not no_coverage:
+            if np.any(line.line_profile.covers_frequency(self.nu)):
                 selected_line_indices.append(i)
                 selected_lines.append(line)
         return selected_lines,selected_line_indices
