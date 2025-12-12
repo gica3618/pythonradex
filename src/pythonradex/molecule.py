@@ -260,12 +260,12 @@ class EmittingMolecule(Molecule):
                 if not no_overlap:
                     overlapping_lines.append(j)
             self.overlapping_lines.append(overlapping_lines)
+        self.line_has_overlap = [len(self.overlapping_lines[i])>0 for i in
+                                 range(self.n_rad_transitions)]
+        self.line_has_overlap = np.array(self.line_has_overlap,dtype=bool)
 
     def any_line_has_overlap(self,line_indices):
-        for index in line_indices:
-            if len(self.overlapping_lines[index]) > 0:
-                return True
-        return False
+        return np.any(self.line_has_overlap[line_indices])
 
     def get_tau_line_nu(self,line_index,level_population,N):
         line = self.rad_transitions[line_index]

@@ -8,7 +8,7 @@ The ``Source`` class
 The core of ``pyhonradex`` is the ``Source`` class which is used to solve the radiative transfer.
 
 .. autoclass:: pythonradex.radiative_transfer.Source
-    :members: __init__, update_parameters, solve_radiative_transfer, fluxes_of_individual_transitions, tau_nu, spectrum, model_grid, print_results 
+    :members: __init__, update_parameters, solve_radiative_transfer, fluxes_of_individual_transitions, brightness_temperature_nu0, tau_nu, spectrum, brightness_temperature_spectrum, model_grid, print_results 
 
 .. _read_LAMDA_API:
 

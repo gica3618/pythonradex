@@ -70,7 +70,7 @@ class RateEquations():
                                           self.molecule.nu0])
 
     def set_dust(self,T_dust,tau_dust):
-        self.no_dust = (T_dust == 0 and tau_dust == 0)
+        self.surely_no_dust = (T_dust == 0 and tau_dust == 0)
         for func_name,func in {'T_dust':T_dust,'tau_dust':tau_dust}.items():
             self.assign_func_nu(func_name=func_name,argument=func)
         if not self.treat_line_overlap:
@@ -137,12 +137,12 @@ class RateEquations():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def Ieff_nu0(beta_nu0,tau_tot_nu0,no_dust,S_dust_nu0,tau_dust_nu0,
+    def Ieff_nu0(beta_nu0,tau_tot_nu0,surely_no_dust,S_dust_nu0,tau_dust_nu0,
                  n_levels,trans_low_index,trans_up_index,Iext_nu0):
         Ieff = np.zeros((n_levels,n_levels))
         for i in range(len(trans_low_index)):
             tau_tot = tau_tot_nu0[i]
-            if no_dust or tau_tot==0:
+            if surely_no_dust or tau_tot==0:
                 psistar_eta_c = 0
             else:
                 psistar_eta_c = (1-beta_nu0[i])*S_dust_nu0[i]*tau_dust_nu0[i]/tau_tot
@@ -197,7 +197,7 @@ class RateEquations():
         beta_nu0 = self.geometry.beta(tau_tot_nu0)
         Ieff_nu0 = self.Ieff_nu0(
                        beta_nu0=beta_nu0,tau_tot_nu0=tau_tot_nu0,
-                       no_dust=self.no_dust,
+                       surely_no_dust=self.surely_no_dust,
                        S_dust_nu0=self.S_dust_nu0,tau_dust_nu0=self.tau_dust_nu0,
                        n_levels=self.molecule.n_levels,
                        trans_low_index=self.molecule.ilow_rad_transitions,

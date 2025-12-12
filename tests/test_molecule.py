@@ -274,11 +274,22 @@ class TestOverlappingLines():
 
     def get_HCl_molecule(self,line_profile_type,width_v):
         return get_molecule(line_profile_type=line_profile_type,width_v=width_v,
-                                 datafilename='hcl.dat')
+                            datafilename='hcl.dat')
 
     def get_CO_molecule(self,line_profile_type,width_v):
         return get_molecule(line_profile_type=line_profile_type,width_v=width_v,
-                                 datafilename='co.dat')
+                            datafilename='co.dat')
+
+    def test_line_has_overlap(self):
+        HCl_mol = self.get_HCl_molecule(line_profile_type='rectangular',
+                                        width_v=50*constants.kilo)
+        assert np.any(HCl_mol.line_has_overlap)
+        for i in range(HCl_mol.n_rad_transitions):
+            n_overlap = len(HCl_mol.overlapping_lines[i])
+            if HCl_mol.line_has_overlap[i]:
+                assert n_overlap > 0
+            else:
+                assert n_overlap == 0
 
     def test_overlapping_lines(self):
         #first three transitions of HCl are separated by ~8 km/s and 6 km/s respectively
@@ -291,6 +302,7 @@ class TestOverlappingLines():
             assert ol.overlapping_lines[0] == [1,2]
             assert ol.overlapping_lines[1] == [0,2]
             assert ol.overlapping_lines[2] == [0,1]
+            assert np.all(ol.line_has_overlap[0:3])
         overlapping_2lines = [self.get_HCl_molecule(line_profile_type='rectangular',
                                                     width_v=8.5*constants.kilo),
                               self.get_HCl_molecule(line_profile_type='Gaussian',
@@ -300,6 +312,7 @@ class TestOverlappingLines():
             assert ol.overlapping_lines[0] == [1,]
             assert ol.overlapping_lines[1] == [0,2]
             assert ol.overlapping_lines[2] == [1,]
+            assert np.all(ol.line_has_overlap[0:3])
         #transitions 4-11 are separated by ~11.2 km/s
         overlapping_8lines = [self.get_HCl_molecule(line_profile_type='rectangular',
                                                     width_v=11.5*constants.kilo),
@@ -310,15 +323,18 @@ class TestOverlappingLines():
             for i in range(3,11):
                 assert ol.overlapping_lines[i] == [index for index in range(3,11)
                                                    if index!=i]
+            assert np.all(ol.line_has_overlap[3:11])
         for line_profile_type in self.line_profile_types:
             CO_molecule = self.get_CO_molecule(line_profile_type=line_profile_type,
                                                width_v=1*constants.kilo)
             for overlap_lines in CO_molecule.overlapping_lines:
                 assert overlap_lines == []
+            assert not np.any(CO_molecule.line_has_overlap)
             HCl_molecule = self.get_HCl_molecule(line_profile_type=line_profile_type,
                                                  width_v=0.01*constants.kilo)
             assert HCl_molecule.overlapping_lines[0] == []
             assert HCl_molecule.overlapping_lines[11] == []
+            assert not np.any(HCl_molecule.line_has_overlap[[0,11]])
 
     def test_any_overlapping(self):
         for line_profile_type in self.line_profile_types:
@@ -335,6 +351,7 @@ class TestOverlappingLines():
                                                width_v=1*constants.kilo)
             assert not CO_molecule.any_line_has_overlap(
                        line_indices=list(range(len(CO_molecule.rad_transitions))))
+
 
 class TestTotalQuantities():
 

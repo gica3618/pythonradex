@@ -349,6 +349,9 @@ class Source():
                                  tau_dust=self.rate_equations.tau_dust,
                                  S_dust=self.rate_equations.S_dust)
 
+    def all_transition_indices(self):
+        return np.arange(self.emitting_molecule.n_rad_transitions)
+
     def fluxes_of_individual_transitions(self,solid_angle,transitions=None):
         r''' Calculate the fluxes of individual lines.
             The flux of individual lines is the amount of
@@ -375,10 +378,12 @@ class Source():
         
         Returns:
             list: The list of fluxes in [W/m\ :sup:`2`] corresponding to the
-            input list of requested transitions. If not specific transitions
+            input list of requested transitions. If no specific transitions
             where requested (transitions=None), then the list of fluxes corresponds
             to the transitions as listed in the LAMDA file.
         '''
+        if transitions is None:
+            transitions = self.all_transition_indices()
         return self.flux_calculator.fluxes_of_individual_transitions(
                          solid_angle=solid_angle,transitions=transitions)
 
@@ -396,7 +401,18 @@ class Source():
         self.flux_calculator.set_nu(nu=nu)
         return self.flux_calculator.tau_nu_tot
 
-    def spectrum(self,solid_angle,nu):
+    @staticmethod
+    def get_brightness_temperature(temperature_type,intensity,nu):
+        if temperature_type == "Rayleigh-Jeans":
+            return helpers.RJ_brightness_temperature(intensity=intensity,nu=nu)
+        elif temperature_type == "Planck":
+            return helpers.Planck_brightness_temperature(intensity=intensity,nu=nu)
+        else:
+            raise ValueError(f"unknown temperature type {temperature_type}:"
+                             +" please choose \"Rayleigh-Jeans\" or \"Planck\"")
+
+    def intensity(self,nu,output,solid_angle=None):
+        raise NotImplementedError
         r''' Calculate the total flux (lines + dust) at each input frequency
 
         Args:
@@ -409,6 +425,62 @@ class Source():
         '''
         self.flux_calculator.set_nu(nu=nu)
         return self.flux_calculator.spectrum(solid_angle=solid_angle)
+
+    def intensity_nu0(self,output,transitions=None,solid_angle=None):
+        raise NotImplementedError
+        r'''Calculate the the brightness temperature at the line center (rest
+            frequency) for the specified transitions. The output brightness
+            temperature includes contributions from dust and overlapping lines.
+
+        Args:
+            transitions (:obj:`list` of :obj:`int` or None): The indices of the
+                transitions for which to calculate the brightness temperatures.
+                If None, then the brightness temperatures of all transitions are calculated.
+                Defaults to None. The indices correspond to the list of
+                transitions in the LAMDA file, starting with 0.
+            temperature_type (str): The type of brightness temperature to calculate.
+                Options are "Rayleigh-Jeans" (use the Rayleigh-Jeans formula)
+                or "Planck" (use the Planck equation).
+        
+        Returns:
+            list: The list of brightness temperatures in [K] corresponding to the
+            input list of requested transitions. If no specific transitions
+            where requested (transitions=None), then the list of temperatures corresponds
+            to the transitions as listed in the LAMDA file.
+        '''
+        if transitions is None:
+            transitions = self.all_transition_indices()
+        nu0s = self.emitting_molecule.nu0[transitions]
+        if self.emitting_molecule.any_line_has_overlap(line_indices=transitions):
+            #do it the slow way
+            mock_Omega = 1
+            intensity_nu0 = self.spectrum(solid_angle=mock_Omega,nu=nu0s)
+            intensity_nu0 /= mock_Omega
+        else:
+            #use fast way
+            intensity_nu0 = self.flux_calculator.intensity_nu0_no_overlap(
+                              transitions=transitions)
+        return self.get_brightness_temperature(
+                          temperature_type=temperature_type,intensity=intensity_nu0,
+                          nu=nu0s)
+
+    # def brightness_temperature_spectrum(self,nu,temperature_type):
+    #     r''' Calculate the brightness temperature (lines + dust) at each input frequency
+
+    #     Args:
+    #         nu (numpy.ndarray): The frequencies in [Hz] for which the spectrum
+    #             should be calculated
+    #         temperature_type (str): The type of brightness temperature to calculate.
+    #                 Options are "Rayleigh-Jeans" (use the Rayleigh-Jeans formula)
+    #                 or "Planck" (use the Planck equation).
+        
+    #     Returns:
+    #         np.ndarray: The brightness temperature in [K] for each input frequency.
+    #     '''
+    #     mock_Omega = 1
+    #     intensity = self.spectrum(solid_angle=mock_Omega,nu=nu)/mock_Omega
+    #     return self.get_brightness_temperature(
+    #                 temperature_type=temperature_type,intensity=intensity,nu=nu)
 
     def model_grid(self,ext_backgrounds,N_values,Tkin_values,collider_densities_values,
                    requested_output,T_dust=0,tau_dust=0,solid_angle=None,

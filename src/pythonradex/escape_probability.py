@@ -93,6 +93,14 @@ class LVGSlab(Flux1D):
         self.beta = escape_probability_functions.beta_LVG_slab
 
 
+@nb.jit(nopython=True,cache=True)
+def compute_flux_nu0_lvg_sphere(tau_nu,source_function,solid_angle):
+    #convenience function useful to compute brightness temperature for LVG sphere
+    #in flux.py
+    tau_factor = exp_tau_factor(tau_nu=tau_nu)
+    return source_function*tau_factor*solid_angle
+    
+
 class LVGSphere():
     """The escape probability and flux for a large velocity gradient (LVG)
     sphere"""
@@ -106,12 +114,13 @@ class LVGSphere():
         #V is the velocity at the surface of the sphere
         #this formula can be derived by using an approach similar to
         #de Jong et al. (1975, Fig. 3)
-        tau_factor = exp_tau_factor(tau_nu=tau_nu)
+        flux_nu0 = compute_flux_nu0_lvg_sphere(
+                       tau_nu=tau_nu,source_function=source_function,
+                       solid_angle=solid_angle)
         v = constants.c*(1-nu/nu0)
         #actually, since the line profile is always rectangular for LVG, in principle
         #there is no need to do the np.where, but it's cleaner
-        return np.where(np.abs(v)>V, 0,
-                        source_function*tau_factor*solid_angle*(1-(v/V)**2))
+        return np.where(np.abs(v)>V, 0, flux_nu0*(1-(v/V)**2))
 
 
 class LVGSphereRADEX(Flux1D):

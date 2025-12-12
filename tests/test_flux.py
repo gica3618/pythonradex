@@ -366,6 +366,114 @@ class TestVarious():
                 assert single_spec[0] == multi_spec[1]
 
 
+class TestIntensityNu0NoOverlap():
+
+    Tkin = 100
+
+    def generate_flux_calculator(self,geometry_name,line_profile_type,
+                                 S_dust,tau_dust,width_v,datafilepath):
+        mol = molecule.EmittingMolecule(
+                datafilepath=datafilepath,line_profile_type=line_profile_type,
+                width_v=width_v)
+        level_population = mol.LTE_level_pop(T=self.Tkin)
+        geometry = radiative_transfer.Source.geometries[geometry_name]
+        tau_nu0_individual_transitions = np.arange(mol.n_rad_transitions,dtype=float)+0.1
+        tau_nu0_individual_transitions = tau_nu0_individual_transitions[::-1]
+        tau_nu0_individual_transitions /= np.max(tau_nu0_individual_transitions)
+        fluxcalculator = flux.FluxCalculator(
+                           emitting_molecule=mol,level_population=level_population,
+                           geometry_name=geometry_name,V_LVG_sphere=width_v/2,
+                           compute_flux_nu=geometry.compute_flux_nu,
+                           tau_nu0_individual_transitions=tau_nu0_individual_transitions,
+                           tau_dust=tau_dust,S_dust=S_dust)
+        return fluxcalculator
+
+    def test_intensity_nu0(self):
+        for geo,line_profile_type in\
+                itertools.product(radiative_transfer.Source.geometries.keys(),
+                                  radiative_transfer.Source.line_profiles.keys()):
+            if "LVG" in geo and line_profile_type == "Gaussian":
+                continue
+            kwargs = {"no dust":{"geometry_name":geo,"line_profile_type":line_profile_type,
+                                 "S_dust":zero,"tau_dust":zero,"width_v":1*constants.kilo,
+                                 "datafilepath":CO_datafilepath}}
+            if "LVG" not in geo:
+                kwargs["dust"] = kwargs["no dust"].copy()
+                kwargs["dust"]["S_dust"] = lambda nu: helpers.B_nu(nu=nu,T=200)
+                kwargs["dust"]["tau_dust"] = lambda nu: np.ones_like(nu)*0.5
+            for kw in kwargs.values():
+                f = self.generate_flux_calculator(**kw)
+                transitions = np.arange(f.emitting_molecule.n_rad_transitions)
+                Omega = 0.235
+                intensity_nu0 = f.intensity_nu0_no_overlap(transitions=transitions)
+                nu = f.emitting_molecule.nu0
+                f.set_nu(nu=nu)
+                expected_from_spec = f.spectrum(solid_angle=Omega)/Omega
+                assert np.allclose(intensity_nu0,expected_from_spec,atol=0,rtol=1e-3)
+                #now explicit calculation:
+                tau_dust = kw["tau_dust"](nu)
+                S_dust = kw["S_dust"](nu)
+                tau_tot = f.tau_nu0_individual_transitions+tau_dust
+                S_lines = helpers.B_nu(nu=nu,T=f.Tex)
+                source_function = np.where(tau_tot==0,0,
+                                           ( f.tau_nu0_individual_transitions*S_lines+tau_dust*S_dust)/tau_tot)
+                flux_kwargs = {"tau_nu":tau_tot,"source_function":source_function,
+                               "solid_angle":Omega}
+                if "LVG" in geo:
+                    explicit = escape_probability.compute_flux_nu0_lvg_sphere(**flux_kwargs)/Omega
+                else:
+                    explicit = f.compute_flux_nu(**flux_kwargs)/Omega
+                assert np.allclose(intensity_nu0,explicit,atol=0,rtol=1e-3)
+
+    def test_thick_intensity(self):
+        Tkin = 123
+        Tdust = 25
+        ext_background = helpers.generate_CMB_background()
+        collider_densities = {"ortho-H2":1e9*constants.centi**-3,
+                              "para-H2":1e9*constants.centi**-3}
+        for geo,line_profile_type in\
+                        itertools.product(radiative_transfer.Source.geometries.keys(),
+                                          radiative_transfer.Source.line_profiles.keys()):
+            if "LVG" in geo and line_profile_type == "Gaussian":
+                continue
+            source = radiative_transfer.Source(
+                       datafilepath=CO_datafilepath,geometry=geo,
+                       line_profile_type=line_profile_type,width_v=1*constants.kilo)
+            #thick line:
+            source.update_parameters(N=1e20*constants.centi**-2,Tkin=Tkin,
+                                     collider_densities=collider_densities,
+                                     ext_background=ext_background,T_dust=0,tau_dust=0)
+            source.solve_radiative_transfer()
+            test_transitions = [0,1,2]
+            assert np.all(source.tau_nu0_individual_transitions[test_transitions] > 10)
+            intensity_nu0 = source.flux_calculator.intensity_nu0_no_overlap(
+                                transitions=test_transitions)
+            expected = helpers.B_nu(T=Tkin,nu=source.emitting_molecule.nu0[test_transitions])
+            assert np.allclose(intensity_nu0,expected,atol=0,rtol=1e-3)
+            #thick dust:
+            if not "LVG" in geo:
+                source.update_parameters(N=1e12*constants.centi**-2,Tkin=Tkin,
+                                         collider_densities=collider_densities,
+                                         ext_background=ext_background,T_dust=Tdust,
+                                         tau_dust=50)
+                source.solve_radiative_transfer()
+                intensity_nu0 = source.flux_calculator.intensity_nu0_no_overlap(
+                                    transitions=test_transitions)
+                expected = helpers.B_nu(T=Tdust,nu=source.emitting_molecule.nu0[test_transitions])
+                assert np.allclose(intensity_nu0,expected,atol=0,rtol=1e-3)
+
+    def test_reject_overlap(self):
+        fluxcalculator = self.generate_flux_calculator(
+                             geometry_name="static sphere",
+                             line_profile_type="rectangular",S_dust=zero,
+                             tau_dust=zero,width_v=10*constants.kilo,
+                             datafilepath=HCl_datafilepath)
+        assert fluxcalculator.emitting_molecule.has_overlapping_lines
+        transitions = [1,]
+        with pytest.raises(AssertionError):
+            fluxcalculator.intensity_nu0_no_overlap(transitions=transitions)
+        
+
 ###### tests using physics ###################
 
 

@@ -36,6 +36,10 @@ source.update_parameters(ext_background=ext_background,N=N,
 
 #warm up
 source.solve_radiative_transfer()
+start = time.time()
+source.solve_radiative_transfer()
+end = time.time()
+print(f"solve time: {end-start:.3g}")
 v = np.linspace(-3*width_v,3*width_v,50)
 nu = source.emitting_molecule.rad_transitions[1].nu0*v/constants.c
 source.spectrum(solid_angle=1, nu=nu)
@@ -53,6 +57,20 @@ T_RJ_fast = intensity*constants.c**2/(2*nu0**2*constants.k)
 end = time.time()
 fast_time = end-start
 print(f"fast method: {fast_time:.3g}")
+
+#the method I implemented
+#warm up
+T_RJ_imp = source.brightness_temperature_nu0(
+              transitions=np.arange(source.emitting_molecule.n_rad_transitions),
+              temperature_type="Rayleigh-Jeans")
+start = time.time()
+T_RJ_imp = source.brightness_temperature_nu0(
+              transitions=np.arange(source.emitting_molecule.n_rad_transitions),
+              temperature_type="Rayleigh-Jeans")
+end = time.time()
+imp_time = end-start
+print(f"implemented: {imp_time:.3g}")
+print(f"imp/fast time ratio: {imp_time/fast_time:.3g}")
 
 start = time.time()
 mock_solid_angle = 1
