@@ -18,7 +18,7 @@ import numpy as np
 import itertools
 
 trans_index = 0
-geometry = 'uniform sphere'
+geometry = 'static sphere'
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
 
@@ -66,14 +66,14 @@ for test_case in test_cases:
         Tex = []
         taus = []
         for treat_overlap in (True,False):
-            cloud = radiative_transfer.Cloud(
+            source = radiative_transfer.Source(
                                   treat_line_overlap=treat_overlap,**cloud_kwargs)
-            cloud.update_parameters(**cloud_params)
-            cloud.solve_radiative_transfer()
-            Tex.append(cloud.Tex[trans_index])
-            fluxes.append(cloud.fluxes_of_individual_transitions(
+            source.update_parameters(**cloud_params)
+            source.solve_radiative_transfer()
+            Tex.append(source.Tex[trans_index])
+            fluxes.append(source.fluxes_of_individual_transitions(
                                        solid_angle=1,transitions=[trans_index,]))
-            taus.append(cloud.tau_nu0_individual_transitions[trans_index])
+            taus.append(source.tau_nu0_individual_transitions[trans_index])
         Tex_relative_diff = relative_diff(Tex)
         flux_relative_diff = relative_diff(fluxes)
         print(Tex_relative_diff,flux_relative_diff)

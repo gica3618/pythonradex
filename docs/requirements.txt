@@ -1,7 +1,6 @@
 sphinx==8.1.3
 sphinx-rtd-theme==3.0.2
 nbsphinx==0.9.6
-sphinx-pyproject==0.3.0
 jupyter
 scipy
 numpy

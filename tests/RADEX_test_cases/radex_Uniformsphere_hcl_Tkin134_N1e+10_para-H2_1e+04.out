@@ -1,6 +1,6 @@
 * Radex version        : 30nov2011
 * Geometry             : Uniform sphere
-* Molecular data file  : ../../tests/LAMDA_files/hcl.dat                                                 
+* Molecular data file  : /home/gianni/science/projects/code/pythonradex/tests/LAMDA_files/hcl.dat        
 * T(kin)            [K]:  134.000
 * Density of H2  [cm-3]:  1.000E+04
 * Density of pH2 [cm-3]:  1.000E+04

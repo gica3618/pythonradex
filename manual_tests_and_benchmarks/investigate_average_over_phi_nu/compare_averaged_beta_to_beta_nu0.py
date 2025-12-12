@@ -19,11 +19,11 @@ width_sigma = width_nu/np.sqrt(8*np.log(2))
 nu = np.linspace(nu0-1.5*width_nu,nu0+1.5*width_nu,100)
 tau_nu0_values = np.logspace(-2,3,20)
 
-esc_probs = {'uniform sphere':escape_probability.UniformSphere(),
-             'uniform sphere RADEX':escape_probability.UniformSphereRADEX(),
-             'uniform slab':escape_probability.UniformSlab(),
-             'LVG slab':escape_probability.UniformLVGSlab(),
-             'LVG sphere':escape_probability.UniformLVGSphere(),
+esc_probs = {'static sphere':escape_probability.StaticSphere(),
+             'static sphere RADEX':escape_probability.StaticSphereRADEX(),
+             'static slab':escape_probability.StaticSlab(),
+             'LVG slab':escape_probability.LVGSlab(),
+             'LVG sphere':escape_probability.LVGSphere(),
              'LVG sphere RADEX':escape_probability.LVGSphereRADEX()}
 
 line_profile = atomic_transition.GaussianLineProfile(nu0=nu0,width_v=width_v)
