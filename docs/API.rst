@@ -3,18 +3,18 @@ API
 
 .. _rad_trans_API:
 
-The ``Cloud`` class
+The ``Source`` class
 ------------------------------------
-The core of ``pyhonradex`` is the ``Cloud`` class which is used to solve the radiative transfer.
+The core of ``pyhonradex`` is the ``Source`` class which is used to solve the radiative transfer.
 
-.. autoclass:: pythonradex.radiative_transfer.Cloud
-    :members: __init__, update_parameters, solve_radiative_transfer, fluxes_of_individual_transitions, tau_nu, spectrum, model_grid, print_results 
+.. autoclass:: pythonradex.radiative_transfer.Source
+    :members: __init__, update_parameters, solve_radiative_transfer, fluxes_of_individual_transitions, brightness_temperature_nu0, tau_nu, spectrum, brightness_temperature_spectrum, model_grid, print_results 
 
 .. _read_LAMDA_API:
 
 Reading LAMDA files
 -------------------------
-``pyhonradex`` provides a convenient function in the ``LAMDA_file`` module to read files from the LAMDA database:
+``pyhonradex`` provides a convenient function in the ``LAMDA_file`` module to read files that follow the `LAMDA format <https://home.strw.leidenuniv.nl/~moldata/molformat.html>`_, for example from the `EMAA <https://emaa.osug.fr/>`_ or `LAMDA <https://home.strw.leidenuniv.nl/~moldata/>`_ databases:
 
 .. autofunction:: pythonradex.LAMDA_file.read
 

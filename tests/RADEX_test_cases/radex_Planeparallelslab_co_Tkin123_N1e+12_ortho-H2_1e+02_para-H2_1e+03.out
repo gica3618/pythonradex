@@ -1,6 +1,6 @@
 * Radex version        : 30nov2011
 * Geometry             : Plane parallel slab
-* Molecular data file  : ../../tests/LAMDA_files/co.dat                                                  
+* Molecular data file  : /home/gianni/science/projects/code/pythonradex/tests/LAMDA_files/co.dat         
 * T(kin)            [K]:  123.000
 * Density of H2  [cm-3]:  1.100E+03
 * Density of pH2 [cm-3]:  1.000E+03

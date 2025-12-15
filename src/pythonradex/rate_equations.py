@@ -70,7 +70,7 @@ class RateEquations():
                                           self.molecule.nu0])
 
     def set_dust(self,T_dust,tau_dust):
-        self.no_dust = (T_dust == 0 and tau_dust == 0)
+        self.surely_no_dust = (T_dust == 0 and tau_dust == 0)
         for func_name,func in {'T_dust':T_dust,'tau_dust':tau_dust}.items():
             self.assign_func_nu(func_name=func_name,argument=func)
         if not self.treat_line_overlap:
@@ -102,18 +102,18 @@ class RateEquations():
     def U_matrix_nu0(self):
         #already multiply by 4*pi/h*nu0 here
         U = np.zeros((self.molecule.n_levels,)*2)
-        n_low = self.molecule.nlow_rad_transitions
-        n_up = self.molecule.nup_rad_transitions
-        U[n_up,n_low] = self.molecule.A21
+        i_low = self.molecule.ilow_rad_transitions
+        i_up = self.molecule.iup_rad_transitions
+        U[i_up,i_low] = self.molecule.A21
         return U
 
     def V_matrix_nu0(self):
         #already multiply by 4*pi/h*nu0 here
         V = np.zeros((self.molecule.n_levels,)*2)
-        n_low = self.molecule.nlow_rad_transitions
-        n_up = self.molecule.nup_rad_transitions
-        V[n_up,n_low] = self.molecule.B21
-        V[n_low,n_up] = self.molecule.B12
+        i_low = self.molecule.ilow_rad_transitions
+        i_up = self.molecule.iup_rad_transitions
+        V[i_up,i_low] = self.molecule.B21
+        V[i_low,i_up] = self.molecule.B12
         return V
 
     def compute_Unu0_Vnu0(self):
@@ -122,13 +122,13 @@ class RateEquations():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def tau_line_nu0(level_population,N,trans_low_number,trans_up_number,
+    def tau_line_nu0(level_population,N,trans_low_index,trans_up_index,
                           A21,phi_nu0,glow_rad_transitions,gup_rad_transitions,nu0):
         #careful, don't use empty_like with an array that is made of integers...
-        tau_nu0 = np.empty(len(trans_low_number))
-        for i in range(len(trans_low_number)):
-            N1 = N * level_population[trans_low_number[i]]
-            N2 = N * level_population[trans_up_number[i]]
+        tau_nu0 = np.empty(len(trans_low_index))
+        for i in range(len(trans_low_index)):
+            N1 = N * level_population[trans_low_index[i]]
+            N2 = N * level_population[trans_up_index[i]]
             tau_nu0[i] = atomic_transition.tau_nu(
                                A21=A21[i],phi_nu=phi_nu0[i],
                                g_low=glow_rad_transitions[i],
@@ -137,40 +137,40 @@ class RateEquations():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def Ieff_nu0(beta_nu0,tau_tot_nu0,no_dust,S_dust_nu0,tau_dust_nu0,
-                 n_levels,trans_low_number,trans_up_number,Iext_nu0):
+    def Ieff_nu0(beta_nu0,tau_tot_nu0,surely_no_dust,S_dust_nu0,tau_dust_nu0,
+                 n_levels,trans_low_index,trans_up_index,Iext_nu0):
         Ieff = np.zeros((n_levels,n_levels))
-        for i in range(len(trans_low_number)):
+        for i in range(len(trans_low_index)):
             tau_tot = tau_tot_nu0[i]
-            if no_dust or tau_tot==0:
+            if surely_no_dust or tau_tot==0:
                 psistar_eta_c = 0
             else:
                 psistar_eta_c = (1-beta_nu0[i])*S_dust_nu0[i]*tau_dust_nu0[i]/tau_tot
-            nlow = trans_low_number[i]
-            nup = trans_up_number[i]
+            ilow = trans_low_index[i]
+            iup = trans_up_index[i]
             I = beta_nu0[i]*Iext_nu0[i] + psistar_eta_c
-            Ieff[nlow,nup] = I
-            Ieff[nup,nlow] = I
+            Ieff[ilow,iup] = I
+            Ieff[iup,ilow] = I
         return Ieff
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
     def mixed_term_nu0(beta_nu0,tau_tot_nu0,tau_line_nu0,n_levels,
-                            trans_low_number,trans_up_number,A21):
+                       trans_low_index,trans_up_index,A21):
         #this is the term (Sum_l'' Chi^{dagger}_{l''l}) * Psi^*_nu * (Sum_l''' U_{l'l'''})
         #if there is no overlap, only the term l''=l' and l'''=l survives:
         #Psi^*_nu * Chi^{dagger}_l'l * U_l'l
         #note that U_l'l is 0 if l'<l
         term = np.zeros((n_levels,n_levels))
         #already multiply by 4*pi/h*nu0 here
-        for i in range(len(trans_low_number)):
-            n_low = trans_low_number[i]
-            n_up = trans_up_number[i]
+        for i in range(len(trans_low_index)):
+            i_low = trans_low_index[i]
+            i_up = trans_up_index[i]
             tau_tot = tau_tot_nu0[i]
             if tau_tot == 0:
-                term[n_up,n_low] = 0
+                term[i_up,i_low] = 0
             else:
-                term[n_up,n_low] = (1-beta_nu0[i])*tau_line_nu0[i]/tau_tot*A21[i]
+                term[i_up,i_low] = (1-beta_nu0[i])*tau_line_nu0[i]/tau_tot*A21[i]
         return term
 
     @staticmethod
@@ -187,8 +187,8 @@ class RateEquations():
     def GammaR_nu0(self,level_population):
         tau_line_nu0 = self.tau_line_nu0(
                             level_population=level_population,N=self.N,
-                            trans_low_number=self.molecule.nlow_rad_transitions,
-                            trans_up_number=self.molecule.nup_rad_transitions,
+                            trans_low_index=self.molecule.ilow_rad_transitions,
+                            trans_up_index=self.molecule.iup_rad_transitions,
                             A21=self.molecule.A21,phi_nu0=self.molecule.phi_nu0,
                             glow_rad_transitions=self.molecule.glow_rad_transitions,
                             gup_rad_transitions=self.molecule.gup_rad_transitions,
@@ -197,17 +197,17 @@ class RateEquations():
         beta_nu0 = self.geometry.beta(tau_tot_nu0)
         Ieff_nu0 = self.Ieff_nu0(
                        beta_nu0=beta_nu0,tau_tot_nu0=tau_tot_nu0,
-                       no_dust=self.no_dust,
+                       surely_no_dust=self.surely_no_dust,
                        S_dust_nu0=self.S_dust_nu0,tau_dust_nu0=self.tau_dust_nu0,
                        n_levels=self.molecule.n_levels,
-                       trans_low_number=self.molecule.nlow_rad_transitions,
-                       trans_up_number=self.molecule.nup_rad_transitions,
+                       trans_low_index=self.molecule.ilow_rad_transitions,
+                       trans_up_index=self.molecule.iup_rad_transitions,
                        Iext_nu0=self.Iext_nu0)
         mixed_term_nu0  = self.mixed_term_nu0(
                            beta_nu0=beta_nu0,tau_tot_nu0=tau_tot_nu0,
                            tau_line_nu0=tau_line_nu0,n_levels=self.molecule.n_levels,
-                           trans_low_number=self.molecule.nlow_rad_transitions,
-                           trans_up_number=self.molecule.nup_rad_transitions,
+                           trans_low_index=self.molecule.ilow_rad_transitions,
+                           trans_up_index=self.molecule.iup_rad_transitions,
                            A21=self.molecule.A21)
         #GammaR_ll' = U_l'l+... i.e. indices are interchanged, so I have to transpose
         #see eq. 2.19 in Rybicki & Hummer (1992)
@@ -244,10 +244,10 @@ class RateEquations():
                 return np.where(tau_tot==0,betaIext,betaIext
                                 +(1-beta)*self.S_dust(nu)*self.tau_dust(nu)/tau_tot)
             Ieff_averaged = trans.line_profile.average_over_phi_nu(Ieff)
-            n_low = trans.low.number
-            n_up = trans.up.number
-            V_Ieff[n_low,n_up] = self.V_nu0[n_low,n_up]*Ieff_averaged
-            V_Ieff[n_up,n_low] = self.V_nu0[n_up,n_low]*Ieff_averaged
+            i_low = trans.low.index
+            i_up = trans.up.index
+            V_Ieff[i_low,i_up] = self.V_nu0[i_low,i_up]*Ieff_averaged
+            V_Ieff[i_up,i_low] = self.V_nu0[i_up,i_low]*Ieff_averaged
         return V_Ieff
 
     def mixed_term_averaged(self,tau_tot_functions,tau_line_functions):
@@ -279,10 +279,10 @@ class RateEquations():
                 pairing_trans = self.molecule.rad_transitions[j]
                 #only non-diagonal terms need to be calculated, as the diagonal
                 #of Gamma will be calculated from the non-diagonal terms directly
-                if trans.up.number != pairing_trans.low.number:
-                    mixed_term[trans.up.number,pairing_trans.low.number] += mixed_averaged
-                if trans.up.number != pairing_trans.up.number:
-                    mixed_term[trans.up.number,pairing_trans.up.number] += -mixed_averaged
+                if trans.up.index != pairing_trans.low.index:
+                    mixed_term[trans.up.index,pairing_trans.low.index] += mixed_averaged
+                if trans.up.index != pairing_trans.up.index:
+                    mixed_term[trans.up.index,pairing_trans.up.index] += -mixed_averaged
         return mixed_term
 
     def GammaR_averaged(self,level_population):

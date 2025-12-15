@@ -58,41 +58,6 @@ def test_K12():
                                             Delta_E=Delta_E,Tkin=Tkin)
         assert np.all(expected_K12==K12)
 
-# def test_fast_coll_coeffs():
-#     Tkin_data = np.array((20,40,100,200,300))
-#     K21_data = np.array((1e-3,1e-4,2e-3,2e-4,5e-5))
-#     K21_data_with_0 = K21_data.copy()
-#     K21_data_with_0[1] = 0
-#     gup = 2
-#     glow = 3
-#     Delta_E = 1e-10
-#     for invalid_Tkin in (10,500):
-#         with pytest.raises(AssertionError):
-#             atomic_transition.fast_coll_coeffs(
-#                      Tkin=np.array((invalid_Tkin,)),Tkin_data=Tkin_data,
-#                      K21_data=K21_data,gup=gup,glow=glow,Delta_E=Delta_E)
-#     log_Tkin_data = np.log(Tkin_data)
-#     log_K21_data = np.log(K21_data)
-#     test_Tkin = np.array((20,90,150,220.1))
-#     log_interp_K21 = np.interp(np.log(test_Tkin),log_Tkin_data,log_K21_data)
-#     log_interp_K21 = np.exp(log_interp_K21)
-#     def get_K12(K21):
-#         return K21*gup/glow*np.exp(-Delta_E/(constants.k*test_Tkin))
-#     log_interp_K12 = get_K12(log_interp_K21)
-#     K12_to_test,K21_to_test = atomic_transition.fast_coll_coeffs(
-#                                  Tkin=test_Tkin,Tkin_data=Tkin_data,K21_data=K21_data,
-#                                  gup=gup,glow=glow,Delta_E=Delta_E)
-#     assert np.all(K12_to_test==log_interp_K12)
-#     assert np.all(K21_to_test==log_interp_K21)
-#     interp_K21 = np.interp(np.log(test_Tkin),log_Tkin_data,K21_data_with_0)
-#     interp_K12 = get_K12(interp_K21)
-#     K12_to_test_0,K21_to_test_0 = atomic_transition.fast_coll_coeffs(
-#                                  Tkin=test_Tkin,Tkin_data=Tkin_data,K21_data=K21_data_with_0,
-#                                  gup=gup,glow=glow,Delta_E=Delta_E)
-#     assert np.all(K12_to_test_0==interp_K12)
-#     assert np.all(K21_to_test_0==interp_K21)
-
-
 class TestLineProfile():
     nu0 = 400*constants.giga
     width_v = 10*constants.kilo
@@ -178,12 +143,54 @@ class TestLineProfile():
         test_func(func=Gaussian,grid_width=4,n_grid_elements=100,rtol=1e-2)
         test_func(func=nasty,grid_width=7,n_grid_elements=600,rtol=7e-2)
 
+    def test_extent_rectangular(self):
+        nu_min_expected = self.rect_line_profile.nu0-self.width_nu/2
+        nu_max_expected = self.rect_line_profile.nu0+self.width_nu/2
+        assert nu_min_expected == self.rect_line_profile.nu_min
+        assert nu_max_expected == self.rect_line_profile.nu_max
+        nu_small = nu_min_expected*0.999
+        nu_large = nu_max_expected*1.001
+        for nu in (nu_small,nu_large):
+            assert self.rect_line_profile.phi_nu(nu) == 0
+
+    def test_extent_Gauss(self):
+        nu_min_expected = self.gauss_line_profile.nu0-self.width_nu*1.57
+        nu_max_expected = self.gauss_line_profile.nu0+self.width_nu*1.57
+        assert nu_min_expected == self.gauss_line_profile.nu_min
+        assert nu_max_expected == self.gauss_line_profile.nu_max
+        nu_small = nu_min_expected*0.999
+        nu_large = nu_max_expected*1.001
+        phi_nu0 = self.gauss_line_profile.phi_nu0
+        for nu in (nu_small,nu_large):
+            assert self.gauss_line_profile.phi_nu(nu) < 1e-3*phi_nu0
+
+    def test_freq_coverage(self):
+        for lp in (self.rect_line_profile,self.gauss_line_profile):
+            inside = (lp.nu0-0.1*lp.width_nu,lp.nu0+0.1*lp.width_nu,lp.nu_min,
+                      lp.nu_max)
+            outside = (1.01*lp.nu_max,0.99*lp.nu_min)
+            for nu_i in inside:
+                assert lp.covers_frequency(nu_i)
+            for nu_o in outside:
+                assert not lp.covers_frequency(nu_o)
+            inside_array = np.array((inside))
+            assert np.all(lp.covers_frequency(inside_array))
+            outside_array = np.array(outside)
+            assert not np.any(lp.covers_frequency(outside_array))
+            mixed = []
+            expected_mixed_answer = []
+            for nu_i,nu_o in zip(inside,outside):
+                mixed += [nu_i,nu_o]
+                expected_mixed_answer += [True,False]
+            assert np.all(lp.covers_frequency(np.array(mixed))
+                          ==np.array(expected_mixed_answer))
+
 
 class TestLevel():
 
     g = 2
     E = 3
-    level = atomic_transition.Level(g=g,E=E,number=1)
+    level = atomic_transition.Level(g=g,E=E,index=1)
 
     def test_LTE_level_pop(self):
         T = 50
@@ -200,8 +207,8 @@ class TestLevel():
 
 class TestTransition():
 
-    up = atomic_transition.Level(g=1,E=1,number=1)
-    low = atomic_transition.Level(g=1,E=0,number=0)
+    up = atomic_transition.Level(g=1,E=1,index=1)
+    low = atomic_transition.Level(g=1,E=0,index=0)
     line_profile_type = 'rectangular'
     A21 = 1
     general_transition = atomic_transition.Transition(up=up,low=low)

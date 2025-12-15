@@ -24,7 +24,7 @@ collider_densities = {'H2':1e3/constants.centi**3}
 #                       'ortho-H2':1e3/constants.centi**3}
 
 datafilepath = general.datafilepath(data_filename)
-geometry = 'uniform sphere'
+geometry = 'static sphere'
 ext_background = 0
 N = 1e16/constants.centi**2
 line_profile_type = 'Gaussian'
@@ -43,7 +43,7 @@ if os.path.exists(cache_folder):
     shutil.rmtree(cache_folder)
 
 start = time.time()
-cloud = radiative_transfer.Cloud(
+source = radiative_transfer.Source(
                     datafilepath=datafilepath,geometry=geometry,
                     line_profile_type=line_profile_type,width_v=width_v,
                     use_Ng_acceleration=use_Ng_acceleration,
@@ -55,19 +55,19 @@ for i in range(niter):
     tot_time = 0
     print(f'iteration {i+1}')
     start = time.time()
-    cloud.update_parameters(
+    source.update_parameters(
               ext_background=ext_background,Tkin=Tkin_values[i],
               collider_densities=collider_densities,N=N,T_dust=0,tau_dust=0)
     end = time.time()
     tot_time += end-start
     print(f'setup params: {end-start:.3g}')
     start = time.time()
-    cloud.solve_radiative_transfer()
+    source.solve_radiative_transfer()
     end = time.time()
     tot_time += end-start
     print(f'solve time: {end-start:.3g}')
     start = time.time()
-    cloud.fluxes_of_individual_transitions(solid_angle=1,transitions=None)
+    source.fluxes_of_individual_transitions(solid_angle=1,transitions=None)
     end = time.time()
     tot_time += end-start
     print(f'flux time: {end-start:.3g}')

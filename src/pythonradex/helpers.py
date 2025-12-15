@@ -67,3 +67,12 @@ def relative_difference(a,b):
 @nb.jit(nopython=True,cache=True)
 def Delta_nu(Delta_v,nu0):
     return nu0 * Delta_v / constants.c
+
+@nb.jit(nopython=True,cache=True)
+def RJ_brightness_temperature(intensity,nu):
+    return intensity*constants.c**2/(2*nu**2*constants.k)
+
+@nb.jit(nopython=True,cache=True)
+def Planck_brightness_temperature(intensity,nu):
+    log_term = np.log(2*constants.h*nu**3/(constants.c**2*intensity)+1)
+    return constants.h*nu/constants.k*log_term**-1

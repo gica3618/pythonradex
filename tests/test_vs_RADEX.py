@@ -21,14 +21,14 @@ ext_background = lambda nu: helpers.B_nu(nu=nu,T=RADEX_test_cases.T_background)
 #for some unknown reason, LVG sphere RADEX shows much larger differences to pythonradex
 #than the other two geometries; to make the test pass, need to adopt more relaxed
 #conditions:
-rtol = {'uniform sphere RADEX':5e-2,
+rtol = {'static sphere RADEX':5e-2,
         'LVG slab':5e-2,
         'LVG sphere RADEX':2e-1}
-frac_max_level_pop_to_consider = {'uniform sphere RADEX':1e-5,
+frac_max_level_pop_to_consider = {'static sphere RADEX':1e-5,
                                   'LVG slab':1e-5,
                                   'LVG sphere RADEX':0.01}
 
-RADEX_geometry = {'uniform sphere RADEX':'Uniform sphere',
+RADEX_geometry = {'static sphere RADEX':'Uniform sphere',
                   'LVG slab':'Plane parallel slab',
                   'LVG sphere RADEX':'Expanding sphere'}
 
@@ -78,14 +78,14 @@ def read_RADEX_output(filepath,molecule):
             assert np.isclose(trans.nu0,freq,atol=0,rtol=1e-3)
             trans_up_x = float(linedata[-4])
             trans_low_x = float(linedata[-3])
-            if np.isfinite(level_pop[trans.up.number]):
-                assert level_pop[trans.up.number] == trans_up_x
+            if np.isfinite(level_pop[trans.up.index]):
+                assert level_pop[trans.up.index] == trans_up_x
             else:
-                level_pop[trans.up.number] = trans_up_x
-            if np.isfinite(level_pop[trans.low.number]):
-                assert level_pop[trans.low.number] == trans_low_x
+                level_pop[trans.up.index] = trans_up_x
+            if np.isfinite(level_pop[trans.low.index]):
+                assert level_pop[trans.low.index] == trans_low_x
             else:
-                level_pop[trans.low.number] = trans_low_x
+                level_pop[trans.low.index] = trans_low_x
             trans_counter += 1
     assert np.all(np.isfinite(level_pop))
     return {'Tkin':Tkin,'column_density':column_density,'width_v':width_v,
@@ -111,17 +111,17 @@ def test_vs_RADEX():
                                                test_case['N_values'],
                                                test_case['Tkin_values']):
                 #need to enter test mode to allow Gaussian line profile with LVG slab:
-                cloud = radiative_transfer.Cloud(
+                source = radiative_transfer.Source(
                            datafilepath=datafilepath,geometry=geo,
                            line_profile_type=line_profile_type,width_v=width_v,
                            use_Ng_acceleration=True,
                            treat_line_overlap=False,test_mode=True)
-                cloud.update_parameters(
+                source.update_parameters(
                        ext_background=ext_background,N=N,Tkin=Tkin,
                        collider_densities=collider_densities,T_dust=0,
                        tau_dust=0)
-                cloud.solve_radiative_transfer()
-                #print(f'tau: {np.min(cloud.tau_nu0)}, {np.max(cloud.tau_nu0)}')
+                source.solve_radiative_transfer()
+                #print(f'tau: {np.min(source.tau_nu0)}, {np.max(source.tau_nu0)}')
                 RADEX_output_filename = RADEX_test_cases.RADEX_out_filename(
                                          radex_geometry=geo_RADEX,specie=specie,
                                          Tkin=Tkin,N=N,
@@ -129,7 +129,7 @@ def test_vs_RADEX():
                 RADEX_results_filepath = os.path.join(RADEX_output_folder,
                                                       RADEX_output_filename)
                 RADEX_results = read_RADEX_output(filepath=RADEX_results_filepath,
-                                                  molecule=cloud.emitting_molecule)
+                                                  molecule=source.emitting_molecule)
                 assert RADEX_results['Tkin'] == Tkin
                 #if collider is ortho-H2 or para-H2, RADEX automatically also
                 #adds H2, although it will not use it (as long as H2 is not defined
@@ -143,17 +143,17 @@ def test_vs_RADEX():
                 assert RADEX_results['column_density'] == N
                 assert RADEX_results['width_v'] == width_v
                 level_pop_selection =\
-                    cloud.level_pop > frac_max_level_pop_to_consider[geo]*np.max(cloud.level_pop)
+                    source.level_pop > frac_max_level_pop_to_consider[geo]*np.max(source.level_pop)
                 taus = []
-                for i,trans in enumerate(cloud.emitting_molecule.rad_transitions):
-                    if level_pop_selection[trans.up.number]:
-                        taus.append(cloud.tau_nu0_individual_transitions[i])
+                for i,trans in enumerate(source.emitting_molecule.rad_transitions):
+                    if level_pop_selection[trans.up.index]:
+                        taus.append(source.tau_nu0_individual_transitions[i])
                 if len(taus) > 0:
                     max_taus.append(np.max(taus))
                 print(specie)
                 print(geo)
                 print(N,Tkin,collider_densities)
                 assert np.allclose(RADEX_results['level_pop'][level_pop_selection],
-                                   cloud.level_pop[level_pop_selection],atol=0,
+                                   source.level_pop[level_pop_selection],atol=0,
                                    rtol=rtol[geo])
     print(f'max(taus): {np.max(max_taus)}')

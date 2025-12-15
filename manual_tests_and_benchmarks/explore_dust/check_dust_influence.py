@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 
 datafilepath = general.datafilepath('co.dat')
-geometry = 'uniform sphere'
+geometry = 'static sphere'
 line_profile_type = 'rectangular'
 width_v = 1*constants.kilo
 use_Ng_acceleration = True
@@ -45,22 +45,22 @@ for treat_overlap in treat_line_overlap_values:
     fig,ax = plt.subplots()
     ax.set_title(f'treat lin overlap = {treat_overlap}')
     for d,(dust_case,dust_p) in enumerate(dust_params.items()):
-        cld = radiative_transfer.Cloud(
+        src = radiative_transfer.Source(
                               datafilepath=datafilepath,geometry=geometry,
                               line_profile_type=line_profile_type,
                               width_v=width_v,
                               use_Ng_acceleration=use_Ng_acceleration,
                               treat_line_overlap=treat_overlap)
-        cld.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
+        src.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
                               collider_densities=collider_densities,**dust_p)
-        cld.solve_radiative_transfer()
-        expected_level_pop = cld.emitting_molecule.LTE_level_pop(
+        src.solve_radiative_transfer()
+        expected_level_pop = src.emitting_molecule.LTE_level_pop(
                                                       T=T_dust_value)
-        ax.plot(cld.level_pop[:max_plot_level],label=dust_case)
+        ax.plot(src.level_pop[:max_plot_level],label=dust_case)
         if d==0:
-            ax.plot(cld.emitting_molecule.LTE_level_pop(Tkin)[:max_plot_level],
+            ax.plot(src.emitting_molecule.LTE_level_pop(Tkin)[:max_plot_level],
                     label='LTE Tkin',linestyle='dashed')
-            ax.plot(cld.emitting_molecule.LTE_level_pop(T_dust_value)[:max_plot_level],
+            ax.plot(src.emitting_molecule.LTE_level_pop(T_dust_value)[:max_plot_level],
                     label='LTE Tdust',linestyle='dashed')
     ax.set_yscale('log')
     ax.set_xlabel('level')

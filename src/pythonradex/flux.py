@@ -7,7 +7,7 @@ Created on Fri Aug  2 10:32:03 2024
 """
 
 from scipy import constants
-from pythonradex import helpers
+from pythonradex import helpers,escape_probability
 import numpy as np
 import warnings
 
@@ -91,9 +91,6 @@ class FluxCalculator():
         flux = np.trapezoid(spectrum,nu,axis=1)
         return flux
 
-    def all_transitions(self):
-        return list(range(self.emitting_molecule.n_rad_transitions))
-
     def determine_tau_of_overlapping_lines(self,transitions):
         total_tau = []
         for i in transitions:
@@ -103,10 +100,8 @@ class FluxCalculator():
             total_tau.append(tau)
         return np.array(total_tau)
 
-    def fluxes_of_individual_transitions(self,solid_angle,transitions=None):
+    def fluxes_of_individual_transitions(self,solid_angle,transitions):
         max_acceptable_tau = 0.1 #for dust and overlapping lines
-        if transitions is None:
-            transitions = self.all_transitions()
         if self.emitting_molecule.any_line_has_overlap(transitions):
             tau_overlapping_lines = self.determine_tau_of_overlapping_lines(
                                                         transitions=transitions)
@@ -128,6 +123,7 @@ class FluxCalculator():
         return np.squeeze(fast_flux)
 
     def set_nu(self,nu):
+        #TODO check that the dimension of nu is <=1?
         self.nu = nu
         self.nu_selected_lines,self.nu_selected_line_indices = self.identify_lines()
         self.tau_dust_nu = self.tau_dust(self.nu)
@@ -135,11 +131,10 @@ class FluxCalculator():
         self.set_tau_nu_tot()
 
     def identify_lines(self):
-        nu_min,nu_max = np.min(self.nu),np.max(self.nu)
         selected_lines = []
         selected_line_indices = []
         for i,line in enumerate(self.emitting_molecule.rad_transitions):
-            if nu_min <= line.nu0 and line.nu0 <= nu_max:
+            if np.any(line.line_profile.covers_frequency(self.nu)):
                 selected_line_indices.append(i)
                 selected_lines.append(line)
         return selected_lines,selected_line_indices
@@ -165,10 +160,12 @@ class FluxCalculator():
         self.tau_nu_tot = np.sum(self.tau_nu_lines,axis=0) + self.tau_dust_nu
 
     def get_S_tot(self):
+        #TODO can I speed this up for the case where there is no overlap?
+        #i.e. without iteration over lines...
         S_nu = np.zeros_like(self.nu)
         for i,line in enumerate(self.nu_selected_lines):
-            x1 = self.level_population[line.low.number]
-            x2 = self.level_population[line.up.number]
+            x1 = self.level_population[line.low.index]
+            x2 = self.level_population[line.up.index]
             S_line = line.source_function(x1=x1,x2=x2)
             S_nu += self.tau_nu_lines[i]*S_line
         S_nu += self.S_dust(self.nu)*self.tau_dust_nu
@@ -207,3 +204,27 @@ class FluxCalculator():
                                tau_nu=self.tau_nu_tot,source_function=source_function,
                                solid_angle=solid_angle)
         return spectrum
+
+    def intensity_nu0_no_overlap(self,transitions):
+        #this function works only if there are no overlapping lines
+        #faster than calling the spectrum function, since I don't need to loop
+        #over the lines
+        assert not self.emitting_molecule.any_line_has_overlap(transitions)
+        nu = self.emitting_molecule.nu0[transitions]
+        tau_lines = self.tau_nu0_individual_transitions[transitions]
+        Tex = self.Tex[transitions]
+        S_lines = helpers.B_nu(nu=nu,T=Tex)
+        tau_dust = self.tau_dust(nu)
+        S_dust = self.S_dust(nu)
+        tau_tot = tau_lines+tau_dust
+        source_function = np.where(tau_tot==0,0,
+                                   (tau_lines*S_lines+tau_dust*S_dust)/tau_tot)
+        mock_Omega = 1
+        kwargs = {"tau_nu":tau_tot,"source_function":source_function,
+                  "solid_angle":mock_Omega}
+        if self.is_LVG_sphere:
+            for dust in (S_dust,tau_dust):
+                assert np.all(dust==0),'LVG does not support dust'
+            return escape_probability.compute_flux_nu0_lvg_sphere(**kwargs)/mock_Omega
+        else:
+            return self.compute_flux_nu(**kwargs)/mock_Omega

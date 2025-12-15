@@ -99,19 +99,19 @@ The approximate iteration scheme is then based on :math:`I_\nu=\Psi^*_\nu[j_\nu]
 
 Escape probability
 -----------------------------
-We still need to specify the formal solution of the radiative transfer we adopt via the operator :math:`\Psi_\nu`. Same as ``RADEX``, we use an escape probability method. We consider the probability :math:`\beta` of a newly created photon to escape the cloud. This probability depends on the geometry of the cloud and the absorption coefficient (or, equivalently, optical depth). If the cloud is completely optically thick (:math:`\beta\approx 0`), we expect the radiation field to equal the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Thus, we write 
+We still need to specify the formal solution of the radiative transfer we adopt via the operator :math:`\Psi_\nu`. Same as ``RADEX``, we use an escape probability method. We consider the probability :math:`\beta` of a newly created photon to escape the source. This probability depends on the geometry of the source and the absorption coefficient (or, equivalently, optical depth). If the source is completely optically thick (:math:`\beta\approx 0`), we expect the radiation field to equal the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Thus, we write 
 
 .. math::
     I_\nu = \Psi[j_\nu] = \beta(\alpha_\nu^\dagger) I_\mathrm{ext} + (1-\beta(\alpha_\nu^\dagger))\frac{j_\nu}{\alpha_\nu^\dagger}
 
-Here :math:`I_\mathrm{ext}` is an external radiation field that irradiates the cloud from the outside (for example the CMB). If the cloud is completely optically thick, external radiation cannot penetrate the cloud and the corresponding term vanishes. 
+Here :math:`I_\mathrm{ext}` is an external radiation field that irradiates the source from the outside (for example the CMB). If the source is completely optically thick, external radiation cannot penetrate the source and the corresponding term vanishes. 
 
 For the approximate Psi operator, we choose
 
 .. math::
     \Psi^*_\nu[j_\nu] = (1-\beta(\alpha_\nu^\dagger))\frac{j_\nu}{\alpha_\nu^\dagger}
 
-Please see the :ref:`section about cloud geometries<geometries>` for a list of all geometries available in ``pythonradex`` with the corresponding formulas for the escape probability.
+Please see the :ref:`section about source geometries<geometries>` for a list of all geometries available in ``pythonradex`` with the corresponding formulas for the escape probability.
 
 Ng-acceleration
 ------------------------

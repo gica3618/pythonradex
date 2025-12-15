@@ -91,6 +91,7 @@ class RadexOutput():
         # flux in W/m2; to get the observed flux, one has to divide by 4*pi and
         # multiply by the solid angle of the target; see 
         # https://personal.sron.nl/~vdtak/radex/index.shtml#output
+        #see also hand notes RADEX_output.jpg
         return output
                 
 
@@ -113,6 +114,8 @@ class RadexWrapper():
         if os.path.exists(radex_input.output_filepath):
             os.remove(radex_input.output_filepath)
         os.system(f'{self.exec_path} < {radex_input.input_filepath} > /dev/null')
+        assert os.path.exists(radex_input.output_filepath),\
+                                    "no output file produced, RADEX failed?"
         output = RadexOutput(radex_input.output_filepath).read()
         radex_input.remove_input_file()
         #os.remove(radex_input.output_filepath)
@@ -139,21 +142,22 @@ class RadexWrapper():
 
 if __name__=='__main__':
     test_freq_interval = Interval(min=50*constants.giga,max=100*constants.giga)
-    test_coll_partners = {'H2':1e10}
+    test_coll_partners = {'H2':1e4*constants.centi**-3}
     test_radex_input = RadexInput(data_filename='hco+.dat',
                                   frequency_interval=test_freq_interval,Tkin=30,
                                   coll_partner_densities=test_coll_partners,
-                                  T_background=2.73,column_density=1e18,
+                                  T_background=2.73,column_density=1e14*constants.centi**-2,
                                   Delta_v=1*constants.kilo)
-    radex_wrapper = RadexWrapper()
+    geometry = "static sphere"
+    radex_wrapper = RadexWrapper(geometry=geometry)
     test_results = radex_wrapper.compute(test_radex_input)
-    print('result of test run:')
-    for quantity,value in test_results.items():
-        print('{:s} = {:g}'.format(quantity,value))
+    # print('result of test run:')
+    # for quantity,value in test_results.items():
+    #     print('{:s} = {:g}'.format(quantity,value))
 
-    test_flux = 3.514e-14
-    expected_column_density = 1e14
-    fitted_column_density = radex_wrapper.fit_column_density(observed_flux=3.514e-14,
-                                                             radex_input=test_radex_input)
-    print('fitted column density for test_flux = {:g}: {:g} (expected: {:g})'\
-          .format(test_flux,fitted_column_density,expected_column_density))
+    # test_flux = 3.514e-14
+    # expected_column_density = 1e14
+    # fitted_column_density = radex_wrapper.fit_column_density(observed_flux=3.514e-14,
+    #                                                          radex_input=test_radex_input)
+    # print('fitted column density for test_flux = {:g}: {:g} (expected: {:g})'\
+    #       .format(test_flux,fitted_column_density,expected_column_density))

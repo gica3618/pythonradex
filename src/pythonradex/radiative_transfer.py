@@ -8,7 +8,7 @@ import numbers
 import traceback
 
 
-class Cloud():
+class Source():
 
     '''
     Solving the non-LTE radiative transfer using escape probabilities.
@@ -36,11 +36,11 @@ class Cloud():
     min_iter_before_ng_acceleration = 4
     ng_acceleration_interval = 4
     slow_variation_limit = 0.1
-    geometries = {'uniform sphere':escape_probability.UniformSphere,
-                  'uniform sphere RADEX':escape_probability.UniformSphereRADEX,
-                  'uniform slab':escape_probability.UniformSlab,
-                  'LVG slab':escape_probability.UniformLVGSlab,
-                  'LVG sphere':escape_probability.UniformLVGSphere,
+    geometries = {'static sphere':escape_probability.StaticSphere,
+                  'static sphere RADEX':escape_probability.StaticSphereRADEX,
+                  'static slab':escape_probability.StaticSlab,
+                  'LVG slab':escape_probability.LVGSlab,
+                  'LVG sphere':escape_probability.LVGSphere,
                   'LVG sphere RADEX':escape_probability.LVGSphereRADEX}
     line_profiles = {'Gaussian':atomic_transition.GaussianLineProfile,
                      'rectangular':atomic_transition.RectangularLineProfile}
@@ -48,14 +48,14 @@ class Cloud():
     def __init__(self,datafilepath,geometry,line_profile_type,width_v,
                  use_Ng_acceleration=True,treat_line_overlap=False,
                  warn_negative_tau=True,verbose=False,test_mode=False):
-        '''Initialises a new instance of the Cloud class.
+        '''Initialises a new instance of the Source class.
 
         Args:
             datafilepath (:obj:`str`): filepath to the LAMDA file that contains
                 the atomic / molecular data
             geometry (:obj:`str`): determines how the escape probability
-                and flux are calculated. Available options: "uniform sphere", 
-                "uniform sphere RADEX", "uniform slab", "LVG slab", "LVG sphere" and
+                and flux are calculated. Available options: "static sphere", 
+                "static sphere RADEX", "static slab", "LVG slab", "LVG sphere" and
                 "LVG sphere RADEX". The options containing "RADEX" are meant to
                 mimic the behaviour of the original RADEX code by using the same
                 equations as RADEX.
@@ -68,7 +68,7 @@ class Cloud():
                 geometries, width_v is the width of the intrinsic emission profile.
                 On the other hand, for LVG geometries (for which the line profile
                 is rectangular), width_v corresponds to the total velocity width
-                of the cloud. So, for "LVG sphere", width_v=2*V, where V is the
+                of the source. So, for "LVG sphere", width_v=2*V, where V is the
                 velocity at the surface of the sphere. In terms of the constant
                 velocity gradient dv/dr=V/R (with R the radius of the sphere),
                 we can also say width_v=dv/dr*2*R. For "LVG slab", width_v=dv/dz*Z
@@ -102,7 +102,7 @@ class Cloud():
         if self.treat_line_overlap:
             if 'LVG' in self.geometry_name:
                 #this is because in LVG, the assumption is that once the radiation
-                #escapes from a local slab, it also escapes the cloud. With overlapping
+                #escapes from a local slab, it also escapes the source. With overlapping
                 #lines this assumption breaks down
                 raise ValueError('treatment of overlapping lines currently not'
                                  +' supported for LVG geometries')
@@ -131,13 +131,16 @@ class Cloud():
 
     def check_parameters(self,collider_densities,T_dust,tau_dust,ext_background):
         if collider_densities is not None:
+            available_colliders = self.emitting_molecule.coll_transitions.keys()
             for collider in collider_densities.keys():
-                if collider not in self.emitting_molecule.coll_transitions:
-                    raise ValueError(f'no data for collider "{collider}" available')
+                if collider not in available_colliders:
+                    raise ValueError(f'collider "{collider}" not available'
+                                    +' in the LAMDA file (available'
+                                    +f' colliders: {list(available_colliders)})')
         if 'LVG' in self.geometry_name:
             if not (T_dust in (None,0) and tau_dust in (None,0)):
                 #this is because for LVG, it is assumed that radiation escaping
-                #the local slab will escape the entire cloud, which is not true
+                #the local slab will escape the entire source, which is not true
                 #if there is dust
                 raise ValueError('including dust continuum is currently not'
                                  +' supported for LVG geometries')
@@ -346,12 +349,15 @@ class Cloud():
                                  tau_dust=self.rate_equations.tau_dust,
                                  S_dust=self.rate_equations.S_dust)
 
-    def fluxes_of_individual_transitions(self,solid_angle,transitions):
+    def all_transition_indices(self):
+        return np.arange(self.emitting_molecule.n_rad_transitions)
+
+    def fluxes_of_individual_transitions(self,solid_angle,transitions=None):
         r''' Calculate the fluxes of individual lines.
             The flux of individual lines is the amount of
             energy per time reaching the telescope via photons emitted by the molecule.
             This calculation is only easily possible if the dust is optically thin (i.e.
-            the dust does not hinder line photons from escaping the cloud). Thus, this
+            the dust does not hinder line photons from escaping the source). Thus, this
             function throws an error if the dust is not optically thin. Similarly,
             the calculation is not possible when lines are overlapping and are not
             optically thin. It is the responsibility of the user to choose an
@@ -372,10 +378,12 @@ class Cloud():
         
         Returns:
             list: The list of fluxes in [W/m\ :sup:`2`] corresponding to the
-            input list of requested transitions. If not specific transitions
+            input list of requested transitions. If no specific transitions
             where requested (transitions=None), then the list of fluxes corresponds
             to the transitions as listed in the LAMDA file.
         '''
+        if transitions is None:
+            transitions = self.all_transition_indices()
         return self.flux_calculator.fluxes_of_individual_transitions(
                          solid_angle=solid_angle,transitions=transitions)
 
@@ -393,12 +401,23 @@ class Cloud():
         self.flux_calculator.set_nu(nu=nu)
         return self.flux_calculator.tau_nu_tot
 
-    def spectrum(self,solid_angle,nu):
+    @staticmethod
+    def get_brightness_temperature(temperature_type,intensity,nu):
+        if temperature_type == "Rayleigh-Jeans":
+            return helpers.RJ_brightness_temperature(intensity=intensity,nu=nu)
+        elif temperature_type == "Planck":
+            return helpers.Planck_brightness_temperature(intensity=intensity,nu=nu)
+        else:
+            raise ValueError(f"unknown temperature type {temperature_type}:"
+                             +" please choose \"Rayleigh-Jeans\" or \"Planck\"")
+
+    def intensity(self,nu,output,solid_angle=None):
+        raise NotImplementedError
         r''' Calculate the total flux (lines + dust) at each input frequency
 
         Args:
             solid_angle (:obj:`float`): The solid angle of the source in [sr].
-            nu (numpy.ndarray): The frequencies in [Hz] for which the optical depth
+            nu (numpy.ndarray): The frequencies in [Hz] for which the spectrum
                 should be calculated
         
         Returns:
@@ -406,6 +425,62 @@ class Cloud():
         '''
         self.flux_calculator.set_nu(nu=nu)
         return self.flux_calculator.spectrum(solid_angle=solid_angle)
+
+    def intensity_nu0(self,output,transitions=None,solid_angle=None):
+        raise NotImplementedError
+        r'''Calculate the the brightness temperature at the line center (rest
+            frequency) for the specified transitions. The output brightness
+            temperature includes contributions from dust and overlapping lines.
+
+        Args:
+            transitions (:obj:`list` of :obj:`int` or None): The indices of the
+                transitions for which to calculate the brightness temperatures.
+                If None, then the brightness temperatures of all transitions are calculated.
+                Defaults to None. The indices correspond to the list of
+                transitions in the LAMDA file, starting with 0.
+            temperature_type (str): The type of brightness temperature to calculate.
+                Options are "Rayleigh-Jeans" (use the Rayleigh-Jeans formula)
+                or "Planck" (use the Planck equation).
+        
+        Returns:
+            list: The list of brightness temperatures in [K] corresponding to the
+            input list of requested transitions. If no specific transitions
+            where requested (transitions=None), then the list of temperatures corresponds
+            to the transitions as listed in the LAMDA file.
+        '''
+        if transitions is None:
+            transitions = self.all_transition_indices()
+        nu0s = self.emitting_molecule.nu0[transitions]
+        if self.emitting_molecule.any_line_has_overlap(line_indices=transitions):
+            #do it the slow way
+            mock_Omega = 1
+            intensity_nu0 = self.spectrum(solid_angle=mock_Omega,nu=nu0s)
+            intensity_nu0 /= mock_Omega
+        else:
+            #use fast way
+            intensity_nu0 = self.flux_calculator.intensity_nu0_no_overlap(
+                              transitions=transitions)
+        return self.get_brightness_temperature(
+                          temperature_type=temperature_type,intensity=intensity_nu0,
+                          nu=nu0s)
+
+    # def brightness_temperature_spectrum(self,nu,temperature_type):
+    #     r''' Calculate the brightness temperature (lines + dust) at each input frequency
+
+    #     Args:
+    #         nu (numpy.ndarray): The frequencies in [Hz] for which the spectrum
+    #             should be calculated
+    #         temperature_type (str): The type of brightness temperature to calculate.
+    #                 Options are "Rayleigh-Jeans" (use the Rayleigh-Jeans formula)
+    #                 or "Planck" (use the Planck equation).
+        
+    #     Returns:
+    #         np.ndarray: The brightness temperature in [K] for each input frequency.
+    #     '''
+    #     mock_Omega = 1
+    #     intensity = self.spectrum(solid_angle=mock_Omega,nu=nu)/mock_Omega
+    #     return self.get_brightness_temperature(
+    #                 temperature_type=temperature_type,intensity=intensity,nu=nu)
 
     def model_grid(self,ext_backgrounds,N_values,Tkin_values,collider_densities_values,
                    requested_output,T_dust=0,tau_dust=0,solid_angle=None,
@@ -539,10 +614,10 @@ class Cloud():
         print('  up   low      nu0 [GHz]    T_ex [K]      poplow         popup'\
               +'         tau_nu0')
         for i,line in enumerate(self.emitting_molecule.rad_transitions):
-            output = f'{line.up.number:>4d} {line.low.number:>4d} '\
+            output = f'{line.up.index:>4d} {line.low.index:>4d} '\
                      +f'{line.nu0/constants.giga:>14.6f} {self.Tex[i]:>10.2f} '\
-                     +f'{self.level_pop[line.low.number]:>14g} '\
-                     +f'{self.level_pop[line.up.number]:>14g} '\
+                     +f'{self.level_pop[line.low.index]:>14g} '\
+                     +f'{self.level_pop[line.up.index]:>14g} '\
                      +f'{self.tau_nu0_individual_transitions[i]:>14g}'
             print(output)
         print('\n')
