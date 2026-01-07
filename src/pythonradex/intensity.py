@@ -12,27 +12,27 @@ import numpy as np
 import warnings
 
 
-class FluxCalculator():
+class IntensityCalculator():
 
     tau_peak_fraction = 1e-2
     nu_per_FHWM = 20
     n_nu_elements = {'regular':15,'LVG sphere':51}
 
     def __init__(self,emitting_molecule,level_population,geometry_name,
-                 V_LVG_sphere,compute_flux_nu,tau_nu0_individual_transitions,
+                 V_LVG_sphere,specific_intensity,tau_nu0_individual_transitions,
                  tau_dust,S_dust):
         self.emitting_molecule = emitting_molecule
         self.level_population = level_population
         self.geometry_name = geometry_name
         self.V_LVG_sphere = V_LVG_sphere
         self.Tex = self.emitting_molecule.get_Tex(level_population=level_population)
-        self.compute_flux_nu = compute_flux_nu
+        self.specific_intensity = specific_intensity
         self.tau_nu0_individual_transitions = tau_nu0_individual_transitions
         self.tau_dust = tau_dust
         self.S_dust = S_dust
         self.is_LVG_sphere = self.geometry_name == 'LVG sphere'
 
-    def get_flux_parameters_for_rectangular_flux(self,transitions):
+    def get_intensity_parameters_for_rectangular(self,transitions):
         n_nu_elements = self.n_nu_elements['LVG sphere'] if self.is_LVG_sphere\
                         else self.n_nu_elements['regular']
         assert n_nu_elements%2 == 1,\
@@ -48,22 +48,21 @@ class FluxCalculator():
         source_function = helpers.B_nu(T=self.Tex[transitions][:,None],nu=nu)
         return nu,tau_nu,source_function
 
-    def fast_line_fluxes_rectangular_without_overlap(self,solid_angle,transitions):
-        #note that integrated fluxes only make sense for non-overlapping lines,
+    def fast_line_intensities_rectangular_without_overlap(self,transitions):
+        #note that intensities only make sense for non-overlapping lines,
         #so this function can only be used for non-overlapping lines
-        nu,tau_nu,source_function = self.get_flux_parameters_for_rectangular_flux(
+        nu,tau_nu,source_function = self.get_intensity_parameters_for_rectangular(
                                           transitions=transitions)
-        kwargs = {'tau_nu':tau_nu,'source_function':source_function,
-                  'solid_angle':solid_angle}
+        kwargs = {'tau_nu':tau_nu,'source_function':source_function}
         if self.is_LVG_sphere:
             kwargs['nu'] = nu
             kwargs['nu0'] = self.emitting_molecule.nu0[transitions][:,None]
             kwargs['V'] = self.V_LVG_sphere
-        flux_nu = self.compute_flux_nu(**kwargs)
-        flux = np.trapezoid(flux_nu,nu,axis=1)
-        return flux
+        specific_intensity = self.specific_intensity(**kwargs)
+        intensity = np.trapezoid(specific_intensity,nu,axis=1)
+        return intensity
 
-    def fast_line_fluxes_Gaussian_without_overlap(self,solid_angle,transitions):
+    def fast_line_intensities_Gaussian_without_overlap(self,transitions):
         nu0 = self.emitting_molecule.nu0[transitions]
         FWHM_nu = self.emitting_molecule.width_v/constants.c*nu0
         sigma_nu = helpers.FWHM2sigma(FWHM_nu)
@@ -86,10 +85,10 @@ class FluxCalculator():
         phi_nu_shape = np.exp(-(nu-nu0[:,None])**2/(2*sigma_nu[:,None]**2))
         tau_nu = tau_nu0[:,None]*phi_nu_shape
         source_function = helpers.B_nu(T=self.Tex[:,None][transitions],nu=nu)
-        spectrum = self.compute_flux_nu(tau_nu=tau_nu,source_function=source_function,
-                                        solid_angle=solid_angle)
-        flux = np.trapezoid(spectrum,nu,axis=1)
-        return flux
+        specific_intensity = self.specific_intensity(
+                                tau_nu=tau_nu,source_function=source_function)
+        intensity = np.trapezoid(specific_intensity,nu,axis=1)
+        return intensity
 
     def determine_tau_of_overlapping_lines(self,transitions):
         total_tau = []
@@ -100,27 +99,28 @@ class FluxCalculator():
             total_tau.append(tau)
         return np.array(total_tau)
 
-    def fluxes_of_individual_transitions(self,solid_angle,transitions):
+    def intensities_of_individual_transitions(self,transitions):
         max_acceptable_tau = 0.1 #for dust and overlapping lines
         if self.emitting_molecule.any_line_has_overlap(transitions):
             tau_overlapping_lines = self.determine_tau_of_overlapping_lines(
                                                         transitions=transitions)
             if np.any(tau_overlapping_lines>max_acceptable_tau):
-                raise ValueError('fluxes of individual lines can only be calculated'
+                raise ValueError('intensities of individual lines can only be calculated'
                                  +' for non-overlapping lines or thin overlapping lines')
-        if np.any(self.tau_dust(self.emitting_molecule.nu0) > max_acceptable_tau):
+        tau_dust_transitions = self.tau_dust(self.emitting_molecule.nu0[transitions])
+        if np.any(tau_dust_transitions > max_acceptable_tau):
             raise ValueError('dust is not optically thin, cannot calculate'+
-                             ' fluxes of individual lines')
+                             ' intensities of individual lines')
         if self.emitting_molecule.line_profile_type == 'Gaussian':
-            fast_flux = self.fast_line_fluxes_Gaussian_without_overlap(
-                                solid_angle=solid_angle,transitions=transitions)
+            fast_intensity = self.fast_line_intensities_Gaussian_without_overlap(
+                                transitions=transitions)
         elif self.emitting_molecule.line_profile_type == 'rectangular':
-            fast_flux = self.fast_line_fluxes_rectangular_without_overlap(
-                                        solid_angle=solid_angle,transitions=transitions)
+            fast_intensity = self.fast_line_intensities_rectangular_without_overlap(
+                                        transitions=transitions)
         else:
             raise ValueError(f'line profile {self.emitting_molecule.line_profile_type} '
                              +'unknown')
-        return np.squeeze(fast_flux)
+        return np.squeeze(fast_intensity)
 
     def set_nu(self,nu):
         #TODO check that the dimension of nu is <=1?
@@ -172,7 +172,7 @@ class FluxCalculator():
         S_tot = np.where(self.tau_nu_tot==0,0,S_nu/self.tau_nu_tot)
         return S_tot
 
-    def spectrum(self,solid_angle):
+    def specific_intensity_spectrum(self):
         #note that this function gives the right answer also in cases where
         #line overlap treatment is not necessary
         if self.is_LVG_sphere:
@@ -185,27 +185,26 @@ class FluxCalculator():
             if self.emitting_molecule.any_line_has_overlap(
                                 line_indices=self.nu_selected_line_indices):
                 warnings.warn('LVG sphere geometry: lines are overlapping, '
-                              +'output spectrum will only be correct if all lines'
+                              +'output will only be correct if overlapping lines'
                               +' are optically thin!')
             for dust_func in (self.S_dust,self.tau_dust):
                 assert np.all(dust_func(self.nu)==0),'LVG does not support dust'
-            spectrum = np.zeros_like(self.nu)
+            I = np.zeros_like(self.nu)
             for line_index,line,tau_nu_line in zip(self.nu_selected_line_indices,
                                                    self.nu_selected_lines,
                                                    self.tau_nu_lines):
                 LVG_sphere_kwargs = {'nu':self.nu,'nu0':line.nu0,'V':self.V_LVG_sphere}
                 source_function = helpers.B_nu(T=self.Tex[line_index],nu=self.nu)
-                spectrum += self.compute_flux_nu(
+                I += self.specific_intensity(
                                     tau_nu=tau_nu_line,source_function=source_function,
-                                    solid_angle=solid_angle,**LVG_sphere_kwargs)
+                                    **LVG_sphere_kwargs)
         else:
             source_function = self.get_S_tot()
-            spectrum = self.compute_flux_nu(
-                               tau_nu=self.tau_nu_tot,source_function=source_function,
-                               solid_angle=solid_angle)
-        return spectrum
+            I = self.specific_intensity(tau_nu=self.tau_nu_tot,
+                                       source_function=source_function)
+        return I
 
-    def intensity_nu0_no_overlap(self,transitions):
+    def specific_intensity_nu0_no_overlap(self,transitions):
         #this function works only if there are no overlapping lines
         #faster than calling the spectrum function, since I don't need to loop
         #over the lines
@@ -219,12 +218,10 @@ class FluxCalculator():
         tau_tot = tau_lines+tau_dust
         source_function = np.where(tau_tot==0,0,
                                    (tau_lines*S_lines+tau_dust*S_dust)/tau_tot)
-        mock_Omega = 1
-        kwargs = {"tau_nu":tau_tot,"source_function":source_function,
-                  "solid_angle":mock_Omega}
+        kwargs = {"tau_nu":tau_tot,"source_function":source_function}
         if self.is_LVG_sphere:
             for dust in (S_dust,tau_dust):
                 assert np.all(dust==0),'LVG does not support dust'
-            return escape_probability.compute_flux_nu0_lvg_sphere(**kwargs)/mock_Omega
+            return escape_probability.specific_intensity_nu0_lvg_sphere(**kwargs)
         else:
-            return self.compute_flux_nu(**kwargs)/mock_Omega
+            return self.specific_intensity(**kwargs)

@@ -46,18 +46,18 @@ for overlap,N in molpop_column_densities.items():
     else:
         raise RuntimeError
     print(f'treat_line_overlap={treat_line_overlap}')
-    cloud = radiative_transfer.Cloud(
+    source = radiative_transfer.Source(
                           datafilepath=datafilepath,geometry='uniform slab',
                           line_profile_type='Gaussian',width_v=width_v,
                           treat_line_overlap=treat_line_overlap,warn_negative_tau=False)
     for i in ref_transitions:
-        assert cloud.emitting_molecule.any_line_has_overlap(line_indices=[i,])
-    cloud.update_parameters(N=N,Tkin=Tkin,collider_densities=collider_densities,
+        assert source.emitting_molecule.any_line_has_overlap(line_indices=[i,])
+    source.update_parameters(N=N,Tkin=Tkin,collider_densities=collider_densities,
                             ext_background=ext_background,T_dust=0,tau_dust=0)
-    cloud.solve_radiative_transfer()
+    source.solve_radiative_transfer()
     for i,trans_index in enumerate(ref_transitions):
         print(f'trans {trans_index}:')
-        print(f'Tex={cloud.Tex[trans_index]:.3g} K (molpop: {molpop_Tex[overlap][i]})')
-        print(f'tau_nu0={cloud.tau_nu0_individual_transitions[trans_index]:.3g}'
+        print(f'Tex={source.Tex[trans_index]:.3g} K (molpop: {molpop_Tex[overlap][i]})')
+        print(f'tau_nu0={source.tau_nu0_individual_transitions[trans_index]:.3g}'
               +f' (molpop: {molpop_tau_nu0[overlap][i]})')
     print('\n')

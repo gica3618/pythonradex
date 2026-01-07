@@ -47,12 +47,11 @@ source.spectrum(solid_angle=1, nu=nu)
 #the fast method works only if there is no dust and no overlapping lines (i.e.
 #source function is just B_nu(Tex)))
 start = time.time()
-mock_Omega = 1
 nu0 = source.emitting_molecule.nu0
 source_function = helpers.B_nu(nu=nu0,T=source.Tex)
-intensity = source.geometry.compute_flux_nu(
+intensity = source.geometry.intensity(
                 tau_nu=source.tau_nu0_individual_transitions,
-                source_function=source_function,solid_angle=mock_Omega)
+                source_function=source_function)
 T_RJ_fast = intensity*constants.c**2/(2*nu0**2*constants.k)
 end = time.time()
 fast_time = end-start

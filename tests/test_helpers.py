@@ -29,10 +29,10 @@ def test_brightness_temperatures():
     test_T = 123
     test_nu = 50*constants.giga
     RJ_intensity = 2*test_nu**2*constants.k*test_T/constants.c**2
-    RJ_temp = helpers.RJ_brightness_temperature(intensity=RJ_intensity,
-                                                nu=test_nu)
+    RJ_temp = helpers.RJ_brightness_temperature(
+                   specific_intensity=RJ_intensity,nu=test_nu)
     assert np.isclose(RJ_temp,test_T,atol=0,rtol=1e-6)
     Planck_intensity = helpers.B_nu(nu=test_nu,T=test_T)
-    Planck_temp = helpers.Planck_brightness_temperature(intensity=Planck_intensity,
-                                                        nu=test_nu)
+    Planck_temp = helpers.Planck_brightness_temperature(
+                         specific_intensity=Planck_intensity,nu=test_nu)
     assert np.isclose(Planck_temp,test_T,atol=0,rtol=1e-6)

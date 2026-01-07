@@ -10,7 +10,7 @@ import numpy as np
 from scipy import constants
 import numba as nb
 import pytest
-from pythonradex import radiative_transfer,helpers,flux,molecule,escape_probability
+from pythonradex import radiative_transfer,helpers,intensity,molecule,escape_probability
 import itertools
 import os
 
@@ -28,9 +28,8 @@ line_profile_types = ('rectangular','Gaussian')
 zero = lambda nu: np.zeros_like(nu)
 
 
-class TestFastFlux():
+class TestFastIntensities():
     
-    solid_angle = 1
     test_transitions = nb.typed.List([0,1,3,4,5,8])
     molecules = {line_profile_type:molecule.EmittingMolecule(
                                    datafilepath=CO_datafilepath,
@@ -52,7 +51,7 @@ class TestFastFlux():
             tau_nu *= peak_tau/np.max(tau_nu)
         return nu,tau_nu
 
-    def test_fast_fluxes(self):
+    def test_fast_intensities(self):
         for (geo_name,geo),lp in itertools.product(
                         radiative_transfer.Source.geometries.items(),
                         ('Gaussian','rectangular')):
@@ -64,41 +63,38 @@ class TestFastFlux():
             T = 123
             Tex = np.ones(mol.n_rad_transitions,dtype=float)*T
             for test_tau in self.test_tau_values:
-                expected_flux = []
+                expected_intensity = []
                 for t in self.test_transitions:
                     S = helpers.B_nu(nu=mol.nu0[t],T=Tex[t])
                     nu,tau_nu = self.calculate_nu_and_tau_nu(
                                     lp=lp,nu0=mol.nu0[t],width_v=mol.width_v,
                                     peak_tau=test_tau)
-                    flux_kwargs = {'tau_nu':tau_nu,'source_function':S,
-                                   'solid_angle':self.solid_angle}
+                    intensity_kwargs = {'tau_nu':tau_nu,'source_function':S}
                     if is_LVG_sphere:
-                        flux_kwargs['nu'] = nu
-                        flux_kwargs['nu0'] = mol.nu0[t]
-                        flux_kwargs['V'] = V_LVG_sphere
-                    expc_flux_nu = geo.compute_flux_nu(**flux_kwargs)
-                    expected_flux.append(np.trapezoid(expc_flux_nu,nu))
+                        intensity_kwargs['nu'] = nu
+                        intensity_kwargs['nu0'] = mol.nu0[t]
+                        intensity_kwargs['V'] = V_LVG_sphere
+                    expc_specific_I = geo.specific_intensity(**intensity_kwargs)
+                    expected_intensity.append(np.trapezoid(expc_specific_I,nu))
                 tau_nu0 = np.ones(mol.n_rad_transitions)*test_tau
-                flux_calculator = flux.FluxCalculator(
+                intensity_calculator = intensity.IntensityCalculator(
                                  emitting_molecule=mol,
                                  level_population=mol.LTE_level_pop(T),
                                  geometry_name=geo_name,
-                                 compute_flux_nu=geo.compute_flux_nu,
+                                 specific_intensity=geo.specific_intensity,
                                  tau_nu0_individual_transitions=tau_nu0,
                                  tau_dust=zero,S_dust=zero,V_LVG_sphere=V_LVG_sphere)
                 if lp == 'Gaussian':
-                    calculated_flux = flux_calculator.fast_line_fluxes_Gaussian_without_overlap(
-                                       solid_angle=self.solid_angle,
+                    calculated_intensity = intensity_calculator.fast_line_intensities_Gaussian_without_overlap(
                                        transitions=self.test_transitions)
                 elif lp == 'rectangular':
-                    calculated_flux = flux_calculator.fast_line_fluxes_rectangular_without_overlap(
-                                      solid_angle=self.solid_angle,
+                    calculated_intensity = intensity_calculator.fast_line_intensities_rectangular_without_overlap(
                                       transitions=self.test_transitions)
                 else:
                     raise ValueError
-                assert np.allclose(expected_flux,calculated_flux,atol=0,rtol=5e-3)
+                assert np.allclose(expected_intensity,calculated_intensity,atol=0,rtol=5e-3)
 
-    def test_rectangular_tau_flux_param_constructor(self):
+    def test_rectangular_tau_param_constructor(self):
         line_index = 3
         mol = self.molecules['rectangular']
         test_line = mol.rad_transitions[line_index]
@@ -117,15 +113,15 @@ class TestFastFlux():
         geo = radiative_transfer.Source.geometries[geo_name]
         tau_nu0_individual_transitions = mol.get_tau_nu0_lines(
                                              N=N,level_population=level_pop)
-        flux_calculator = flux.FluxCalculator(
+        intensity_calculator = intensity.IntensityCalculator(
                              emitting_molecule=mol,level_population=level_pop,
                              geometry_name=geo_name,V_LVG_sphere=mol.width_v/2,
-                             compute_flux_nu=geo.compute_flux_nu,
+                             specific_intensity=geo.specific_intensity,
                              tau_nu0_individual_transitions=tau_nu0_individual_transitions,
                              tau_dust=zero,S_dust=zero)
         transitions = [line_index,]
         constructed_nu,constructed_tau_nu,constructed_source_function\
-               = flux_calculator.get_flux_parameters_for_rectangular_flux(
+               = intensity_calculator.get_intensity_parameters_for_rectangular(
                                                         transitions=transitions)
         interp_tau_nu = np.interp(x=constructed_nu,xp=nu,fp=expected_tau_nu)
         assert np.allclose(constructed_tau_nu,interp_tau_nu,atol=0,rtol=1e-3)
@@ -135,7 +131,7 @@ class TestFastFlux():
         assert np.allclose(interp_S,constructed_source_function,atol=0,rtol=1e-3)
 
 
-class TestInvalidFluxRequest():
+class TestInvalidIntensityRequest():
 
     molecule_with_overlap = molecule.EmittingMolecule(
                                    datafilepath=HCl_datafilepath,
@@ -143,20 +139,20 @@ class TestInvalidFluxRequest():
                                    width_v=30*constants.kilo)
     test_overlapping_transitions = [0,1,2] #these are overlapping
 
-    def generate_test_flux_calculator(self,emitting_molecule,
+    def generate_test_intensity_calculator(self,emitting_molecule,
                                       tau_nu0_individual_transitions,tau_dust,
                                       S_dust):
         geometry_name = 'static sphere'
         geometry = escape_probability.StaticSphere()
         level_population = emitting_molecule.LTE_level_pop(T=45)
-        fluxcalculator = flux.FluxCalculator(
+        intensitycalculator = intensity.IntensityCalculator(
                            emitting_molecule=emitting_molecule,
                            level_population=level_population,
                            geometry_name=geometry_name,V_LVG_sphere=1*constants.kilo,
-                           compute_flux_nu=geometry.compute_flux_nu,
+                           specific_intensity=geometry.specific_intensity,
                            tau_nu0_individual_transitions=tau_nu0_individual_transitions,
                            tau_dust=tau_dust,S_dust=S_dust)
-        return fluxcalculator
+        return intensitycalculator
 
     def test_tau_dust_condition(self):
         emitting_molecule = molecule.EmittingMolecule(
@@ -167,15 +163,29 @@ class TestInvalidFluxRequest():
         for tau_dust in (1e-2,0.2,1,10):
             def tau_dust_func(nu):
                 return np.ones_like(nu)*tau_dust
-            fluxcalculator = self.generate_test_flux_calculator(
+            intensitycalculator = self.generate_test_intensity_calculator(
                               emitting_molecule=emitting_molecule,
                               tau_nu0_individual_transitions=tau_nu0_individual_transitions,
                               tau_dust=tau_dust_func,S_dust=S_dust)
+            all_transitions = np.arange(intensitycalculator.emitting_molecule.n_rad_transitions)
             if tau_dust > 0.1:
                 with pytest.raises(ValueError):
-                    fluxcalculator.fluxes_of_individual_transitions(solid_angle=1)
+                    intensitycalculator.intensities_of_individual_transitions(
+                              transitions=all_transitions)
             else:
-               fluxcalculator.fluxes_of_individual_transitions(solid_angle=1)
+               intensitycalculator.intensities_of_individual_transitions(
+                              transitions=all_transitions)
+        def variable_tau_dust(nu):
+            return np.where(nu<=1.1*emitting_molecule.nu0[0],10,0.05)
+        intensitycalculator = self.generate_test_intensity_calculator(
+                          emitting_molecule=emitting_molecule,
+                          tau_nu0_individual_transitions=tau_nu0_individual_transitions,
+                          tau_dust=variable_tau_dust,S_dust=S_dust)
+        with pytest.raises(ValueError):
+            intensitycalculator.intensities_of_individual_transitions(
+                      transitions=[0,])
+        intensitycalculator.intensities_of_individual_transitions(
+                  transitions=[1,2,3])
 
     def test_total_tau_overlapping_lines(self):
         for tt in self.test_overlapping_transitions:
@@ -185,11 +195,11 @@ class TestInvalidFluxRequest():
         test_tau[:3] = [1.2,0.3,4]
         S_dust = lambda nu: np.zeros_like(nu)
         tau_dust = lambda nu: np.zeros_like(nu)
-        fluxcalculator = self.generate_test_flux_calculator(
+        intensitycalculator = self.generate_test_intensity_calculator(
                           emitting_molecule=self.molecule_with_overlap,
                           tau_nu0_individual_transitions=test_tau,
                           tau_dust=tau_dust,S_dust=S_dust)
-        tau_tot = fluxcalculator.determine_tau_of_overlapping_lines(
+        tau_tot = intensitycalculator.determine_tau_of_overlapping_lines(
                                    transitions=self.test_overlapping_transitions)
         assert np.all(tau_tot==np.array((0.3+4,1.2+4,1.2+0.3)))
 
@@ -203,15 +213,18 @@ class TestInvalidFluxRequest():
             tau_nu0 = np.zeros(self.molecule_with_overlap.n_rad_transitions)
             for case in cases:
                 tau_nu0[:3] = case
-                fluxcalculator = self.generate_test_flux_calculator(
+                intensitycalculator = self.generate_test_intensity_calculator(
                                   emitting_molecule=self.molecule_with_overlap,
                                   tau_nu0_individual_transitions=tau_nu0,
                                   tau_dust=tau_dust,S_dust=S_dust)
+                all_transitions = np.arange(intensitycalculator.emitting_molecule.n_rad_transitions)
                 if validity == 'invalid':
                     with pytest.raises(ValueError):
-                        fluxcalculator.fluxes_of_individual_transitions(solid_angle=1)
+                        intensitycalculator.intensities_of_individual_transitions(
+                                transitions=all_transitions)
                 else:
-                   fluxcalculator.fluxes_of_individual_transitions(solid_angle=1)
+                   intensitycalculator.intensities_of_individual_transitions(
+                                transitions=all_transitions)
 
 
 class TestVarious():
@@ -220,31 +233,31 @@ class TestVarious():
     N = 1e12/constants.centi**2
     T = 344
 
-    def generate_flux_calculator(self,geo_name,tau_dust,S_dust):
+    def generate_intensity_calculator(self,geo_name,tau_dust,S_dust):
         geo = radiative_transfer.Source.geometries[geo_name]
         for lp in ('rectangular','Gaussian'):
             mol = molecule.EmittingMolecule(datafilepath=CO_datafilepath,
                                             line_profile_type=lp,width_v=self.width_v)
             level_population = mol.LTE_level_pop(self.T)
             tau_nu0 = mol.get_tau_nu0_lines(N=self.N,level_population=level_population)
-            fluxcalculator = flux.FluxCalculator(
+            intensitycalculator = intensity.IntensityCalculator(
                                      emitting_molecule=mol,level_population=level_population,
                                      geometry_name=geo_name,
-                                     compute_flux_nu=geo.compute_flux_nu,
+                                     specific_intensity=geo.specific_intensity,
                                      tau_nu0_individual_transitions=tau_nu0,
                                      tau_dust=tau_dust,S_dust=S_dust,V_LVG_sphere=mol.width_v/2)
-            yield {"mol":mol,"fluxcalculator":fluxcalculator,"tau_nu0":tau_nu0,
+            yield {"mol":mol,"intensitycalculator":intensitycalculator,"tau_nu0":tau_nu0,
                    "level_population":level_population}
     
     def test_tau_nu_constructor(self):
         test_transitions = [0,3,10]
-        for f in self.generate_flux_calculator(geo_name="static sphere",tau_dust=zero,
+        for f in self.generate_intensity_calculator(geo_name="static sphere",tau_dust=zero,
                                                S_dust=zero):
             for t in test_transitions:
                 line = f["mol"].rad_transitions[t]
                 width_nu = f["mol"].width_v/constants.c * line.nu0
                 nu = np.linspace(line.nu0-2*width_nu,line.nu0+2*width_nu,200)
-                constructed_tau_nu = f["fluxcalculator"].construct_tau_nu_individual_line(
+                constructed_tau_nu = f["intensitycalculator"].construct_tau_nu_individual_line(
                                         line=line,nu=nu,tau_nu0=f["tau_nu0"][t])
                 N1 = self.N*f["level_population"][line.low.index]
                 N2 = self.N*f["level_population"][line.up.index]
@@ -253,9 +266,9 @@ class TestVarious():
     
     def test_line_identification(self):
         trans_indices = [2,3]
-        for f in self.generate_flux_calculator(geo_name="static sphere",tau_dust=zero,
+        for f in self.generate_intensity_calculator(geo_name="static sphere",tau_dust=zero,
                                                S_dust=zero):
-            fluxcalculator = f["fluxcalculator"]
+            intensitycalculator = f["intensitycalculator"]
             transitions = [f["mol"].rad_transitions[i] for i in trans_indices]
             freq_widths = [helpers.Delta_nu(Delta_v=self.width_v,nu0=t.nu0) for t in transitions]
             for i,trans,width_nu in zip(trans_indices,transitions,freq_widths):
@@ -273,9 +286,9 @@ class TestVarious():
                            np.array((trans.line_profile.nu_min+width_nu/100,)),
                            ]
                 for nu in include:
-                    fluxcalculator.set_nu(nu=nu)
-                    assert len(fluxcalculator.nu_selected_line_indices) == 1
-                    assert i in fluxcalculator.nu_selected_line_indices
+                    intensitycalculator.set_nu(nu=nu)
+                    assert len(intensitycalculator.nu_selected_line_indices) == 1
+                    assert i in intensitycalculator.nu_selected_line_indices
                 not_included = [np.array((1.01*trans.line_profile.nu_max,)),
                                 np.array((0.99*trans.line_profile.nu_min,)),
                                 np.array((trans.line_profile.nu_min-0.001*width_nu,)),
@@ -284,8 +297,8 @@ class TestVarious():
                                 np.array((trans.line_profile.nu_min-3*width_nu,
                                           trans.line_profile.nu_max+3*width_nu))]
                 for nu in not_included:
-                    fluxcalculator.set_nu(nu=nu)
-                    assert len(fluxcalculator.nu_selected_line_indices) == 0
+                    intensitycalculator.set_nu(nu=nu)
+                    assert len(intensitycalculator.nu_selected_line_indices) == 0
             #test also ranges that cover both transitions
             both = [np.array((transitions[0].nu0,transitions[1].nu0,)),
                     np.array((transitions[0].line_profile.nu_min-5*width_nu,
@@ -293,19 +306,19 @@ class TestVarious():
                               transitions[1].line_profile.nu_max+5*width_nu)),
                     np.array((transitions[0].nu0,transitions[1].line_profile.nu_max-width_nu/100))]
             for nu in both:
-                fluxcalculator.set_nu(nu=nu)
-                assert len(fluxcalculator.nu_selected_line_indices) == 2
+                intensitycalculator.set_nu(nu=nu)
+                assert len(intensitycalculator.nu_selected_line_indices) == 2
                 for i in trans_indices:
-                    assert i in fluxcalculator.nu_selected_line_indices
+                    assert i in intensitycalculator.nu_selected_line_indices
             #nu that should include all transitions:
             all_inclusive_nu = [np.array([t.nu0 for t in f["mol"].rad_transitions]),
                                 np.array([t.nu0+t.line_profile.width_nu/6 for t
                                           in f["mol"].rad_transitions])]
             for nu in all_inclusive_nu:
-                fluxcalculator.set_nu(nu=nu)
-                assert len(fluxcalculator.nu_selected_line_indices)\
+                intensitycalculator.set_nu(nu=nu)
+                assert len(intensitycalculator.nu_selected_line_indices)\
                                                  == len(f["mol"].rad_transitions)
-                assert np.all(fluxcalculator.nu_selected_line_indices
+                assert np.all(intensitycalculator.nu_selected_line_indices
                               ==np.array(range(len(f["mol"].rad_transitions))))
 
     @staticmethod
@@ -315,13 +328,13 @@ class TestVarious():
                 np.array((trans.line_profile.nu_max+0.5*width_nu,
                           trans.line_profile.nu_max+width_nu))]
 
-    def check_no_line_spectrum(self,fluxcalculator,trans,expected_spec):
+    def check_no_line_spectrum(self,intensitycalculator,trans,expected_spec):
         width_nu = self.width_v/constants.c*trans.nu0
         no_line = self.get_no_line_nu(trans=trans,width_nu=width_nu)
         for nu in no_line:
-            fluxcalculator.set_nu(nu=nu)
-            assert len(fluxcalculator.nu_selected_lines) == 0
-            spec = fluxcalculator.spectrum(solid_angle=1)
+            intensitycalculator.set_nu(nu=nu)
+            assert len(intensitycalculator.nu_selected_lines) == 0
+            spec = intensitycalculator.specific_intensity_spectrum()
             assert np.all(spec==expected_spec(nu))
 
     @pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
@@ -330,10 +343,10 @@ class TestVarious():
         def zero_spec(nu):
             return np.zeros_like(nu)
         for geo_name in ("static sphere", "LVG sphere"):
-            for f in self.generate_flux_calculator(geo_name=geo_name,tau_dust=zero,
+            for f in self.generate_intensity_calculator(geo_name=geo_name,tau_dust=zero,
                                                    S_dust=zero):
                 self.check_no_line_spectrum(
-                        fluxcalculator=f["fluxcalculator"],
+                        intensitycalculator=f["intensitycalculator"],
                         trans=f["mol"].rad_transitions[1],expected_spec=zero_spec)
         #test with dust:
         def S_dust(nu):
@@ -342,35 +355,34 @@ class TestVarious():
             return np.ones_like(nu)*0.56
         def dust_spec(nu):
             return S_dust(nu)*(1-np.exp(-tau_dust(nu)))
-        for f in self.generate_flux_calculator(geo_name="static slab",tau_dust=tau_dust,
+        for f in self.generate_intensity_calculator(geo_name="static slab",tau_dust=tau_dust,
                                                S_dust=S_dust):
                 self.check_no_line_spectrum(
-                        fluxcalculator=f["fluxcalculator"],
+                        intensitycalculator=f["intensitycalculator"],
                         trans=f["mol"].rad_transitions[1],expected_spec=dust_spec)
 
     def test_single_nu_spectrum(self):
         for geo_name in ("static sphere", "LVG sphere"):
-            for f in self.generate_flux_calculator(geo_name=geo_name,tau_dust=zero,
+            for f in self.generate_intensity_calculator(geo_name=geo_name,tau_dust=zero,
                                                    S_dust=zero):
-                fluxcalculator = f["fluxcalculator"]
+                intensitycalculator = f["intensitycalculator"]
                 trans = f["mol"].rad_transitions[5]
                 width_nu = self.width_v/constants.c*trans.nu0
                 single_nu = np.array((trans.nu0-width_nu/6,))
                 multi_nu = np.array((trans.line_profile.nu_min,single_nu[0],
                                      trans.line_profile.nu_max))
-                Omega = 1
-                fluxcalculator.set_nu(nu=single_nu)
-                single_spec = fluxcalculator.spectrum(solid_angle=Omega)
-                fluxcalculator.set_nu(nu=multi_nu)
-                multi_spec = fluxcalculator.spectrum(solid_angle=Omega)
+                intensitycalculator.set_nu(nu=single_nu)
+                single_spec = intensitycalculator.specific_intensity_spectrum()
+                intensitycalculator.set_nu(nu=multi_nu)
+                multi_spec = intensitycalculator.specific_intensity_spectrum()
                 assert single_spec[0] == multi_spec[1]
 
 
-class TestIntensityNu0NoOverlap():
+class TestSpecificIntensityNu0NoOverlap():
 
     Tkin = 100
 
-    def generate_flux_calculator(self,geometry_name,line_profile_type,
+    def generate_intensity_calculator(self,geometry_name,line_profile_type,
                                  S_dust,tau_dust,width_v,datafilepath):
         mol = molecule.EmittingMolecule(
                 datafilepath=datafilepath,line_profile_type=line_profile_type,
@@ -380,15 +392,15 @@ class TestIntensityNu0NoOverlap():
         tau_nu0_individual_transitions = np.arange(mol.n_rad_transitions,dtype=float)+0.1
         tau_nu0_individual_transitions = tau_nu0_individual_transitions[::-1]
         tau_nu0_individual_transitions /= np.max(tau_nu0_individual_transitions)
-        fluxcalculator = flux.FluxCalculator(
+        intensitycalculator = intensity.IntensityCalculator(
                            emitting_molecule=mol,level_population=level_population,
                            geometry_name=geometry_name,V_LVG_sphere=width_v/2,
-                           compute_flux_nu=geometry.compute_flux_nu,
+                           specific_intensity=geometry.specific_intensity,
                            tau_nu0_individual_transitions=tau_nu0_individual_transitions,
                            tau_dust=tau_dust,S_dust=S_dust)
-        return fluxcalculator
+        return intensitycalculator
 
-    def test_intensity_nu0(self):
+    def test_specific_intensity_nu0(self):
         for geo,line_profile_type in\
                 itertools.product(radiative_transfer.Source.geometries.keys(),
                                   radiative_transfer.Source.line_profiles.keys()):
@@ -402,14 +414,13 @@ class TestIntensityNu0NoOverlap():
                 kwargs["dust"]["S_dust"] = lambda nu: helpers.B_nu(nu=nu,T=200)
                 kwargs["dust"]["tau_dust"] = lambda nu: np.ones_like(nu)*0.5
             for kw in kwargs.values():
-                f = self.generate_flux_calculator(**kw)
+                f = self.generate_intensity_calculator(**kw)
                 transitions = np.arange(f.emitting_molecule.n_rad_transitions)
-                Omega = 0.235
-                intensity_nu0 = f.intensity_nu0_no_overlap(transitions=transitions)
+                specific_intensity_nu0 = f.specific_intensity_nu0_no_overlap(transitions=transitions)
                 nu = f.emitting_molecule.nu0
                 f.set_nu(nu=nu)
-                expected_from_spec = f.spectrum(solid_angle=Omega)/Omega
-                assert np.allclose(intensity_nu0,expected_from_spec,atol=0,rtol=1e-3)
+                expected_from_spec = f.specific_intensity_spectrum()
+                assert np.allclose(specific_intensity_nu0,expected_from_spec,atol=0,rtol=1e-3)
                 #now explicit calculation:
                 tau_dust = kw["tau_dust"](nu)
                 S_dust = kw["S_dust"](nu)
@@ -417,13 +428,13 @@ class TestIntensityNu0NoOverlap():
                 S_lines = helpers.B_nu(nu=nu,T=f.Tex)
                 source_function = np.where(tau_tot==0,0,
                                            ( f.tau_nu0_individual_transitions*S_lines+tau_dust*S_dust)/tau_tot)
-                flux_kwargs = {"tau_nu":tau_tot,"source_function":source_function,
-                               "solid_angle":Omega}
+                intensity_kwargs = {"tau_nu":tau_tot,"source_function":source_function}
                 if "LVG" in geo:
-                    explicit = escape_probability.compute_flux_nu0_lvg_sphere(**flux_kwargs)/Omega
+                    explicit = escape_probability.specific_intensity_nu0_lvg_sphere(
+                                                   **intensity_kwargs)
                 else:
-                    explicit = f.compute_flux_nu(**flux_kwargs)/Omega
-                assert np.allclose(intensity_nu0,explicit,atol=0,rtol=1e-3)
+                    explicit = f.specific_intensity(**intensity_kwargs)
+                assert np.allclose(specific_intensity_nu0,explicit,atol=0,rtol=1e-3)
 
     def test_thick_intensity(self):
         Tkin = 123
@@ -446,10 +457,10 @@ class TestIntensityNu0NoOverlap():
             source.solve_radiative_transfer()
             test_transitions = [0,1,2]
             assert np.all(source.tau_nu0_individual_transitions[test_transitions] > 10)
-            intensity_nu0 = source.flux_calculator.intensity_nu0_no_overlap(
+            specific_intensity_nu0 = source.intensity_calculator.specific_intensity_nu0_no_overlap(
                                 transitions=test_transitions)
             expected = helpers.B_nu(T=Tkin,nu=source.emitting_molecule.nu0[test_transitions])
-            assert np.allclose(intensity_nu0,expected,atol=0,rtol=1e-3)
+            assert np.allclose(specific_intensity_nu0,expected,atol=0,rtol=1e-3)
             #thick dust:
             if not "LVG" in geo:
                 source.update_parameters(N=1e12*constants.centi**-2,Tkin=Tkin,
@@ -457,27 +468,27 @@ class TestIntensityNu0NoOverlap():
                                          ext_background=ext_background,T_dust=Tdust,
                                          tau_dust=50)
                 source.solve_radiative_transfer()
-                intensity_nu0 = source.flux_calculator.intensity_nu0_no_overlap(
+                specific_intensity_nu0 = source.intensity_calculator.specific_intensity_nu0_no_overlap(
                                     transitions=test_transitions)
                 expected = helpers.B_nu(T=Tdust,nu=source.emitting_molecule.nu0[test_transitions])
-                assert np.allclose(intensity_nu0,expected,atol=0,rtol=1e-3)
+                assert np.allclose(specific_intensity_nu0,expected,atol=0,rtol=1e-3)
 
     def test_reject_overlap(self):
-        fluxcalculator = self.generate_flux_calculator(
+        intensitycalculator = self.generate_intensity_calculator(
                              geometry_name="static sphere",
                              line_profile_type="rectangular",S_dust=zero,
                              tau_dust=zero,width_v=10*constants.kilo,
                              datafilepath=HCl_datafilepath)
-        assert fluxcalculator.emitting_molecule.has_overlapping_lines
+        assert intensitycalculator.emitting_molecule.has_overlapping_lines
         transitions = [1,]
         with pytest.raises(AssertionError):
-            fluxcalculator.intensity_nu0_no_overlap(transitions=transitions)
+            intensitycalculator.specific_intensity_nu0_no_overlap(transitions=transitions)
         
 
 ###### tests using physics ###################
 
 
-class TestFluxesWithPhysics():
+class TestIntensitiesWithPhysics():
 
     CO_molecules = {line_profile_type:molecule.EmittingMolecule(
                                    datafilepath=CO_datafilepath,
@@ -492,10 +503,8 @@ class TestFluxesWithPhysics():
     HCL_overlapping_transitions = (0,1,2)
     distance = 1*constants.parsec
     sphere_radius = 1*constants.au
-    sphere_surface = 4*np.pi*sphere_radius**2
     sphere_volume = 4/3*sphere_radius**3*np.pi
     sphere_Omega = sphere_radius**2*np.pi/distance**2
-    Omega = sphere_Omega #use the same Omega for all geometries
     Tkin = 45
     tau_dust = {'thin':1e-4,'thick':50}
     T_dust = 100
@@ -504,7 +513,7 @@ class TestFluxesWithPhysics():
     def S_dust(self,nu):
         return helpers.B_nu(nu=nu,T=self.T_dust)
 
-    def LTE_fluxcalc_iterator(self,specie,N,tau_dust,S_dust):
+    def LTE_intensitycalc_iterator(self,specie,N,tau_dust,S_dust):
         #assume LTE for convenience
         if specie == 'CO':
             molecules = self.CO_molecules
@@ -517,13 +526,13 @@ class TestFluxesWithPhysics():
                 if not allowed_param_combination(geometry=geo_name,
                                                  line_profile_type=lp):
                     continue
-                fluxcalculator = flux.FluxCalculator(
+                intensitycalculator = intensity.IntensityCalculator(
                                 emitting_molecule=mol,level_population=level_pop,
                                 geometry_name=geo_name,V_LVG_sphere=mol.width_v/2,
-                                compute_flux_nu=geo.compute_flux_nu,
+                                specific_intensity=geo.specific_intensity,
                                 tau_nu0_individual_transitions=tau_nu0,
                                 tau_dust=tau_dust,S_dust=S_dust)
-                yield lp,level_pop,tau_nu0,fluxcalculator
+                yield lp,level_pop,tau_nu0,intensitycalculator
 
     def test_HCl_lines_are_overlapping(self):
         for mol in self.HCl_molecules.values():
@@ -531,53 +540,57 @@ class TestFluxesWithPhysics():
                 assert mol.overlapping_lines[t]\
                         == [i for i in self.HCL_overlapping_transitions if i!=t]
 
-    def test_flux_thin(self):
+    def test_thin(self):
         N = 1e12/constants.centi**2
-        for lp,level_pop,tau_nu0,fluxcalculator in\
-                      self.LTE_fluxcalc_iterator(specie='CO',N=N,tau_dust=zero,S_dust=zero):
-            fluxes = fluxcalculator.fluxes_of_individual_transitions(solid_angle=self.Omega)
-            expected_fluxes = []
-            for i,line in enumerate(fluxcalculator.emitting_molecule.rad_transitions):
+        for lp,level_pop,tau_nu0,intensitycalculator in\
+                      self.LTE_intensitycalc_iterator(specie='CO',N=N,tau_dust=zero,S_dust=zero):
+            transitions = np.arange(intensitycalculator.emitting_molecule.n_rad_transitions)
+            intensities = intensitycalculator.intensities_of_individual_transitions(
+                                 transitions=transitions)
+            expected_intensities = []
+            for i,line in enumerate(intensitycalculator.emitting_molecule.rad_transitions):
                 up_level_pop = level_pop[line.up.index]
-                if fluxcalculator.geometry_name in ('static sphere','LVG sphere'):
+                if intensitycalculator.geometry_name in ('static sphere','LVG sphere'):
                     #in the case of spheres, we can do an elegant test
                     #using physics
                     number_density = N/(2*self.sphere_radius)
                     total_mol = number_density*self.sphere_volume
-                    f = total_mol*up_level_pop*line.A21*line.Delta_E\
-                               /(4*np.pi*self.distance**2)
+                    I = total_mol*up_level_pop*line.A21*line.Delta_E\
+                               /(4*np.pi*self.distance**2)/self.sphere_Omega
                 else:
                     #for slabs, could not come up with elegant test
-                    flux_nu0 = helpers.B_nu(nu=line.nu0,T=self.Tkin)\
-                                                      *tau_nu0[i]*self.Omega
+                    I_nu0 = helpers.B_nu(nu=line.nu0,T=self.Tkin)\
+                                                      *tau_nu0[i]
                     if lp == 'Gaussian':
-                        f = np.sqrt(2*np.pi)*line.line_profile.sigma_nu*flux_nu0
+                        I = np.sqrt(2*np.pi)*line.line_profile.sigma_nu*I_nu0
                     elif lp == 'rectangular':
-                        f = flux_nu0*line.line_profile.width_nu
-                expected_fluxes.append(f)
-            expected_fluxes = np.array(expected_fluxes)
-            assert np.allclose(fluxes,expected_fluxes,atol=0,rtol=5e-3)
+                        I = I_nu0*line.line_profile.width_nu
+                expected_intensities.append(I)
+            expected_intensities = np.array(expected_intensities)
+            assert np.allclose(intensities,expected_intensities,atol=0,rtol=5e-3)
             assert np.allclose(tau_nu0,0,atol=1e-3,rtol=0)
 
-    def test_thick_flux(self):
+    def test_thick(self):
         N = 1e19/constants.centi**2
-        for lp,level_pop,tau_nu0,fluxcalculator in\
-                        self.LTE_fluxcalc_iterator(specie='CO',N=N,tau_dust=zero,S_dust=zero):
-            fluxes = fluxcalculator.fluxes_of_individual_transitions(solid_angle=self.Omega)
+        for lp,level_pop,tau_nu0,intensitycalculator in\
+                        self.LTE_intensitycalc_iterator(specie='CO',N=N,tau_dust=zero,S_dust=zero):
+            transitions = np.arange(intensitycalculator.emitting_molecule.n_rad_transitions)
+            intensities = intensitycalculator.intensities_of_individual_transitions(
+                                 transitions=transitions)
             thick_lines = tau_nu0 > 10
             assert thick_lines.sum() >= 10
-            for i,line in enumerate(fluxcalculator.emitting_molecule.rad_transitions):
+            for i,line in enumerate(intensitycalculator.emitting_molecule.rad_transitions):
                 if not thick_lines[i]:
                     continue
-                bb_flux_nu0 = helpers.B_nu(nu=line.nu0,T=self.Tkin)*self.Omega
+                bb_intensity_nu0 = helpers.B_nu(nu=line.nu0,T=self.Tkin)
                 #can only test rectangular profiles; also, cannot test LVG sphere
                 #because it has a different spectral shape than a rectangle
-                if lp == 'rectangular' and fluxcalculator.geometry_name != 'LVG sphere':
-                    expected_total_flux = bb_flux_nu0*line.line_profile.width_nu
-                    assert np.isclose(a=expected_total_flux,b=fluxes[i],
+                if lp == 'rectangular' and intensitycalculator.geometry_name != 'LVG sphere':
+                    expected_total_intensity = bb_intensity_nu0*line.line_profile.width_nu
+                    assert np.isclose(a=expected_total_intensity,b=intensities[i],
                                       atol=0,rtol=3e-2)
                 else:
-                    assert lp == 'Gaussian' or fluxcalculator.geometry_name == 'LVG sphere'
+                    assert lp == 'Gaussian' or intensitycalculator.geometry_name == 'LVG sphere'
 
     def get_line_covering_nu(self,lines,width_v):
         nu0s = [line.nu0 for line in lines]
@@ -592,32 +605,32 @@ class TestFluxesWithPhysics():
         N_values = {'thin':1e12/constants.centi**2,'thick':1e19/constants.centi**2}
         test_transitions = [0,2,5]
         for ID,N in N_values.items():
-            iterator = self.LTE_fluxcalc_iterator(
+            iterator = self.LTE_intensitycalc_iterator(
                             specie='CO',N=N,tau_dust=zero,S_dust=zero)
-            for lp,level_pop,tau_nu0,fluxcalculator in iterator:
-                width_v = fluxcalculator.emitting_molecule.width_v
+            for lp,level_pop,tau_nu0,intensitycalculator in iterator:
+                width_v = intensitycalculator.emitting_molecule.width_v
                 for t in test_transitions:
-                    line = fluxcalculator.emitting_molecule.rad_transitions[t]
+                    line = intensitycalculator.emitting_molecule.rad_transitions[t]
                     nu = self.get_line_covering_nu(lines=[line,],width_v=width_v)
-                    fluxcalculator.set_nu(nu=nu)
-                    spec = fluxcalculator.spectrum(solid_angle=self.Omega)
+                    intensitycalculator.set_nu(nu=nu)
+                    spec = intensitycalculator.specific_intensity_spectrum()
                     assert np.all(spec >= 0)
                     source_func = helpers.B_nu(T=self.Tkin,nu=nu)
-                    if fluxcalculator.geometry_name == 'LVG sphere':
+                    if intensitycalculator.geometry_name == 'LVG sphere':
                         LVG_kwargs = {'nu':nu,'nu0':line.nu0,'V':width_v/2}
                     else:
                         LVG_kwargs = {}
                     N1 = level_pop[line.low.index]*N
                     N2 = level_pop[line.up.index]*N
                     expected_tau_nu = line.tau_nu(N1,N2,nu)
-                    expected_spec = fluxcalculator.compute_flux_nu(
+                    expected_spec = intensitycalculator.specific_intensity(
                                         tau_nu=expected_tau_nu,source_function=source_func,
-                                        solid_angle=self.Omega,**LVG_kwargs)
+                                        **LVG_kwargs)
                     assert np.allclose(spec,expected_spec,atol=0,rtol=1e-3)
                     if ID == 'thick':
-                        bb_flux_nu0 = helpers.B_nu(nu=line.nu0,T=self.Tkin)*self.Omega
-                        peak_flux = np.max(spec)
-                        assert np.isclose(a=peak_flux,b=bb_flux_nu0,atol=0,rtol=3e-2)
+                        bb_intensity_nu0 = helpers.B_nu(nu=line.nu0,T=self.Tkin)
+                        peak = np.max(spec)
+                        assert np.isclose(a=peak,b=bb_intensity_nu0,atol=0,rtol=3e-2)
                 if ID == 'thin':
                     assert np.allclose(expected_tau_nu,0,atol=1e-3,rtol=0)
 
@@ -625,14 +638,14 @@ class TestFluxesWithPhysics():
     @pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
     def test_tau_and_spectrum_overlapping_lines_without_overlap_treatment(self):
         N = 1e10/constants.centi**2
-        for lp,level_pop,tau_nu0,fluxcalculator in\
-                    self.LTE_fluxcalc_iterator(specie='HCl',N=N,tau_dust=zero,S_dust=zero):
-            lines = [fluxcalculator.emitting_molecule.rad_transitions[t] for t
+        for lp,level_pop,tau_nu0,intensitycalculator in\
+                    self.LTE_intensitycalc_iterator(specie='HCl',N=N,tau_dust=zero,S_dust=zero):
+            lines = [intensitycalculator.emitting_molecule.rad_transitions[t] for t
                      in self.HCL_overlapping_transitions]
-            width_v = fluxcalculator.emitting_molecule.width_v
+            width_v = intensitycalculator.emitting_molecule.width_v
             nu = self.get_line_covering_nu(lines=lines,width_v=width_v)
-            fluxcalculator.set_nu(nu=nu)
-            spec = fluxcalculator.spectrum(solid_angle=self.Omega)
+            intensitycalculator.set_nu(nu=nu)
+            spec = intensitycalculator.specific_intensity_spectrum()
             expected_spec = np.zeros_like(spec)
             expected_tau_nu = np.zeros_like(spec)
             for line in lines:
@@ -641,17 +654,17 @@ class TestFluxesWithPhysics():
                 tau_nu_line = line.tau_nu(N1,N2,nu)
                 expected_tau_nu += tau_nu_line
                 source_func = helpers.B_nu(T=self.Tkin,nu=nu)
-                if fluxcalculator.geometry_name == 'LVG sphere':
+                if intensitycalculator.geometry_name == 'LVG sphere':
                     LVG_kwargs = {'nu':nu,'nu0':line.nu0,'V':width_v/2}
                 else:
                     LVG_kwargs = {}
-                expected_spec += fluxcalculator.compute_flux_nu(
+                expected_spec += intensitycalculator.specific_intensity(
                                     tau_nu=tau_nu_line,source_function=source_func,
-                                    solid_angle=self.Omega,**LVG_kwargs)
-            assert np.allclose(fluxcalculator.tau_nu_tot,expected_tau_nu,atol=1e-20,
+                                    **LVG_kwargs)
+            assert np.allclose(intensitycalculator.tau_nu_tot,expected_tau_nu,atol=1e-20,
                                rtol=1e-3)
             assert np.allclose(spec,expected_spec,atol=0,rtol=1e-3)
-            assert np.allclose(fluxcalculator.tau_nu_tot,0,atol=1e-3,rtol=0)
+            assert np.allclose(intensitycalculator.tau_nu_tot,0,atol=1e-3,rtol=0)
 
     def test_spectrum_with_dust(self):
         N_values = {'CO':{'thin':1e12/constants.centi**2,'thick':1e19/constants.centi**2},
@@ -661,23 +674,23 @@ class TestFluxesWithPhysics():
             tau_dust = lambda nu: np.ones_like(nu)*tau_dust_value
             for specie in ('CO','HCl'):
                 for line_thickness,N in N_values[specie].items():
-                    for lp,level_pop,tau_nu0,fluxcalculator in\
-                                self.LTE_fluxcalc_iterator(specie=specie,N=N,tau_dust=tau_dust,
+                    for lp,level_pop,tau_nu0,intensitycalculator in\
+                                self.LTE_intensitycalc_iterator(specie=specie,N=N,tau_dust=tau_dust,
                                                            S_dust=self.S_dust):
-                        if 'LVG' in fluxcalculator.geometry_name:
+                        if 'LVG' in intensitycalculator.geometry_name:
                             #LVG does not allow dust
                             continue
-                        lines = [fluxcalculator.emitting_molecule.rad_transitions[t]
+                        lines = [intensitycalculator.emitting_molecule.rad_transitions[t]
                                  for t in transitions[specie]]
-                        width_v = fluxcalculator.emitting_molecule.width_v
+                        width_v = intensitycalculator.emitting_molecule.width_v
                         nu = self.get_line_covering_nu(lines=lines,width_v=width_v)
-                        fluxcalculator.set_nu(nu=nu)
-                        spec = fluxcalculator.spectrum(solid_angle=self.Omega)
+                        intensitycalculator.set_nu(nu=nu)
+                        spec = intensitycalculator.specific_intensity_spectrum()
                         if line_thickness == 'thin' and dust_thickness == 'thick':
                             #dust should dominate
-                            for tau_line in fluxcalculator.tau_nu_lines:
+                            for tau_line in intensitycalculator.tau_nu_lines:
                                 assert np.allclose(tau_line,0,atol=1e-3,rtol=0)
-                            expected_spec = self.S_dust(nu=nu)*self.Omega
+                            expected_spec = self.S_dust(nu=nu)
                             assert np.allclose(spec,expected_spec,atol=0,rtol=1e-3)
                         elif line_thickness == 'thick' and dust_thickness == 'thick':
                             #at nu0, expect mix of line and dust
@@ -694,38 +707,35 @@ class TestFluxesWithPhysics():
                                 S_tot_nu0 = tau_nu0_alllines*S_line_nu0+tau_dust_nu0*S_dust_nu0
                                 S_tot_nu0 /= tau_nu0_alllines+tau_dust_nu0
                                 nu0_index = np.argmin(np.abs(nu-line.nu0))
-                                expected_spec_nu0 = S_tot_nu0*self.Omega
+                                expected_spec_nu0 = S_tot_nu0
                                 assert np.isclose(expected_spec_nu0,spec[nu0_index],
                                                   atol=0,rtol=1e-3)
                         elif line_thickness == 'thin' and dust_thickness == 'thin':
                             #expect that I can just add together the line and dust specs
-                            dust_spec = fluxcalculator.compute_flux_nu(
-                                             tau_nu=tau_dust(nu),
-                                             source_function=helpers.B_nu(nu=nu,T=self.T_dust),
-                                             solid_angle=self.Omega)
+                            dust_S = helpers.B_nu(nu=nu,T=self.T_dust)
+                            dust_spec = intensitycalculator.specific_intensity(
+                                           tau_nu=tau_dust(nu),source_function=dust_S)
                             expected_spec = dust_spec
                             S_line = helpers.B_nu(nu=nu,T=self.Tkin)
-                            for tau_line in fluxcalculator.tau_nu_lines:
-                                line_spec = fluxcalculator.compute_flux_nu(
-                                                 tau_nu=tau_line,source_function=S_line,
-                                                 solid_angle=self.Omega)
+                            for tau_line in intensitycalculator.tau_nu_lines:
+                                line_spec = intensitycalculator.specific_intensity(
+                                                 tau_nu=tau_line,
+                                                 source_function=S_line)
                                 expected_spec += line_spec
                             assert np.allclose(spec,expected_spec,atol=0,rtol=1e-3)
                         elif line_thickness == 'thick' and dust_thickness == 'thin':
                             #expect line dominating at nu0
                             for line in lines:
                                 S_nu0 = helpers.B_nu(nu=line.nu0,T=self.Tkin)
-                                expected_spec_nu0 = S_nu0*self.Omega
                                 nu0_index = np.argmin(np.abs(nu-line.nu0))
-                                assert np.isclose(spec[nu0_index],expected_spec_nu0,
+                                assert np.isclose(spec[nu0_index],S_nu0,
                                                   atol=0,rtol=1e-3)
                         else:
                             raise RuntimeError
                         #for all cases, at the wavelength grid edges, we should only have
                         #dust emission
                         nu_edge = nu[[0,-1]]
-                        expected_dust_spec = fluxcalculator.compute_flux_nu(
+                        expected_dust_spec = intensitycalculator.specific_intensity(
                                   tau_nu=tau_dust(nu_edge),
-                                  source_function=helpers.B_nu(nu=nu_edge,T=self.T_dust),
-                                  solid_angle=self.Omega)
+                                  source_function=helpers.B_nu(nu=nu_edge,T=self.T_dust))
                         assert np.allclose(spec[[0,-1]],expected_dust_spec,atol=0,rtol=1e-3)

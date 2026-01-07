@@ -26,12 +26,6 @@ def T_dust(nu):
 def tau_dust(nu):
     return np.ones_like(nu)*0.5
 
-def check_no_dust(rate_eq):
-    nu0 = rate_eq.molecule.nu0
-    Tdust = rate_eq.T_dust(nu0)
-    taudust = rate_eq.tau_dust(nu0)
-    return np.all(Tdust==0) and np.all(taudust==0)
-
 
 class RateEqGenerator():
 
@@ -82,7 +76,7 @@ class TestGeneral():
             rate_eq = self.rate_eq_generator.generate_rate_eq(
                        treat_line_overlap=True,
                        ext_background=0,T_dust=Td,tau_dust=taud)
-            assert no_dust == rate_eq.no_dust
+            assert no_dust == rate_eq.surely_no_dust
 
     def test_nu_functions(self):
         def non_zero(nu):
@@ -163,10 +157,10 @@ class TestGeneral():
             S_dust_nu0 = helpers.B_nu(nu=self.test_molecule.nu0,
                                       T=T_dust(self.test_molecule.nu0))
             tau_dust_nu0 = tau_dust(self.test_molecule.nu0)
-            no_dust = check_no_dust(rate_eq)
             Ieff = rate_eq.Ieff_nu0(**general_kwargs,Iext_nu0=Iext_nu0,beta_nu0=beta_nu0,
                                     S_dust_nu0=S_dust_nu0,tau_dust_nu0=tau_dust_nu0,
-                                    tau_tot_nu0=tau_tot_nu0,no_dust=no_dust)
+                                    tau_tot_nu0=tau_tot_nu0,
+                                    surely_no_dust=rate_eq.surely_no_dust)
             expected_Ieff = np.zeros((self.test_molecule.n_levels,)*2)
             for t,trans in enumerate(self.test_molecule.rad_transitions):
                 iup,ilow = trans.up.index,trans.low.index
@@ -185,11 +179,10 @@ class TestGeneral():
         beta_nu0 = geometry.beta(tau_tot_nu0)
         S_dust_nu0 = np.zeros_like(tau_tot_nu0)
         tau_dust_nu0 = np.zeros_like(tau_tot_nu0)
-        no_dust = check_no_dust(rate_eq)
         Ieff = rate_eq.Ieff_nu0(
                   **general_kwargs,Iext_nu0=Iext_nu0,beta_nu0=beta_nu0,
                   S_dust_nu0=S_dust_nu0,tau_dust_nu0=tau_dust_nu0,
-                  tau_tot_nu0=tau_tot_nu0,no_dust=no_dust)
+                  tau_tot_nu0=tau_tot_nu0,surely_no_dust=rate_eq.surely_no_dust)
         expected_Ieff = np.zeros((self.test_molecule.n_levels,)*2)
         for line in rate_eq.molecule.rad_transitions:
             iup,ilow = line.up.index,line.low.index
@@ -450,14 +443,14 @@ class TestGammaR():
                 beta_nu0 = rate_eq.geometry.beta(tau_tot_nu0)
                 trans_low_index = rate_eq.molecule.ilow_rad_transitions
                 trans_up_index = rate_eq.molecule.iup_rad_transitions
-                no_dust = check_no_dust(rate_eq)
                 Ieff_nu0 = rate_eq.Ieff_nu0(
                               n_levels=n_levels,Iext_nu0=rate_eq.Iext_nu0,
                               beta_nu0=beta_nu0,S_dust_nu0=rate_eq.S_dust_nu0,
                               trans_low_index=trans_low_index,
                               trans_up_index=trans_up_index,
                               tau_dust_nu0=rate_eq.tau_dust_nu0,
-                              tau_tot_nu0=tau_tot_nu0,no_dust=no_dust)
+                              tau_tot_nu0=tau_tot_nu0,
+                              surely_no_dust=rate_eq.surely_no_dust)
                 mixed_term_nu0  = rate_eq.mixed_term_nu0(
                                      n_levels=n_levels,beta_nu0=beta_nu0,
                                      trans_low_index=trans_low_index,
@@ -514,12 +507,11 @@ def test_square_line_profile_averaging():
     n_levels = rate_eq_nu0.molecule.n_levels
     trans_low_index = rate_eq_nu0.molecule.ilow_rad_transitions
     trans_up_index = rate_eq_nu0.molecule.iup_rad_transitions
-    no_dust = check_no_dust(rate_eq_nu0)
     Ieff_nu0 = rate_eq_nu0.Ieff_nu0(
                   n_levels=n_levels,Iext_nu0=rate_eq_nu0.Iext_nu0,beta_nu0=beta_nu0,
                   S_dust_nu0=rate_eq_nu0.S_dust_nu0,trans_low_index=trans_low_index,
                   trans_up_index=trans_up_index,tau_dust_nu0=rate_eq_nu0.tau_dust_nu0,
-                  tau_tot_nu0=tau_tot_nu0,no_dust=no_dust)
+                  tau_tot_nu0=tau_tot_nu0,surely_no_dust=rate_eq_nu0.surely_no_dust)
     V_Ieff_nu0 = rate_eq_nu0.V_nu0*Ieff_nu0
     tau_tot_functions = rate_eq_avg.get_tau_tot_functions(
                                           level_population=level_pop)

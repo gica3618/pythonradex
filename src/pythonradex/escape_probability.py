@@ -22,15 +22,28 @@ class StaticSphere(EscapeProbabilityStaticSphere):
 
     '''Represents the escape probability and emerging flux from a static
     spherical medium'''    
-    
+
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def compute_flux_nu(tau_nu,source_function,solid_angle):
-        '''Computes the observed flux in [W/m2/Hz], given the optical depth
-        tau_nu, the source function in [W/m2/Hz/sr] and the solid angle in [sr].'''
+    def specific_intensity(tau_nu,source_function):
+        '''Computes the observed specific intensity in [W/m2/Hz/sr], given
+        the optical depth tau_nu and the source function in [W/m2/Hz/sr].'''
         #see old Osterbrock book for this formula, appendix 2
-        #this is the flux per surface of the emitting region
-        #for lower tau_nu, the Osterbrock formula becomes numerically unstable,
+        #the observed flux in [W/m2/Hz] is given by
+        #(flux at sphere surface)*4*pi*r**2/(4*pi*d**2) = F_surface*Omega*4/(4*pi)
+        # = F_surface*Omega/pi
+        #with Omega the solid angle of the sphere (Omega=r^2pi/d^2)
+        #to calculate the intensity, I simply divide by Omega. This gives the
+        #intensity one would measure if the source is unresolved. Of course,
+        #if the source is resolved, then for different locations on the sphere
+        #different intensities will be measured. so the intensity calculate here
+        #is some kind of mean intensity. In fact, it can be understood as the intensity
+        #that would produce the same flux if one would assume that it was independent
+        #of solid angle, i.e. flux at sphere surface = 2*pi*integral(I_nu*cos(theta)*sin(theta))dtheta,
+        #where cos(theta) is necessary to take into account surface inclination.
+        #This evaluates to pi*I_nu if I_nu is assumed to be constant
+
+        #for small tau_nu, the Osterbrock formula becomes numerically unstable,
         #so we use a Taylor expansion
         min_tau_nu = 1e-2
         stable_region = tau_nu > min_tau_nu
@@ -40,9 +53,7 @@ class StaticSphere(EscapeProbabilityStaticSphere):
                           -tau_nu**4/144) #from Wolfram Alpha
         flux_nu = np.where(stable_region,flux_nu,flux_nu_Taylor)
         assert np.all(np.isfinite(flux_nu))
-        #the observed flux is (flux at sphere surface)*4*pi*r**2/(4*pi*d**2)
-        #=F_surface*Omega*4/(4*pi)
-        return flux_nu*solid_angle/np.pi
+        return flux_nu/np.pi
 
 
 @nb.jit(nopython=True,cache=True)
@@ -58,12 +69,11 @@ class Flux1D():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def compute_flux_nu(tau_nu,source_function,solid_angle):
-        '''Computes the observed flux in [W/m2/Hz], given the optical depth
-        tau_nu, the source function in [W/m2/Hz/sr] and the solid angle of
-        the source (in [sr]) seen by the observer.'''
+    def specific_intensity(tau_nu,source_function):
+        '''Computes the observed specific intensity in [W/m2/Hz/sr], given
+        the optical depth tau_nu and the source function in [W/m2/Hz/sr].'''
         tau_factor = exp_tau_factor(tau_nu=tau_nu)
-        return source_function*tau_factor*solid_angle
+        return source_function*tau_factor
 
 
 class StaticSphereRADEX(EscapeProbabilityStaticSphere,Flux1D):
@@ -94,11 +104,11 @@ class LVGSlab(Flux1D):
 
 
 @nb.jit(nopython=True,cache=True)
-def compute_flux_nu0_lvg_sphere(tau_nu,source_function,solid_angle):
+def specific_intensity_nu0_lvg_sphere(tau_nu,source_function):
     #convenience function useful to compute brightness temperature for LVG sphere
     #in flux.py
     tau_factor = exp_tau_factor(tau_nu=tau_nu)
-    return source_function*tau_factor*solid_angle
+    return source_function*tau_factor
     
 
 class LVGSphere():
@@ -110,17 +120,16 @@ class LVGSphere():
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)
-    def compute_flux_nu(tau_nu,source_function,solid_angle,nu,nu0,V):
+    def specific_intensity(tau_nu,source_function,nu,nu0,V):
         #V is the velocity at the surface of the sphere
         #this formula can be derived by using an approach similar to
         #de Jong et al. (1975, Fig. 3)
-        flux_nu0 = compute_flux_nu0_lvg_sphere(
-                       tau_nu=tau_nu,source_function=source_function,
-                       solid_angle=solid_angle)
+        intensity_nu0 = specific_intensity_nu0_lvg_sphere(
+                                tau_nu=tau_nu,source_function=source_function)
         v = constants.c*(1-nu/nu0)
         #actually, since the line profile is always rectangular for LVG, in principle
         #there is no need to do the np.where, but it's cleaner
-        return np.where(np.abs(v)>V, 0, flux_nu0*(1-(v/V)**2))
+        return np.where(np.abs(v)>V, 0, intensity_nu0*(1-(v/V)**2))
 
 
 class LVGSphereRADEX(Flux1D):

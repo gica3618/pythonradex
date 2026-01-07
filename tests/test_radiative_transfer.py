@@ -38,18 +38,18 @@ def allowed_geo_param_combination(geometry,line_profile_type,treat_line_overlap)
         return False
     return True
 
-def iterate_all_cloud_params():
+def iterate_all_source_params():
     return itertools.product(geometries,line_profile_types,use_ng_options,
                              treat_overlap_options)
 
-def iterate_allowed_cloud_params():
-    for geo,lp,use_ng,treat_overlap in iterate_all_cloud_params():
+def iterate_allowed_source_params():
+    for geo,lp,use_ng,treat_overlap in iterate_all_source_params():
         if allowed_geo_param_combination(geometry=geo,line_profile_type=lp,
                                          treat_line_overlap=treat_overlap):
             yield geo,lp,use_ng,treat_overlap
 
-def general_cloud_iterator(specie,width_v):
-    for geo,lp,use_ng,treat_overlap in iterate_allowed_cloud_params():
+def general_source_iterator(specie,width_v):
+    for geo,lp,use_ng,treat_overlap in iterate_allowed_source_params():
         src = radiative_transfer.Source(
                               datafilepath=datafilepath[specie],geometry=geo,
                               line_profile_type=lp,width_v=width_v,
@@ -63,7 +63,7 @@ class TestInitialisation():
     def test_too_large_width_v(self):
         width_vs = np.array((1e4,1.2e4,1e5))*constants.kilo
         for width_v in width_vs:
-            for geo,lp,use_ng,treat_overlap in iterate_allowed_cloud_params():
+            for geo,lp,use_ng,treat_overlap in iterate_allowed_source_params():
                 with pytest.raises(AssertionError):
                     radiative_transfer.Source(
                                       datafilepath=datafilepath['CO'],geometry=geo,
@@ -72,7 +72,7 @@ class TestInitialisation():
                                       treat_line_overlap=treat_overlap)
 
     def test_LVG_cannot_treat_overlap(self):
-        for geo,lp,use_ng,average in iterate_allowed_cloud_params():
+        for geo,lp,use_ng,average in iterate_allowed_source_params():
             if 'LVG' in geo:
                 with pytest.raises(ValueError):
                     radiative_transfer.Source(
@@ -83,7 +83,7 @@ class TestInitialisation():
                                           treat_line_overlap=True)    
 
     def test_warning_overlapping_lines(self):
-        for geo,lp,use_ng,average in iterate_allowed_cloud_params():
+        for geo,lp,use_ng,average in iterate_allowed_source_params():
             with pytest.warns(UserWarning):
                 radiative_transfer.Source(
                                       datafilepath=datafilepath['HCl'],
@@ -189,7 +189,7 @@ class TestUpdateParameters():
                                             new_func_or_number=func,old=2.1)
 
     def test_initial_param_setting(self):
-        for source in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+        for source in general_source_iterator(specie='CO',width_v=1*constants.kilo):
             source.update_parameters(**self.standard_params)
             self.verify_cloud_params(source=source,new_params=self.standard_params,
                                      original_params=None)
@@ -203,7 +203,7 @@ class TestUpdateParameters():
                 source.update_parameters(**invalid_initial_params)
 
     def test_update_N(self):
-        for source in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+        for source in general_source_iterator(specie='CO',width_v=1*constants.kilo):
             source.update_parameters(**self.standard_params)
             changed_values = [None,self.standard_params['N'],
                               self.standard_params['N']/2.12]
@@ -216,7 +216,7 @@ class TestUpdateParameters():
                                          original_params=original_params)
 
     def test_update_Tkin_colldens(self):
-        for source in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+        for source in general_source_iterator(specie='CO',width_v=1*constants.kilo):
             source.update_parameters(**self.standard_params)
             changed_Tkin = [None,self.standard_params['Tkin'],12.3]
             changed_coll_dens = [None,self.standard_params['collider_densities'],
@@ -232,7 +232,7 @@ class TestUpdateParameters():
                                          original_params=original_params)
 
     def test_update_ext_background(self):
-        for source in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+        for source in general_source_iterator(specie='CO',width_v=1*constants.kilo):
             source.update_parameters(**self.standard_params)
             changed_ext_bgs = [None,self.standard_params['ext_background'],
                                lambda nu: nu*2.234,helpers.generate_CMB_background(z=2)]
@@ -245,7 +245,7 @@ class TestUpdateParameters():
                                          original_params=original_params)
 
     def test_update_dust(self):
-        for source in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+        for source in general_source_iterator(specie='CO',width_v=1*constants.kilo):
             if 'LVG' in source.geometry_name:
                 continue
             def some_func(nu):
@@ -265,7 +265,7 @@ class TestUpdateParameters():
                                          original_params=original_params)
 
     def test_update_several_parameters(self):
-        for source in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+        for source in general_source_iterator(specie='CO',width_v=1*constants.kilo):
             source.update_parameters(**self.standard_params)
             self.verify_cloud_params(source=source,new_params=self.standard_params,
                                      original_params=None)
@@ -286,7 +286,7 @@ class TestUpdateParameters():
                                      original_params=old_params)
 
     def test_None_parameters(self):
-        for source in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+        for source in general_source_iterator(specie='CO',width_v=1*constants.kilo):
             old_params = {'ext_background':cmb,
                           'Tkin':201,'collider_densities':{'para-H2':1},
                           'N':2e12,'T_dust':lambda nu: np.ones_like(nu)*145,
@@ -409,13 +409,226 @@ def test_compute_residual():
                                           min_tau=min_tau)\
             == expected_residual
 
+def test_intensity_transformation():
+    nu = np.linspace(100,101,10)*constants.giga
+    T = 123.234
+    specific_intensity_Planck = 2*constants.h*nu**3/constants.c**2\
+                       *(np.exp(constants.h*nu/(constants.k*T))-1)**-1
+    specific_intensity_RJ = 2*nu**2*constants.k*T/constants.c**2
+    with pytest.raises(ValueError):
+        radiative_transfer.Source.transform_specific_intensity(
+                   specific_intensity=specific_intensity_Planck,
+                   nu=nu,solid_angle=None,output_type="flux density")
+    for output_type in ("Rayleigh-Jeans","Planck"):
+        with pytest.warns(UserWarning):
+            radiative_transfer.Source.transform_specific_intensity(
+                       specific_intensity=specific_intensity_Planck,nu=nu,
+                       solid_angle=1,output_type=output_type)
+    with pytest.raises(ValueError):
+        radiative_transfer.Source.transform_specific_intensity(
+                   specific_intensity=specific_intensity_Planck,nu=nu,
+                   solid_angle=None,output_type="test123")
+    T_RJ = radiative_transfer.Source.transform_specific_intensity(
+               specific_intensity=specific_intensity_RJ,nu=nu,solid_angle=None,
+               output_type="Rayleigh-Jeans")
+    T_Planck= radiative_transfer.Source.transform_specific_intensity(
+               specific_intensity=specific_intensity_Planck,nu=nu,solid_angle=None,
+               output_type="Planck")
+    for brightness_T in (T_RJ,T_Planck):
+        assert np.allclose(brightness_T,T,atol=0,rtol=1e-8)
+
+def CO_HCl_model_iterator():
+    use_Ng_acceleration = True
+    treat_line_overlap = False
+    for specie in ("CO","HCl"):
+        for T_dust,tau_dust in zip((0,12),(0,0.5)):
+            for geo,lp in itertools.product(geometries,line_profile_types):
+                if not allowed_geo_param_combination(
+                           geometry=geo,line_profile_type=lp,
+                           treat_line_overlap=treat_line_overlap):
+                    continue
+                source = radiative_transfer.Source(
+                                      datafilepath=datafilepath[specie],geometry=geo,
+                                      line_profile_type=lp,width_v=20*constants.kilo,
+                                      use_Ng_acceleration=use_Ng_acceleration,
+                                      treat_line_overlap=treat_line_overlap)
+                if T_dust != 0 and "LVG" in source.geometry_name:
+                    continue
+                if specie == "HCl":
+                    assert source.emitting_molecule.has_overlapping_lines
+                source.update_parameters(N=1e15/constants.centi**2,Tkin=123,
+                                         collider_densities={"para-H2":1e5/constants.centi**3},
+                                         ext_background=cmb,T_dust=T_dust,
+                                         tau_dust=tau_dust)
+                source.solve_radiative_transfer()
+                yield source
+
+spec_output_types = ("specific intensity","flux density","Rayleigh-Jeans","Planck")
+
+@pytest.mark.filterwarnings("ignore:some lines are overlapping")
+@pytest.mark.filterwarnings("ignore:negative optical depth")
+@pytest.mark.filterwarnings("ignore:LVG sphere geometry")
+def test_emission_at_line_center():
+    for source in CO_HCl_model_iterator():
+        for transitions in (None,[0,2],[1,]):
+            if transitions is None:
+                nu0s = source.emitting_molecule.nu0
+            else:
+                nu0s =  np.array([source.emitting_molecule.rad_transitions[i].nu0
+                                  for i in transitions])
+            for output_type in spec_output_types:
+                solid_angle = 0.23 if output_type=="flux density" else None
+                emission = source.emission_at_line_center(
+                               output_type=output_type,transitions=transitions,
+                               solid_angle=solid_angle)
+                expected_emission = source.spectrum(
+                                      nu=nu0s,output_type=output_type,
+                                      solid_angle=solid_angle)
+                assert np.allclose(emission,expected_emission,atol=0,rtol=1e-3)
+
+@pytest.mark.filterwarnings("ignore:some lines are overlapping")
+@pytest.mark.filterwarnings("ignore:negative optical depth")
+@pytest.mark.filterwarnings("ignore:LVG sphere geometry")
+def test_spectrum():
+    for source in CO_HCl_model_iterator():
+        transition = source.emitting_molecule.rad_transitions[2]
+        v = np.linspace(-40,40,50)
+        nu0 = transition.nu0
+        nu = nu0*(1-v/constants.c)
+        specific_intensity = source.spectrum(
+                                  nu=nu, output_type="specific intensity")
+        for output_type in spec_output_types:
+            solid_angle = 1 if output_type=="flux density" else None
+            spec = source.spectrum(nu=nu,output_type=output_type,
+                                   solid_angle=solid_angle)
+            if output_type == "specific intensity":
+                pass
+            elif output_type == "Rayleigh-Jeans":
+                spec = spec*2*nu**2*constants.k/constants.c**2
+            elif output_type == "Planck":
+                spec = 2*constants.h*nu**3/constants.c**2\
+                                 *(np.exp(constants.h*nu/(constants.k*spec))-1)**-1
+            elif output_type == "flux density":
+                spec = spec/solid_angle
+            assert np.allclose(spec,specific_intensity,atol=0,rtol=1e-6)
+
+
+class TestSpectrumPhysics():
+
+    N_thick = 1e20*constants.centi**-2
+    N_regular = 1e15*constants.centi**-2
+    N_thin = 1e12*constants.centi**-2
+    Tkin = 123
+    collider_densities = {"ortho-H2":1e5*constants.centi**-3,
+                          "para-H2":1e5*constants.centi**-3}
+    specie = "CO"
+    width_v = 1*constants.kilo
+    T_dust = 45
+    tau_dust_thick = 50
+    general_params = {"N":1e14*constants.centi**-2,"Tkin":101,
+                      "collider_densities":{"ortho-H2":1e5*constants.centi**-3},
+                      "ext_background":cmb,"T_dust":0,"tau_dust":0}
+    general_params_dust = {"N":1e14*constants.centi**-2,"Tkin":101,
+                           "collider_densities":{"ortho-H2":1e5*constants.centi**-3},
+                           "ext_background":cmb,
+                           "T_dust":lambda nu: np.ones_like(nu)*78,
+                           "tau_dust":lambda nu: np.ones_like(nu)*1.2}
+
+    def test_thick(self):
+        for source in general_source_iterator(specie=self.specie,width_v=self.width_v):
+            #thick lines:
+            source.update_parameters(
+                  N=self.N_thick,Tkin=self.Tkin,
+                  collider_densities=self.collider_densities,
+                  ext_background=cmb,T_dust=0,tau_dust=0)
+            source.solve_radiative_transfer()
+            thick = source.tau_nu0_individual_transitions > 20
+            assert np.any(thick)
+            T_Planck = source.emission_at_line_center(output_type="Planck")
+            assert np.allclose(T_Planck[thick],source.Tex[thick],atol=0,rtol=1e-2)
+            nu = source.emitting_molecule.nu0[thick]
+            T_Planck_spec = source.spectrum(nu=nu,output_type="Planck")
+            assert np.allclose(T_Planck_spec,source.Tex[thick],atol=0,rtol=1e-2)
+            #thick dust:
+            if "LVG" not in source.geometry_name:
+                source.update_parameters(
+                      N=self.N_thin,Tkin=self.Tkin,
+                      collider_densities=self.collider_densities,
+                      ext_background=cmb,T_dust=self.T_dust,tau_dust=self.tau_dust_thick)
+                source.solve_radiative_transfer()
+                T_Planck = source.emission_at_line_center(output_type="Planck")
+                assert np.allclose(T_Planck,self.T_dust,atol=0,rtol=1e-3)
+                T_Planck_spec = source.spectrum(nu=source.emitting_molecule.nu0,
+                                                output_type="Planck")
+                assert np.allclose(T_Planck_spec,self.T_dust,atol=0,rtol=1e-3)
+
+    def test_RJ_Planck_consistency(self):
+        for source in general_source_iterator(specie=self.specie,width_v=self.width_v):
+            for T_dust,tau_dust in zip((0,45),(0,1.2)):
+                if "LVG" in source.geometry_name and T_dust > 0:
+                    continue
+                source.update_parameters(
+                      N=self.N_thick,Tkin=self.Tkin,
+                      collider_densities=self.collider_densities,
+                      ext_background=cmb,T_dust=T_dust,tau_dust=tau_dust)
+                source.solve_radiative_transfer()
+                T_Planck = source.emission_at_line_center(output_type="Planck")
+                T_Planck_spec = source.spectrum(nu=source.emitting_molecule.nu0,
+                                                output_type="Planck")
+                T_RJ = source.emission_at_line_center(output_type="Rayleigh-Jeans")
+                T_RJ_spec = source.spectrum(nu=source.emitting_molecule.nu0,
+                                            output_type="Rayleigh-Jeans")
+                for Planck,RJ in zip((T_Planck,T_Planck_spec),(T_RJ,T_RJ_spec)):
+                    intensity_from_T_Planck = helpers.B_nu(T=Planck,nu=source.emitting_molecule.nu0)
+                    T_RJ_from_intensity = helpers.RJ_brightness_temperature(
+                                     specific_intensity=intensity_from_T_Planck,
+                                     nu=source.emitting_molecule.nu0)
+                    assert np.allclose(RJ,T_RJ_from_intensity,atol=0,rtol=1e-5)
+
+    def test_explicitly(self):
+        #calculate brightness temperature explicitly from Tex and tau_nu for a simple
+        #case (no overlap)
+        for source in general_source_iterator(specie=self.specie,width_v=self.width_v):
+            for T_dust,tau_dust in zip((0,45,lambda nu: np.ones_like(nu)*87),
+                                       (0,1.2,lambda nu:np.ones_like(nu)*0.36)):
+                if "LVG" in source.geometry_name and T_dust != 0:
+                    continue
+                source.update_parameters(
+                      N=self.N_regular,Tkin=self.Tkin,
+                      collider_densities=self.collider_densities,
+                      ext_background=cmb,T_dust=T_dust,tau_dust=tau_dust)
+                source.solve_radiative_transfer()
+                T_Planck = source.emission_at_line_center(output_type="Planck")
+                T_Planck_spec = source.spectrum(nu=source.emitting_molecule.nu0,
+                                                output_type="Planck")
+                T_RJ = source.emission_at_line_center(output_type="Rayleigh-Jeans")
+                T_RJ_spec = source.spectrum(nu=source.emitting_molecule.nu0,
+                                                output_type="Rayleigh-Jeans")
+                nu = source.emitting_molecule.nu0
+                tau_d = source.rate_equations.tau_dust(nu)
+                T_d = source.rate_equations.T_dust(nu)
+                tau_tot = tau_d+source.tau_nu0_individual_transitions
+                S = tau_d*helpers.B_nu(nu=nu,T=T_d)\
+                     +source.tau_nu0_individual_transitions*helpers.B_nu(nu=nu,T=source.Tex)
+                S /= tau_tot
+                intensity_kwargs = {"tau_nu":tau_tot,"source_function":S}
+                if source.geometry_name == "LVG sphere":
+                    specific_intensity = escape_probability.specific_intensity_nu0_lvg_sphere(
+                                      **intensity_kwargs)
+                else:
+                    specific_intensity = source.geometry.specific_intensity(**intensity_kwargs)
+                T_Planck_expected = helpers.Planck_brightness_temperature(
+                                     specific_intensity=specific_intensity,nu=nu)
+                T_RJ_expected = helpers.RJ_brightness_temperature(
+                                            specific_intensity=specific_intensity, nu=nu)
+                for P in (T_Planck,T_Planck_spec):
+                    assert np.allclose(P,T_Planck_expected,atol=0,rtol=1e-4)
+                for RJ in (T_RJ,T_RJ_spec):
+                    assert np.allclose(RJ,T_RJ_expected,atol=0,rtol=1e-4)
+
 
 class TestModelGrid():
 
-    source = radiative_transfer.Source(
-                          datafilepath=datafilepath['CO'],geometry='static sphere',
-                          line_profile_type='rectangular',width_v=1.4*constants.kilo,
-                          use_Ng_acceleration=True,treat_line_overlap=False)
     ext_backgrounds = {'CMB':helpers.generate_CMB_background(z=2),
                        'zero':0}
     N_values = np.array((1e14,1e16))/constants.centi**2
@@ -429,112 +642,88 @@ class TestModelGrid():
     grid_kwargs_with_dust['T_dust'] = lambda nu: np.ones_like(nu)*111
     #make dust optically thin to allow computation of individual line fluxes
     grid_kwargs_with_dust['tau_dust'] = lambda nu: np.ones_like(nu)*0.05
-    requested_output = ['level_pop','Tex','tau_nu0_individual_transitions',
-                        'fluxes_of_individual_transitions','tau_nu','spectrum']
-    transitions = [3,4]
-    solid_angle = 1
-    nu = np.linspace(115.27,115.28,10)*constants.giga
-    
-    def test_wrong_requested_output(self):
-        wrong_requested_output = ['Tex','levelpop']
-        with pytest.raises(AssertionError):
-            for model in self.source.model_grid(**self.grid_kwargs_no_dust,
-                                               requested_output=wrong_requested_output):
-                pass
 
-    def test_insufficient_input(self):
-        #test that errors are thrown if solid_angle or nu are not provided
-        for request in ('fluxes_of_individual_transitions','spectrum'):
-            with pytest.raises(AssertionError): 
-                for model in self.source.model_grid(
-                                **self.grid_kwargs_no_dust,requested_output=[request,],
-                                nu=self.nu):
-                    pass
-        for request in ('tau_nu','spectrum'):
-            with pytest.raises(AssertionError):
-                for model in self.source.model_grid(
-                                **self.grid_kwargs_no_dust,requested_output=[request,],
-                                solid_angle=self.solid_angle):
-                    pass
+    @staticmethod
+    def generate_source():
+        source = radiative_transfer.Source(
+                              datafilepath=datafilepath['CO'],geometry='static sphere',
+                              line_profile_type='rectangular',width_v=1.4*constants.kilo,
+                              use_Ng_acceleration=True,treat_line_overlap=False)
+        return source
 
-    def tests_invalid_coll_densities(self):
+    def test_invalid_coll_densities(self):
         invalid_coll_densities = [{'ortho-H2':[1,2],'para-H2':[1,]},
                                   {'ortho-H2':[1,],'para-H2':[1,2]},
                                   {'ortho-H2':[1,2],'para-H2':[1,3,4,5,5]},]
+        source = self.generate_source()
         for coll_densities in invalid_coll_densities:
             grid_kwargs = self.grid_kwargs_no_dust.copy()
             grid_kwargs['collider_densities_values'] = coll_densities
             with pytest.raises(AssertionError):
-                grid = self.source.model_grid(
-                                **grid_kwargs,requested_output=self.requested_output,
-                                solid_angle=self.solid_angle)
+                grid = source.efficient_parameter_iterator(**grid_kwargs)
                 list(grid)
+
+    def test_grid(self):
+        source = self.generate_source()
+        nu = source.emitting_molecule.nu0
+        for grid_kwargs in (self.grid_kwargs_no_dust,self.grid_kwargs_with_dust):
+            for params in source.efficient_parameter_iterator(**grid_kwargs):
+                if "T_dust" in grid_kwargs:
+                    expected_T_dust = grid_kwargs["T_dust"](nu)
+                else:
+                    expected_T_dust = np.zeros_like(nu)
+                assert np.all(source.rate_equations.T_dust(nu)==
+                              expected_T_dust)
+                if "tau_dust" in grid_kwargs:
+                    expected_tau_dust = grid_kwargs["tau_dust"](nu)
+                else:
+                    expected_tau_dust = np.zeros_like(nu)
+                assert np.all(source.rate_equations.tau_dust(nu)==
+                              expected_tau_dust)
+                ext_background_name = params["ext_background"]
+                if ext_background_name == "zero":
+                    expected_background = np.zeros_like(nu)
+                else:
+                    expected_background = grid_kwargs["ext_backgrounds"][ext_background_name](nu)
+                assert np.all(source.rate_equations.ext_background(nu)==expected_background)
+                assert source.rate_equations.N == params["N"]
+                assert source.rate_equations.Tkin == params["Tkin"]
+                assert source.rate_equations.collider_densities\
+                                               == params["collider_densities"]
 
     @pytest.mark.filterwarnings("ignore:negative optical depth")
     @pytest.mark.filterwarnings("ignore:invalid value encountered")
-    def test_grid(self):
+    def test_grid_explicitly(self):
+        source = self.generate_source()
+        v = np.linspace(-source.emitting_molecule.width_v,source.emitting_molecule.width_v,10)
+        nu = source.emitting_molecule.nu0[1]*(1-v/constants.c)
         for grid_kwargs in (self.grid_kwargs_no_dust,self.grid_kwargs_with_dust):
-            iterator = self.source.model_grid(
-                            **grid_kwargs,requested_output=self.requested_output,
-                            solid_angle=self.solid_angle,transitions=self.transitions,
-                            nu=self.nu)
-            models = [m for m in iterator]
-            n_check_models = 0
-            for backgroundID,ext_background in self.ext_backgrounds.items():
-                for N in self.N_values:
-                    for Tkin in self.Tkin_values:
-                        for n_ortho,n_para in zip(self.collider_densities_values['ortho-H2'],
-                                                  self.collider_densities_values['para-H2']):
-                            collider_densities = {'ortho-H2':n_ortho,'para-H2':n_para}
-                            update_kwargs = {'ext_background':ext_background,'N':N,
-                                             'Tkin':Tkin,
-                                             'collider_densities':collider_densities}
-                            if 'T_dust' in grid_kwargs:
-                                update_kwargs['T_dust'] = grid_kwargs['T_dust']
-                                update_kwargs['tau_dust'] = grid_kwargs['tau_dust']
-                            self.source.update_parameters(**update_kwargs)
-                            self.source.solve_radiative_transfer()
-                            fluxes = self.source.fluxes_of_individual_transitions(
-                                                 solid_angle=self.solid_angle,
-                                                 transitions=self.transitions)
-                            tau_nu = self.source.tau_nu(nu=self.nu)
-                            spectrum = self.source.spectrum(
-                                                solid_angle=self.solid_angle,nu=self.nu)
-                            matching_models = [m for m in models if
-                                               m['ext_background']==backgroundID
-                                               and m['N']==N and m['Tkin']==Tkin
-                                               and m['collider_densities']==collider_densities]
-                            assert len(matching_models) == 1
-                            matching_model = matching_models[0]
-                            assert np.all(matching_model['level_pop'] == self.source.level_pop)
-                            assert np.all(matching_model['Tex']
-                                          == self.source.Tex[self.transitions])
-                            assert np.all(matching_model['tau_nu0_individual_transitions']
-                                          == self.source.tau_nu0_individual_transitions[self.transitions])
-                            assert np.all(matching_model['fluxes_of_individual_transitions']
-                                          == fluxes)
-                            assert np.all(matching_model['tau_nu'] == tau_nu)
-                            assert np.all(matching_model['spectrum']==spectrum)
-                            n_check_models += 1
-            assert n_check_models == len(models)
-
-    def test_error_handling(self):
-        requested_output = ['level_pop','Tex','tau_nu0_individual_transitions']
-        kwargs = {'ext_backgrounds':{'zero':0},'N_values':[np.nan,],'Tkin_values':[120,],
-                  'collider_densities_values':{coll:[200,] for  coll in
-                                               ('para-H2','ortho-H2')}}
-        grid_with_failing_models = self.source.model_grid(
-                                       **kwargs,requested_output=requested_output)
-        for model in grid_with_failing_models:
-            for rout in requested_output:
-                assert model[rout] is None
-
-    def test_brightness_temp(self):
-        raise NotImplementedError("need to implemente brightness temp support")
+            for params in source.efficient_parameter_iterator(**grid_kwargs):
+                source.solve_radiative_transfer()
+                check_source = self.generate_source()
+                T_dust = grid_kwargs["T_dust"] if "T_dust" in grid_kwargs else 0
+                tau_dust = grid_kwargs["tau_dust"] if "tau_dust" in grid_kwargs\
+                               else 0
+                check_source.update_parameters(
+                          N=params["N"],Tkin=params["Tkin"],
+                          collider_densities=params["collider_densities"],
+                          ext_background=grid_kwargs["ext_backgrounds"][params["ext_background"]],
+                          T_dust=T_dust,tau_dust=tau_dust)
+                check_source.solve_radiative_transfer()
+                assert np.all(source.Tex==check_source.Tex)
+                assert np.all(source.level_pop==check_source.level_pop)
+                assert np.all(source.tau_nu0_individual_transitions
+                              ==check_source.tau_nu0_individual_transitions)
+                assert np.all(source.frequency_integrated_emission_of_individual_transitions(output_type="intensity")
+                              ==check_source.frequency_integrated_emission_of_individual_transitions(output_type="intensity"))
+                assert np.all(source.spectrum(nu=nu,output_type="Planck")==
+                              check_source.spectrum(nu=nu,output_type="Planck"))
+                assert np.all(source.emission_at_line_center(output_type="Rayleigh-Jeans")
+                              ==check_source.emission_at_line_center(output_type="Rayleigh-Jeans"))
 
 
 def test_print_results():
-    for source in general_cloud_iterator(specie='CO',width_v=1*constants.kilo):
+    for source in general_source_iterator(specie='CO',width_v=1*constants.kilo):
         source.update_parameters(ext_background=helpers.generate_CMB_background(),
                                 N=1e14/constants.centi**2,Tkin=33.33,
                                 collider_densities={'ortho-H2':1e3/constants.centi**3},
@@ -567,7 +756,7 @@ class TestPhysics():
 
     def cloud_iterator(self):
         for specie,width_v in zip(('CO','HCl'),(1*constants.kilo,20*constants.kilo)):
-            for source in general_cloud_iterator(specie=specie,width_v=width_v):
+            for source in general_source_iterator(specie=specie,width_v=width_v):
                 if specie == 'HCl':
                     assert source.emitting_molecule.has_overlapping_lines
                 yield source
@@ -651,7 +840,7 @@ def test_single_transition_molecule():
     T_dust_values = [0,50,lambda nu: np.ones_like(nu)*451]
     tau_dust_values = [0,0.01,12,lambda nu: np.ones_like(nu)*2.3]
     width_v = 1*constants.kilo
-    for source in general_cloud_iterator(specie='C+',width_v=width_v):
+    for source in general_source_iterator(specie='C+',width_v=width_v):
         for ext_background in ext_background_values:
             for T_dust,tau_dust in zip(T_dust_values,tau_dust_values):
                 if 'LVG' in source.geometry_name and T_dust != 0:
@@ -663,154 +852,78 @@ def test_single_transition_molecule():
                 source.solve_radiative_transfer()
                 nu0 = source.emitting_molecule.nu0[0]
                 if source.rate_equations.tau_dust(nu0) < 0.1:
-                    source.fluxes_of_individual_transitions(
-                             solid_angle=solid_angle,transitions=transitions)
+                    source.frequency_integrated_emission_of_individual_transitions(
+                             output_type="intensity",transitions=transitions)
                 v = np.linspace(-2*width_v,2*width_v,10)
                 nu = nu0*(1-v/constants.c)
                 source.tau_nu(nu=nu)
-                source.spectrum(solid_angle=solid_angle,nu=nu)
+                source.spectrum(output_type="flux density",solid_angle=solid_angle,nu=nu)
                 source.print_results()
 
 
-class TestBrightnessTemp():
+class TestFrequencyIntegratedEmission():
 
-    N_thick = 1e20*constants.centi**-2
-    N_regular = 1e15*constants.centi**-2
-    N_thin = 1e12*constants.centi**-2
-    Tkin = 123
-    collider_densities = {"ortho-H2":1e5*constants.centi**-3,
-                          "para-H2":1e5*constants.centi**-3}
-    specie = "CO"
-    width_v = 1*constants.kilo
-    T_dust = 45
-    tau_dust_thick = 50
-    general_params = {"N":1e14*constants.centi**-2,"Tkin":101,
-                      "collider_densities":{"ortho-H2":1e5*constants.centi**-3},
-                      "ext_background":cmb,"T_dust":0,"tau_dust":0}
-    general_params_dust = {"N":1e14*constants.centi**-2,"Tkin":101,
-                           "collider_densities":{"ortho-H2":1e5*constants.centi**-3},
-                           "ext_background":cmb,
-                           "T_dust":lambda nu: np.ones_like(nu)*78,
-                           "tau_dust":lambda nu: np.ones_like(nu)*1.2}
-
-    def test_invalid_temp_type(self):
-        source = get_general_test_source(specie=self.specie, width_v=self.width_v)
-        source.update_parameters(**self.general_params)
+    @staticmethod
+    def generate_and_solve_source(geometry,N,line_profile_type):
+        source = radiative_transfer.Source(
+                              datafilepath=datafilepath["CO"],geometry=geometry,
+                              line_profile_type=line_profile_type,width_v=1*constants.kilo)
+        source.update_parameters(N=N,Tkin=123,
+                                 collider_densities={"ortho-H2":1e6*constants.centi**-3},
+                                 ext_background=helpers.generate_CMB_background(),
+                                 T_dust=0,tau_dust=0)
         source.solve_radiative_transfer()
-        for temp_type in ("Planckd","Rayleigh-Jeanss",""):
-            with pytest.raises(ValueError):
-                source.brightness_temperature_nu0(temperature_type=temp_type)
+        return source
 
-    def test_None_transitions(self):
-        source = get_general_test_source(specie=self.specie, width_v=self.width_v)
-        source.update_parameters(**self.general_params)
-        source.solve_radiative_transfer()
-        for temp_type in ("Planck","Rayleigh-Jeans"):
-            T_None = source.brightness_temperature_nu0(temperature_type=temp_type,
-                                                       transitions=None)
-            T_default = source.brightness_temperature_nu0(temperature_type=temp_type,
-                                                       transitions=None)
-            T_explicit = source.brightness_temperature_nu0(
-                        temperature_type=temp_type,
-                        transitions=list(range(source.emitting_molecule.n_rad_transitions)))
-            assert np.all(T_None==T_explicit)
-            assert np.all(T_default==T_explicit)
+    def test_wrong_input(self):
+        source = self.generate_and_solve_source(
+                                      geometry="static sphere",
+                                      N=1e12/constants.centi**-2,
+                                      line_profile_type="Gaussian")
+        with pytest.raises(ValueError):
+            source.frequency_integrated_emission_of_individual_transitions(
+                        output_type="flux")
+        with pytest.raises(ValueError):
+            source.frequency_integrated_emission_of_individual_transitions(
+                            output_type="flux",solid_angle=None)
+        with pytest.raises(ValueError):
+            source.frequency_integrated_emission_of_individual_transitions(
+                            output_type="asdf")
 
-    def test_brightness_temp_nu0_thick(self):
-        for source in general_cloud_iterator(specie=self.specie,width_v=self.width_v):
-            #thick lines:
-            source.update_parameters(
-                  N=self.N_thick,Tkin=self.Tkin,
-                  collider_densities=self.collider_densities,
-                  ext_background=cmb,T_dust=0,tau_dust=0)
-            source.solve_radiative_transfer()
-            thick = source.tau_nu0_individual_transitions > 20
-            assert np.any(thick)
-            T_Planck = source.brightness_temperature_nu0(temperature_type="Planck")
-            assert np.allclose(T_Planck[thick],source.Tex[thick],atol=0,rtol=1e-2)
-            #thick dust:
-            if "LVG" not in source.geometry_name:
-                source.update_parameters(
-                      N=self.N_thin,Tkin=self.Tkin,
-                      collider_densities=self.collider_densities,
-                      ext_background=cmb,T_dust=self.T_dust,tau_dust=self.tau_dust_thick)
-                source.solve_radiative_transfer()
-                T_Planck = source.brightness_temperature_nu0(temperature_type="Planck")
-                assert np.allclose(T_Planck,self.T_dust,atol=0,rtol=1e-3)
-
-    def test_RJ_Planck_consistency(self):
-        for source in general_cloud_iterator(specie=self.specie,width_v=self.width_v):
-            for T_dust,tau_dust in zip((0,45),(0,1.2)):
-                if "LVG" in source.geometry_name and T_dust > 0:
-                    continue
-                source.update_parameters(
-                      N=self.N_thick,Tkin=self.Tkin,
-                      collider_densities=self.collider_densities,
-                      ext_background=cmb,T_dust=T_dust,tau_dust=tau_dust)
-                source.solve_radiative_transfer()
-                T_Planck = source.brightness_temperature_nu0(temperature_type="Planck")
-                intensity_from_T_Planck = helpers.B_nu(T=T_Planck,nu=source.emitting_molecule.nu0)
-                T_RJ = source.brightness_temperature_nu0(temperature_type="Rayleigh-Jeans")
-                T_RJ_from_intensity = helpers.RJ_brightness_temperature(
-                                     intensity=intensity_from_T_Planck,
-                                     nu=source.emitting_molecule.nu0)
-                assert np.allclose(T_RJ,T_RJ_from_intensity,atol=0,rtol=1e-5)
-
-    def test_explicitly(self):
-        #calculate brightness temperature explicitly from Tex and tau_nu for a simple
-        #case (no overlap)
-        for source in general_cloud_iterator(specie=self.specie,width_v=self.width_v):
-            for T_dust,tau_dust in zip((0,45,lambda nu: np.ones_like(nu)*87),
-                                       (0,1.2,lambda nu:np.ones_like(nu)*0.36)):
-                if "LVG" in source.geometry_name and T_dust > 0:
-                    continue
-                source.update_parameters(
-                      N=self.N_regular,Tkin=self.Tkin,
-                      collider_densities=self.collider_densities,
-                      ext_background=cmb,T_dust=T_dust,tau_dust=tau_dust)
-                source.solve_radiative_transfer()
-                T_Planck = source.brightness_temperature_nu0(temperature_type="Planck")
-                T_RJ = source.brightness_temperature_nu0(temperature_type="Rayleigh-Jeans")
-                nu = source.emitting_molecule.nu0
-                tau_tot = tau_dust+source.tau_nu0_individual_transitions
-                S = tau_dust*helpers.B_nu(nu=nu,T=T_dust)\
-                     +source.tau_nu0_individual_transitions*helpers.B_nu(nu=nu,T=source.Tex)
-                S /= tau_tot
-                Omega = 0.8
-                flux_kwargs = {"tau_nu":tau_tot,"source_function":S,
-                               "solid_angle":Omega}
-                if source.geometry_name == "LVG sphere":
-                    intensity = escape_probability.compute_flux_nu0_lvg_sphere(
-                                      **flux_kwargs)/Omega
-                else:
-                    intensity = source.geometry.compute_flux_nu(**flux_kwargs)/Omega
-                T_Planck_expected = helpers.Planck_brightness_temperature(
-                                     intensity=intensity,nu=nu)
-                T_RJ_expected = helpers.RJ_brightness_temperature(
-                                            intensity=intensity, nu=nu)
-                assert np.allclose(T_Planck,T_Planck_expected,atol=0,rtol=1e-4)
-                assert np.allclose(T_RJ,T_RJ_expected,atol=0,rtol=1e-4)
-
-    @pytest.mark.filterwarnings(r"ignore:LVG sphere geometry")
-    @pytest.mark.filterwarnings("ignore:some lines are overlapping")
-    def test_brightness_temp_nu0_spec_consistency(self):
-        #here I should also test overlapping lines
-        for specie in ("CO","HCl"):
-            for source in general_cloud_iterator(specie=specie,width_v=10*constants.kilo):
-                if specie == "HCl":
-                    assert source.emitting_molecule.has_overlapping_lines
-                for params in (self.general_params,self.general_params_dust):
-                    if "LVG" in source.geometry_name and params["T_dust"] > 0:
-                        continue
-                    source.update_parameters(**params)
-                    source.solve_radiative_transfer()
-                    for temp_type in ("Planck","Rayleigh-Jeans"):
-                        nu = source.emitting_molecule.nu0
-                        spec_T = source.brightness_temperature_spectrum(
-                                                    nu=nu,temperature_type=temp_type)
-                        nu0_T = source.brightness_temperature_nu0(
-                                         temperature_type=temp_type)
-                        assert np.allclose(spec_T,nu0_T,atol=0,rtol=1e-4)
-
-    def test_brightness_temp_spectrum(self):
-        raise NotImplementedError
+    def test_with_physics_thin(self):
+        N = 1e12/constants.centi**2
+        for line_profile in ("Gaussian","rectangular"):
+            source = self.generate_and_solve_source(
+                                          geometry="static sphere",N=N,
+                                          line_profile_type=line_profile)
+            distance = 1*constants.parsec
+            sphere_radius = 1*constants.au
+            sphere_volume = 4/3*sphere_radius**3*np.pi
+            sphere_Omega = sphere_radius**2*np.pi/distance**2
+            number_density = N/(2*sphere_radius)
+            total_mol = number_density*sphere_volume
+            expected_flux = []
+            for i,line in enumerate(source.emitting_molecule.rad_transitions):
+                up_level_pop = source.level_pop[line.up.index]
+                f = total_mol*up_level_pop*line.A21*line.Delta_E\
+                       /(4*np.pi*distance**2)
+                expected_flux.append(f)
+            fluxes = source.frequency_integrated_emission_of_individual_transitions(
+                              output_type="flux",solid_angle=sphere_Omega)
+            assert np.allclose(fluxes,expected_flux,atol=0,rtol=1e-2)
+        
+    def test_with_physics_thick(self):
+        N = 1e19*constants.centi**-2
+        source = self.generate_and_solve_source(
+                                      geometry="static slab",N=N,
+                                      line_profile_type="rectangular")
+        thick = source.tau_nu0_individual_transitions > 10
+        assert np.any(thick)
+        for i,line in enumerate(source.emitting_molecule.rad_transitions):
+            if not thick[i]:
+                continue
+            expected_specific_intensity = helpers.B_nu(nu=line.nu0,T=source.Tex[i])
+            expected_intensity = expected_specific_intensity*line.line_profile.width_nu
+            intensity = source.frequency_integrated_emission_of_individual_transitions(
+                             output_type="intensity",transitions=[i,])
+            assert np.isclose(intensity,expected_intensity,atol=0,rtol=1e-3)

@@ -51,19 +51,19 @@ assert geometry != "LVG sphere" and geometry_radex != "LVG sphere"
 assert geometry != "uniform slab"
 
 
-cloud = radiative_transfer.Cloud(datafilepath=datafilepath,geometry=geometry,
-                                 line_profile_type=line_profile_type,
-                                 width_v=width_v)
+source = radiative_transfer.Source(datafilepath=datafilepath,geometry=geometry,
+                                   line_profile_type=line_profile_type,
+                                   width_v=width_v)
 def compute_pythonradex_model(N,Tkin,coll_partner_densities):
-    cloud.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
-                            collider_densities=coll_partner_densities,
-                            T_dust=0,tau_dust=0)
-    cloud.solve_radiative_transfer()
-    pop_up = [cloud.level_pop[t.up.number] for t in
-              cloud.emitting_molecule.rad_transitions]
-    pop_low = [cloud.level_pop[t.low.number] for t in
-               cloud.emitting_molecule.rad_transitions]
-    return cloud.Tex,pop_up,pop_low
+    source.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
+                             collider_densities=coll_partner_densities,
+                             T_dust=0,tau_dust=0)
+    source.solve_radiative_transfer()
+    pop_up = [source.level_pop[t.up.number] for t in
+              source.emitting_molecule.rad_transitions]
+    pop_low = [source.level_pop[t.low.number] for t in
+               source.emitting_molecule.rad_transitions]
+    return source.Tex,pop_up,pop_low
 
 def compute_RADEX_model(N,Tkin,coll_partner_densities,transitions):
     Tex = []
@@ -93,12 +93,12 @@ example_Tkin = 50
 example_coll_dens = {'ortho-H2':1e4/constants.centi**3,'para-H2':1e4/constants.centi**3}
 radex_model = compute_RADEX_model(N=example_N,Tkin=example_Tkin,
                                   coll_partner_densities=example_coll_dens,
-                                  transitions=cloud.emitting_molecule.rad_transitions)
+                                  transitions=source.emitting_molecule.rad_transitions)
 pythonradex_model = compute_pythonradex_model(
                          N=example_N,Tkin=example_Tkin,
                          coll_partner_densities=example_coll_dens)
 x = [trans.up.E/constants.k for trans in
-     cloud.emitting_molecule.rad_transitions[:plot_max_trans_index+1]]
+     source.emitting_molecule.rad_transitions[:plot_max_trans_index+1]]
 for ax,y,y_radex in zip(axes,pythonradex_model,radex_model):
     ax.plot(x,y[:plot_max_trans_index+1],marker="o",linestyle='None',label="pythonradex",
             color=colors["pythonradex"])
@@ -115,7 +115,7 @@ for ax in axes[1:]:
 
 
 #now calculate the grid...
-plot_trans = cloud.emitting_molecule.rad_transitions[plot_trans_index]
+plot_trans = source.emitting_molecule.rad_transitions[plot_trans_index]
 N_grid = np.logspace(13,18,grid_size)*constants.centi**-2
 Tkin_grid = np.logspace(np.log10(5),np.log10(500),grid_size)
 N_GRID,TKIN_GRID = np.meshgrid(N_grid,Tkin_grid,indexing='ij')
@@ -153,9 +153,9 @@ for i,nH2 in enumerate(nH2_grid):
                 Tex,pop_up,pop_low = model
                 S = helpers.B_nu(nu=nu,T=Tex)
                 tau_nu = plot_trans.tau_nu(N1=N*pop_low,N2=N*pop_up,nu=nu)
-                f = cloud.geometry.compute_flux_nu(
-                             tau_nu=tau_nu,source_function=S,solid_angle=solid_angle)
-                f = -np.trapz(f,nu) #nu is decreasing, so need to take minus
+                intensity = source.geometry.intensity(
+                             tau_nu=tau_nu,source_function=S)
+                f = -np.trapz(intensity*solid_angle,nu) #nu is decreasing, so need to take minus
                 flux[ID][i,j,k] = f
                 excitation_temp[ID][i,j,k] = Tex
 

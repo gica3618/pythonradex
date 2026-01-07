@@ -25,14 +25,14 @@ N = 2.11E+14*constants.centi**-2/constants.kilo * Doppler
 
 
 width_v = Doppler*2*np.sqrt(np.log(2))
-cloud_kwargs = {'datafilepath':datafilepath,'geometry':geometry,
-                'line_profile_type':line_profile_type,'width_v':width_v,
-                'warn_negative_tau':False}
+source_kwargs = {'datafilepath':datafilepath,'geometry':geometry,
+                 'line_profile_type':line_profile_type,'width_v':width_v,
+                 'warn_negative_tau':False}
 reference_cloud_parameters = {'N':N,'Tkin':Tkin,'collider_densities':{'H2':nH2},
                               'ext_background':ext_background,'T_dust':0,
                               'tau_dust':0}
-clouds = {ID:radiative_transfer.Cloud(**cloud_kwargs,treat_line_overlap=treat)
-          for ID,treat in zip(('treat overlap','ignore overlap'),(True,False))}
+sources = {ID:radiative_transfer.Source(**source_kwargs,treat_line_overlap=treat)
+           for ID,treat in zip(('treat overlap','ignore overlap'),(True,False))}
 
 line_indices = [3,4,5,6,7,8]
 
@@ -47,19 +47,19 @@ molpop_cep_Tex = {"treat overlap":[8.22E+00,8.55E+00,8.75E+00,8.83E+00,5.56E+00,
 # molpop_cep_Tex = {"treat overlap":[8.22E+00,8.55E+00,8.75E+00,8.83E+00,5.56E+00,5.80E+00],
 #                   "ignore overlap":[6.51,5.6,7.08,10.3,4.97,5.3]}
 
-for ID,cloud in clouds.items():
+for ID,source in sources.items():
     print(ID)
-    cloud.update_parameters(**reference_cloud_parameters)
-    cloud.solve_radiative_transfer()
+    source.update_parameters(**reference_cloud_parameters)
+    source.solve_radiative_transfer()
     for i,index in enumerate(line_indices):
         print(f'line {index}:')
-        print(f'tau_nu0 = {cloud.tau_nu0_individual_transitions[index]:.2g}, '
-              +f'Tex = {cloud.Tex[index]:.3g} K')
+        print(f'tau_nu0 = {source.tau_nu0_individual_transitions[index]:.2g}, '
+              +f'Tex = {source.Tex[index]:.3g} K')
         print(f"molpopcep: tau_nu0 = {molpop_cep_tau_nu0[ID][i]:.2g},"
               +f" Tex={molpop_cep_Tex[ID][i]:.2g}")
     print('\n')
 
-nu0s = [clouds['treat overlap'].emitting_molecule.nu0[index] for index in
+nu0s = [sources['treat overlap'].emitting_molecule.nu0[index] for index in
         line_indices]
 nu0s = sorted(nu0s)
 #arbitrarily choose one of the rest frequencies to define the velocity grid:
@@ -88,17 +88,17 @@ molpop_cep_spectrum = {}
 for overlap,tau in molpop_cep_tau.items():
     molpop_cep_Stot[overlap] /= tau
     assert geometry == "uniform slab"
-    molpop_cep_spectrum[overlap] = escape_probability.UniformSlab.compute_flux_nu(
-                          tau_nu=tau,source_function=molpop_cep_Stot[overlap],
-                          solid_angle=solid_angle)
+    molpop_cep_intensiy = escape_probability.UniformSlab.intensity(
+                               tau_nu=tau,source_function=molpop_cep_Stot[overlap])
+    molpop_cep_spectrum[overlap] = molpop_cep_intensiy*solid_angle
 
 
 linestyles = {'treat overlap':'solid','ignore overlap':'dashed'}
 colors = {"pythonradex":"blue","molpop-cep":"green"}
 fig,ax = plt.subplots()
 ax.set_title('HCN hyperfine spectrum around 177.3 GHz')
-for ID,cloud in clouds.items():
-    spectrum = cloud.spectrum(solid_angle=solid_angle,nu=nu)
+for ID,source in sources.items():
+    spectrum = source.spectrum(solid_angle=solid_angle,nu=nu,output_type="flux density")
     ax.plot(v/constants.kilo,spectrum*1e26,label=ID,linestyle=linestyles[ID],
             color=colors["pythonradex"])
     ax.plot(v/constants.kilo,molpop_cep_spectrum[ID]*1e26,label=f"{ID}\n(MOLPOP-CEP)",

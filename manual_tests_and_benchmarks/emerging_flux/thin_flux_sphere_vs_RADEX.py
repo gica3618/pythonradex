@@ -65,17 +65,16 @@ geometries = {"static sphere":escape_probability.StaticSphere(),
               "lvg sphere":escape_probability.LVGSphere(),
               "static sphere RADEX":escape_probability.StaticSphereRADEX(),
               "lvg sphere RADEX":escape_probability.LVGSphereRADEX()}
-flux_kwargs_template = {'tau_nu':tau_nu,'source_function':source_func,
-                        'solid_angle':solid_angle}
-flux_kwargs = {geo_name:flux_kwargs_template.copy() for geo_name in
-               geometries.keys()}
-flux_kwargs["lvg sphere"]["nu"] = nu
-flux_kwargs["lvg sphere"]["nu0"] = trans.nu0
-flux_kwargs["lvg sphere"]["V"] = width_v/2
+intensity_kwargs_template = {'tau_nu':tau_nu,'source_function':source_func}
+intensity_kwargs = {geo_name:intensity_kwargs_template.copy() for geo_name in
+                    geometries.keys()}
+intensity_kwargs["lvg sphere"]["nu"] = nu
+intensity_kwargs["lvg sphere"]["nu0"] = trans.nu0
+intensity_kwargs["lvg sphere"]["V"] = width_v/2
 
 for geo_name,geo in geometries.items():
-    flux = geo.compute_flux_nu(**flux_kwargs[geo_name])
-    flux = np.trapezoid(flux,nu)
+    intensity = geo.intensity(**intensity_kwargs[geo_name])
+    flux = np.trapezoid(intensity,nu)*solid_angle
     print(f"{geo_name}: {flux:.3g} W/m2")
 
 

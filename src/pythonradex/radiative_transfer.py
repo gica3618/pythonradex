@@ -1,11 +1,10 @@
 from scipy import constants
 import numpy as np
-from pythonradex import helpers,escape_probability,atomic_transition,flux,rate_equations
+from pythonradex import helpers,escape_probability,atomic_transition,intensity,rate_equations
 from pythonradex.molecule import EmittingMolecule
 import warnings
 import numba as nb
 import numbers
-import traceback
 
 
 class Source():
@@ -339,12 +338,12 @@ class Source():
                     print(f'{trans.name}: tau_nu0 = {self.tau_nu0_individual_transitions[i]:.3g}')
         self.level_pop = level_pop
         self.Tex = self.emitting_molecule.get_Tex(level_pop)
-        self.flux_calculator = flux.FluxCalculator(
+        self.intensity_calculator = intensity.IntensityCalculator(
                                  emitting_molecule=self.emitting_molecule,
                                  level_population=self.level_pop,
                                  geometry_name=self.geometry_name,
                                  V_LVG_sphere=self.V_LVG_sphere,
-                                 compute_flux_nu=self.geometry.compute_flux_nu,
+                                 specific_intensity=self.geometry.specific_intensity,
                                  tau_nu0_individual_transitions=self.tau_nu0_individual_transitions,
                                  tau_dust=self.rate_equations.tau_dust,
                                  S_dust=self.rate_equations.S_dust)
@@ -352,16 +351,15 @@ class Source():
     def all_transition_indices(self):
         return np.arange(self.emitting_molecule.n_rad_transitions)
 
-    def fluxes_of_individual_transitions(self,solid_angle,transitions=None):
-        r''' Calculate the fluxes of individual lines.
-            The flux of individual lines is the amount of
-            energy per time reaching the telescope via photons emitted by the molecule.
+    def frequency_integrated_emission_of_individual_transitions(
+                          self,output_type,transitions=None,solid_angle=None):
+        r''' Calculates the frequency-integrated emission of individual transitions.
             This calculation is only easily possible if the dust is optically thin (i.e.
             the dust does not hinder line photons from escaping the source). Thus, this
             function throws an error if the dust is not optically thin. Similarly,
             the calculation is not possible when lines are overlapping and are not
-            optically thin. It is the responsibility of the user to choose an
-            appropriate observational quantity to be compared to the line fluxes
+            optically thin. The user needs to choose an appropriate
+            observational quantity to be compared to the line fluxes
             calculated here. In particular, for optically thin lines, the
             continuum-subtracted observation might be appropriate. On the other
             hand, for optically thick lines, the non-continuum-subtracted
@@ -369,23 +367,36 @@ class Source():
             line blocks the continuum at the line enter; see e.g. Weaver et al. 2018)
 
         Args:
-            solid_angle (:obj:`float`): The solid angle of the source in [sr].
+            output_type (str): Specifies the type of the output. Can either be
+                "intensity" (in [W/m2/sr]) or "flux" (in [W/m2]; solid_angle
+                needs to be specified)
             transitions (:obj:`list` of :obj:`int` or None): The indices of the
                 transitions for which to calculate the fluxes. If None, then the
                 fluxes of all transitions are calculated. Defaults to None. The
                 indices correspond to the list of transitions in the LAMDA file,
                 starting with 0.
+            solid_angle (:obj:`float`): The solid angle of the source in [sr].
+                    Needed for output_type "flux".
         
         Returns:
-            list: The list of fluxes in [W/m\ :sup:`2`] corresponding to the
+            list: The list of intensities or fluxes in corresponding to the
             input list of requested transitions. If no specific transitions
             where requested (transitions=None), then the list of fluxes corresponds
             to the transitions as listed in the LAMDA file.
         '''
         if transitions is None:
             transitions = self.all_transition_indices()
-        return self.flux_calculator.fluxes_of_individual_transitions(
-                         solid_angle=solid_angle,transitions=transitions)
+        I = self.intensity_calculator.intensities_of_individual_transitions(
+                                                  transitions=transitions)
+        if output_type == "intensity":
+            return I
+        elif output_type == "flux":
+            if solid_angle is None:
+                raise ValueError("solid_angle needs to be specified for"
+                                 +" output_type 'flux'")
+            return I*solid_angle
+        else:
+            raise ValueError(f"output_type '{output_type}' not understood")
 
     def tau_nu(self,nu):
         r''' Calculate the total optical depth (all lines plus dust) at each
@@ -398,97 +409,105 @@ class Source():
         Returns:
             np.ndarray: The total optical depth at the input frequencies.
         '''
-        self.flux_calculator.set_nu(nu=nu)
-        return self.flux_calculator.tau_nu_tot
+        self.intensity_calculator.set_nu(nu=nu)
+        return self.intensity_calculator.tau_nu_tot
 
     @staticmethod
-    def get_brightness_temperature(temperature_type,intensity,nu):
-        if temperature_type == "Rayleigh-Jeans":
-            return helpers.RJ_brightness_temperature(intensity=intensity,nu=nu)
-        elif temperature_type == "Planck":
-            return helpers.Planck_brightness_temperature(intensity=intensity,nu=nu)
+    def transform_specific_intensity(specific_intensity,nu,solid_angle,output_type):
+        if output_type == "flux density" and solid_angle is None:
+            raise ValueError("For flux density, solid angle needs to be specified")
+        if output_type != "flux density" and solid_angle is not None:
+            warnings.warn("solid_angle specified, but not needed for"
+                          +f" output_type \"{output_type}\", will be ignored")
+        if output_type == "flux density":
+            return specific_intensity*solid_angle
+        elif output_type == "Rayleigh-Jeans":
+            return helpers.RJ_brightness_temperature(
+                                  specific_intensity=specific_intensity,nu=nu)
+        elif output_type == "Planck":
+            return helpers.Planck_brightness_temperature(
+                                 specific_intensity=specific_intensity,nu=nu)
         else:
-            raise ValueError(f"unknown temperature type {temperature_type}:"
-                             +" please choose \"Rayleigh-Jeans\" or \"Planck\"")
+            raise ValueError(f"invalid output_type \"{output_type}\"")
 
-    def intensity(self,nu,output,solid_angle=None):
-        raise NotImplementedError
-        r''' Calculate the total flux (lines + dust) at each input frequency
+    def spectrum(self,nu,output_type,solid_angle=None):
+        r''' Calculate the emission (lines + dust) as a function of frequency.
 
         Args:
-            solid_angle (:obj:`float`): The solid angle of the source in [sr].
             nu (numpy.ndarray): The frequencies in [Hz] for which the spectrum
-                should be calculated
+                should be calculated.
+            output_type (str): Specifies the type of the output spectrum.
+                Possible choices are "specific intensity" (in [W/m2/Hz/sr]),
+                "flux density" (in [W/m2/Hz]; solid_angle needs to be specified),
+                "Rayleigh-Jeans" (Rayleigh-Jeans brightness temperature in [K]),
+                "Planck" (brightness temperature calculated using the Planck
+                function, in [K]).
+            solid_angle (:obj:`float`): The solid angle of the source in [sr].
+                Needed for output_type "flux density".
         
         Returns:
-            np.ndarray: The flux in [W/m2/Hz] for each input frequency.
+            np.ndarray: The emission for each input frequency.
         '''
-        self.flux_calculator.set_nu(nu=nu)
-        return self.flux_calculator.spectrum(solid_angle=solid_angle)
+        self.intensity_calculator.set_nu(nu=nu)
+        specific_intensity = self.intensity_calculator.specific_intensity_spectrum()
+        if output_type == "specific intensity":
+            return specific_intensity
+        else:
+            return self.transform_specific_intensity(
+                            specific_intensity=specific_intensity,nu=nu,
+                            solid_angle=solid_angle,output_type=output_type)
 
-    def intensity_nu0(self,output,transitions=None,solid_angle=None):
-        raise NotImplementedError
-        r'''Calculate the the brightness temperature at the line center (rest
-            frequency) for the specified transitions. The output brightness
-            temperature includes contributions from dust and overlapping lines.
+    def emission_at_line_center(self,output_type,transitions=None,solid_angle=None):
+        r'''Calculate the emission at the line center (rest frequency) for the
+        specified transitions. The output includes contributions from dust and
+        overlapping lines.
 
         Args:
             transitions (:obj:`list` of :obj:`int` or None): The indices of the
-                transitions for which to calculate the brightness temperatures.
-                If None, then the brightness temperatures of all transitions are calculated.
+                transitions for which to calculate the emission. If None, then
+                the emission of all transitions are calculated.
                 Defaults to None. The indices correspond to the list of
                 transitions in the LAMDA file, starting with 0.
-            temperature_type (str): The type of brightness temperature to calculate.
-                Options are "Rayleigh-Jeans" (use the Rayleigh-Jeans formula)
-                or "Planck" (use the Planck equation).
+            output_type (str): Specifies the type of the output.
+                Possible choices are "specific intensity" (in [W/m2/Hz/sr]),
+                "flux density" (in [W/m2/Hz]; solid_angle needs to be specified),
+                "Rayleigh-Jeans" (Rayleigh-Jeans brightness temperature in [K]),
+                "Planck" (brightness temperature calculated using the Planck
+                function, in [K]).
+            solid_angle (:obj:`float`): The solid angle of the source in [sr].
+                    Needed for output_type "flux density".
         
         Returns:
-            list: The list of brightness temperatures in [K] corresponding to the
+            list: The list of emission values corresponding to the
             input list of requested transitions. If no specific transitions
-            where requested (transitions=None), then the list of temperatures corresponds
-            to the transitions as listed in the LAMDA file.
+            where requested (transitions=None), then the list corresponds
+            to all transitions as listed in the LAMDA file.
         '''
         if transitions is None:
             transitions = self.all_transition_indices()
         nu0s = self.emitting_molecule.nu0[transitions]
         if self.emitting_molecule.any_line_has_overlap(line_indices=transitions):
             #do it the slow way
-            mock_Omega = 1
-            intensity_nu0 = self.spectrum(solid_angle=mock_Omega,nu=nu0s)
-            intensity_nu0 /= mock_Omega
+            specific_intensity_nu0 = self.spectrum(
+                                        nu=nu0s,output_type="specific intensity")
         else:
             #use fast way
-            intensity_nu0 = self.flux_calculator.intensity_nu0_no_overlap(
+            specific_intensity_nu0 = self.intensity_calculator.specific_intensity_nu0_no_overlap(
                               transitions=transitions)
-        return self.get_brightness_temperature(
-                          temperature_type=temperature_type,intensity=intensity_nu0,
-                          nu=nu0s)
+        if output_type == "specific intensity":
+            return specific_intensity_nu0
+        else:
+            return self.transform_specific_intensity(
+                         specific_intensity=specific_intensity_nu0,nu=nu0s,
+                         solid_angle=solid_angle,output_type=output_type)
 
-    # def brightness_temperature_spectrum(self,nu,temperature_type):
-    #     r''' Calculate the brightness temperature (lines + dust) at each input frequency
-
-    #     Args:
-    #         nu (numpy.ndarray): The frequencies in [Hz] for which the spectrum
-    #             should be calculated
-    #         temperature_type (str): The type of brightness temperature to calculate.
-    #                 Options are "Rayleigh-Jeans" (use the Rayleigh-Jeans formula)
-    #                 or "Planck" (use the Planck equation).
-        
-    #     Returns:
-    #         np.ndarray: The brightness temperature in [K] for each input frequency.
-    #     '''
-    #     mock_Omega = 1
-    #     intensity = self.spectrum(solid_angle=mock_Omega,nu=nu)/mock_Omega
-    #     return self.get_brightness_temperature(
-    #                 temperature_type=temperature_type,intensity=intensity,nu=nu)
-
-    def model_grid(self,ext_backgrounds,N_values,Tkin_values,collider_densities_values,
-                   requested_output,T_dust=0,tau_dust=0,solid_angle=None,
-                   transitions=None,nu=None):
-        r'''Iterator over a grid of models.
-            Models are calculated for all possible combinations of the input
-            parameters ext_backgrounds, N_values, Tkin_values and
-            collider_densities_values.
+    def efficient_parameter_iterator(self,ext_backgrounds,N_values,Tkin_values,
+                                     collider_densities_values,T_dust=0,
+                                     tau_dust=0):
+        r'''Iterator to update parameters in an efficient way.
+            For all possible combinations of the input parameters
+            ext_backgrounds, N_values, Tkin_values and collider_densities_values,
+            the parameters are updated in each iteration.
 
         Args:
             ext_backgrounds (:obj:`dict`): A dictionary, one entry for
@@ -506,10 +525,7 @@ class Source():
                 computed for, using a "zip" logic (i.e. calculate a model for the first
                 entries of each list, for the second entries of each list, etc).
                 Units are [m\ :sup:`-3`]. Example:
-                collider_densities_values={'para-H2':[400,600],'ortho-H2':[700,1000]}
-            requested_output (:obj:`list`): The list of requested outputs. Possible
-                entries are 'level_pop', 'Tex', 'tau_nu0_individual_transitions',
-                'fluxes_of_individual_transitions', 'tau_nu', and 'spectrum'
+                collider_densities_values={'para-H2':[4e9,6e9],'ortho-H2':[7e8,1e10]}
             T_dust (func or number): The dust temperature in [K] as a function of frequency.
                  It is assumed that the source function of the dust is a black body
                  at temperature T_dust. A single number is interpreted as a constant value
@@ -519,41 +535,14 @@ class Source():
                 A single number is interpreted as a constant value
                 for all frequencies. Defaults to 0 (i.e. no internal dust
                 radiation field).
-            solid_angle (:obj:`float`): The solid angle of the source in [sr].
-                Defaults to None. Compulsory if 'fluxes_of_individual_transitions'
-                or 'spectrum' are requested.
-            transitions (:obj:`list`): The indices of the transitions for which
-                to calculate Tex, tau_nu and fluxes. If None, then
-                values for all transitions are calculated. Defaults to None. The
-                indices are relative to the list of transitions in the LAMDA file,
-                starting with 0.
-            nu (numpy.ndarray): The frequencies in [Hz]. Compulsory if 'tau_nu'
-                or 'spectrum' is requested. Defaults to None.
 
-        Returns:
-            dict: dictionary representing the model
-                The dictionary fields are 'ext_background', 'N', 'Tkin' and 
-                'collider_densities' to identify the input parameters of the model,
-                as well as any requested output. Units of outputs:
-                'level_pop': no units; 'Tex': [K]; 'tau_nu0': no units;
-                'fluxes_of_individual_transitions': [W/m\ :sup:`2`];
-                'tau_nu': no units; 'spectrum': [W/m\ :sup:`2`/Hz]. If the model
-                for a specific set of parameters could not be calculated, the output
-                fields are None.
+        Yields:
+            dict: A dictionary with fields 'ext_background', 'N', 'Tkin' and 
+                'collider_densities' to identify the values of the parameters
+                that were updated.
         '''
         #it is expensive to update Tkin and collider densities, so those should be in
         #the outermost loops
-        allowed_outputs = ('level_pop','Tex','tau_nu0_individual_transitions',
-                           'fluxes_of_individual_transitions','tau_nu','spectrum')
-        for request in requested_output:
-            assert request in allowed_outputs,f'requested output "{request}" is invalid'
-        if 'fluxes_of_individual_transitions' in requested_output\
-                                      or 'spectrum' in requested_output:
-            assert solid_angle is not None
-        if 'tau_nu' in requested_output or 'spectrum' in requested_output:
-            assert nu is not None
-        if transitions is None:
-            transitions = [i for i in range(self.emitting_molecule.n_rad_transitions)]
         n_coll_values = np.array([len(coll_values) for coll_values in
                                   collider_densities_values.values()])
         assert np.all(n_coll_values==n_coll_values[0]),\
@@ -572,41 +561,15 @@ class Source():
             for i in range(n_coll_values):
                 collider_densities = {collider:values[i] for collider,values
                                       in collider_densities_values.items()}
-                #note updating Tkin and coll dens together to avoid
+                #note: updating Tkin and coll dens together to avoid
                 #unnecessary overhead
                 self.update_parameters(Tkin=Tkin,collider_densities=collider_densities)
                 for ext_background_name,ext_background in ext_backgrounds.items():
                     self.update_parameters(ext_background=ext_background)
                     for N in N_values:
-                        output = {'ext_background':ext_background_name,'N':N,
-                                  'Tkin':Tkin,'collider_densities':collider_densities}
-                        try:
-                            self.update_parameters(N=N)
-                            self.solve_radiative_transfer()
-                            if 'level_pop' in requested_output:
-                                output['level_pop'] = self.level_pop
-                            if 'Tex' in requested_output:
-                                output['Tex'] = self.Tex[transitions]
-                            if 'tau_nu0_individual_transitions' in requested_output:
-                                output['tau_nu0_individual_transitions']\
-                                           = self.tau_nu0_individual_transitions[transitions]
-                            if 'fluxes_of_individual_transitions' in requested_output:
-                                output['fluxes_of_individual_transitions']\
-                                       = self.fluxes_of_individual_transitions(
-                                             solid_angle=solid_angle,transitions=transitions)
-                            if 'tau_nu' in requested_output:
-                                output['tau_nu'] = self.tau_nu(nu=nu)
-                            if 'spectrum' in requested_output:
-                                output['spectrum'] = self.spectrum(
-                                                        solid_angle=solid_angle,nu=nu)
-                            yield output
-                        except:
-                            print('Error during calculation of model with following'
-                                  +f' parameters: {output}')
-                            traceback.print_exc()
-                            for out in requested_output:
-                                output[out] = None
-                            yield output
+                        self.update_parameters(N=N)
+                        yield {'ext_background':ext_background_name,'N':N,
+                               'Tkin':Tkin,'collider_densities':collider_densities}
 
     def print_results(self):
         '''Prints the results from the radiative transfer computation.'''

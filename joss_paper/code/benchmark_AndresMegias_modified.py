@@ -207,20 +207,20 @@ print('Individual run :')
 
 t1 = time.time()
 
-cloud = pradex.radiative_transfer.Cloud(
+source = pradex.radiative_transfer.Source(
                           datafilepath=datafilepath,geometry=geometry,
                           line_profile_type=line_profile_type,width_v=width_v)
 ext_background = pradex.helpers.generate_CMB_background(z=0)
-cloud.update_parameters(N=N, Tkin=Tkin, collider_densities=collider_densities,
+source.update_parameters(N=N, Tkin=Tkin, collider_densities=collider_densities,
                         ext_background=ext_background, T_dust=T_dust,
                         tau_dust=tau_dust)
-cloud.solve_radiative_transfer()
+source.solve_radiative_transfer()
 
-nu0_21 = cloud.emitting_molecule.nu0[index_21]
+nu0_21 = source.emitting_molecule.nu0[index_21]
 nu0 = float(nu0_21)
 
-tau0 = cloud.tau_nu(nu=nu0)
-Tex = cloud.Tex[index_21]
+tau0 = source.tau_nu(nu=nu0)
+Tex = source.Tex[index_21]
 I0 = (pradex.helpers.B_nu(nu0, Tex) - ext_background(nu0)) * (1 - np.exp(-tau0))
 # I0 = cloud.spectrum(1., nu=np.array([nu0]))
 # I0 -= ext_background(nu0)

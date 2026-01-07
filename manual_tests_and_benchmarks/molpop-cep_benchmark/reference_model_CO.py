@@ -24,7 +24,7 @@ ext_background = helpers.generate_CMB_background()
 solid_angle = 1
 
 width_v = 2*np.sqrt(np.log(2))*Doppler
-cloud = radiative_transfer.Cloud(
+source = radiative_transfer.Source(
                       datafilepath=datafilepath,geometry='uniform slab',
                       line_profile_type='Gaussian',width_v=width_v)
 
@@ -38,20 +38,20 @@ collider_densities = {'para-H2':n/2,'ortho-H2':n/2}
 for i,N_molpop in enumerate(molpop_cep_N):
     N = N_molpop*Doppler
     print(f'N={N/constants.centi**-2:.1g} cm-2')
-    cloud.update_parameters(N=N,Tkin=Tkin,collider_densities=collider_densities,
+    source.update_parameters(N=N,Tkin=Tkin,collider_densities=collider_densities,
                             ext_background=ext_background,T_dust=0,tau_dust=0)
-    cloud.solve_radiative_transfer()
+    source.solve_radiative_transfer()
     fig,axes = plt.subplots(2)
     fig.suptitle(f"{N/constants.centi**-2:.2g} cm-2")
     for j,trans_index in enumerate(ref_transitions):
         print(f'trans {trans_index}:')
-        print(f'Tex={cloud.Tex[trans_index]:.3g} K (molpop: {molpop_cep_Tex[j][i]})')
-        print(f'tau_nu0={cloud.tau_nu0_individual_transitions[trans_index]}'
+        print(f'Tex={source.Tex[trans_index]:.3g} K (molpop: {molpop_cep_Tex[j][i]})')
+        print(f'tau_nu0={source.tau_nu0_individual_transitions[trans_index]}'
               +f" (molpop: {molpop_cep_tau_nu0[j][i]})")
         v = np.linspace(-3*width_v,3*width_v,100)
-        trans = cloud.emitting_molecule.rad_transitions[trans_index]
+        trans = source.emitting_molecule.rad_transitions[trans_index]
         nu = trans.nu0*(1-v/constants.c)
-        spec = cloud.spectrum(solid_angle=solid_angle,nu=nu)
+        spec = source.spectrum(solid_angle=solid_angle,nu=nu)
         ax = axes[j]
         ax.set_title(f"trans {trans_index}")
         ax.plot(v/constants.kilo,spec,label="pythonradex")

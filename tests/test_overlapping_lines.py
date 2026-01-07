@@ -26,7 +26,6 @@ class Test_Overlapping():
     N = {'thin':1e14/constants.centi**2,
          #'intermediate':1e16/constants.centi**2,
          'thick':1e21/constants.centi**2}
-    solid_angle = 1
     geometries = ('static sphere','static slab')
 
     def generate_cloud(self,N,line_profile_type,treat_line_overlap,coll_dens,
@@ -112,7 +111,7 @@ class Test_Overlapping():
                 LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=self.Tkin)
                 assert not np.allclose(source.level_pop,LTE_level_pop,rtol=0,atol=1e-2)
                 nu = self.generate_nu_for_spectrum(source=source)
-                spectra.append(source.spectrum(solid_angle=self.solid_angle,nu=nu))
+                spectra.append(source.spectrum(output_type="specific intensity",nu=nu))
             assert np.allclose(*spectra,atol=0,rtol=3e-2)
 
     @pytest.mark.filterwarnings("ignore:some lines are overlapping")
@@ -127,13 +126,12 @@ class Test_Overlapping():
                                         coll_dens=self.collider_densities['LTE'],
                                         geometry=geo)
             nu = self.generate_nu_for_spectrum(source=source)
-            spectrum = source.spectrum(solid_angle=self.solid_angle,nu=nu)
+            spectrum = source.spectrum(output_type="specific intensity",nu=nu)
             black_body = helpers.B_nu(nu=nu,T=self.Tkin)
-            bb_flux = black_body*self.solid_angle
             overlapping_lines = source.emitting_molecule.rad_transitions[8:11]
             assert source.emitting_molecule.line_profile_type == 'rectangular'
             summed_phi_nu = np.zeros_like(nu)
             for line in overlapping_lines:
                 summed_phi_nu += line.line_profile.phi_nu(nu)
-            expected_spectrum = np.where(summed_phi_nu>0,bb_flux,0)
+            expected_spectrum = np.where(summed_phi_nu>0,black_body,0)
             assert np.allclose(spectrum,expected_spectrum,atol=0,rtol=5e-2)

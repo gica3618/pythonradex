@@ -40,7 +40,7 @@ If you have ideas for new features, feel free to [open an issue](https://github.
 
         pip install -e .[dev]
 
-   This installs `pythonradex` and `pytest`.
+   This installs `pythonradex`, `pytest` and additional packages to modify and build the documentation and run the example notebooks.
 
 
 ### Running Tests
@@ -81,11 +81,7 @@ Documentation is located in the `docs/` folder and hosted on [ReadTheDocs](https
 
 ### Build the documentation locally
 
-To build the documentation, you need to install additional packages:
-
-    pip install sphinx sphinx-rtd-theme
-
-To build the documentation:
+To build the documentation locally:
 
     cd docs
     make html
@@ -99,11 +95,7 @@ The generated HTML files will appear in `docs/_build/html/`. Open `docs/_build/h
 
 ### Notebooks
 
-Example notebooks are located in `docs/examples/`. To run them, you need to install the following packages:
-
-    pip install jupyter matplotlib
-
-Then you can run them with
+Example notebooks are located in `docs/examples/`. You can run them with
 
     jupyter notebook docs/examples/
 

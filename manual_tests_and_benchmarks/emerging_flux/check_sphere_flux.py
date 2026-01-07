@@ -64,7 +64,7 @@ for i,n in enumerate(n_values):
                A21=trans.A21,phi_nu=phi_nu,
                g_low=trans.low.g,g_up=trans.up.g,N1=N1,N2=N2,nu=nu)
     source_func = helpers.B_nu(nu=nu,T=T)
-    flux_kwargs = {'tau_nu':tau_nu,'source_function':source_func,'solid_angle':solid_angle}
+    intensity_kwargs = {'tau_nu':tau_nu,'source_function':source_func}
     LVG_sphere_kwargs = {'nu':nu,'nu0':trans.nu0,'V':width_v/2}
     flux_no_beta = volume*n*level_pop[trans.up.index]*trans.A21*trans.Delta_E\
                        /(4*np.pi*d**2) * phi_nu #W/m2/Hz
@@ -76,10 +76,10 @@ for i,n in enumerate(n_values):
         beta_fluxes[ID][i] = np.trapezoid(flux_no_beta*beta_nu,nu)
         geo = geometries[ID]
         if ID == 'LVG sphere':
-            flux_pythonradex = geo.compute_flux_nu(**flux_kwargs,**LVG_sphere_kwargs)
+            intensity_pythonradex = geo.intensity(**intensity_kwargs,**LVG_sphere_kwargs)
         else:
-            flux_pythonradex = geo.compute_flux_nu(**flux_kwargs)
-        pythonradex_fluxes[ID][i] = np.trapezoid(flux_pythonradex,nu)#W/m2
+            intensity_pythonradex = geo.intensity(**intensity_kwargs)
+        pythonradex_fluxes[ID][i] = np.trapezoid(intensity_pythonradex,nu)*solid_angle#W/m2
 
 for ID in beta_funcs.keys():
     fig,ax = plt.subplots()
