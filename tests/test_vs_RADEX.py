@@ -15,15 +15,24 @@ import itertools
 import pytest
 
 #RADEX does the calculation with rectangular, but then applies a correction factor
-#to convert to Gaussian
+#to convert optical depth, flux etc
 line_profile_type = 'Gaussian'
-ext_background = lambda nu: helpers.B_nu(nu=nu,T=RADEX_test_cases.T_background)
-#for some unknown reason, LVG sphere RADEX shows much larger differences to pythonradex
-#than the other two geometries; to make the test pass, need to adopt more relaxed
-#conditions:
-rtol = {'static sphere RADEX':5e-2,
-        'LVG slab':5e-2,
-        'LVG sphere RADEX':2e-1}
+
+#following shows the tolerance that needs to be adopted to pass this test
+rtol_Tex = {'static sphere RADEX':5e-2,
+            'LVG slab':10e-2,
+            'LVG sphere RADEX':20e-2}
+rtol_level_pop = {'static sphere RADEX':5e-2,
+                  'LVG slab':5e-2,
+                  'LVG sphere RADEX':20e-2}
+rtol_TR_flux = {'static sphere RADEX':5e-2,
+                'LVG slab':5e-2,
+                'LVG sphere RADEX':30e-2}
+rtol_tau = {'static sphere RADEX':5e-2,
+            'LVG slab':10e-2,
+            'LVG sphere RADEX':20e-2}
+
+
 frac_max_level_pop_to_consider = {'static sphere RADEX':1e-5,
                                   'LVG slab':1e-5,
                                   'LVG sphere RADEX':0.01}
@@ -45,6 +54,7 @@ def read_RADEX_output(filepath,molecule):
     collider_densities = {}
     tau = []
     flux = []
+    T_R = []
     Tex = []
     level_pop = np.ones(molecule.n_levels)*np.inf
     trans_counter = 0
@@ -70,7 +80,8 @@ def read_RADEX_output(filepath,molecule):
             continue
         if line[0].isdigit():
             linedata = line.split()
-            flux.append(float(linedata[-1]))
+            flux.append(float(linedata[-1])*constants.erg/constants.centi**2)
+            T_R.append(float(linedata[-5]))
             tau.append(float(linedata[-6]))
             Tex.append(float(linedata[-7]))
             trans = molecule.rad_transitions[trans_counter]
@@ -90,7 +101,8 @@ def read_RADEX_output(filepath,molecule):
     assert np.all(np.isfinite(level_pop))
     return {'Tkin':Tkin,'column_density':column_density,'width_v':width_v,
             'collider_densities':collider_densities,'flux':np.array(flux),
-            'tau':np.array(tau),'Tex':np.array(Tex),'level_pop':np.array(level_pop)}
+            "T_R":np.array(T_R),'tau':np.array(tau),'Tex':np.array(Tex),
+            'level_pop':np.array(level_pop)}
 
 here = os.path.dirname(os.path.abspath(__file__))
 LAMDA_folder = os.path.join(here,'LAMDA_files')
@@ -106,16 +118,22 @@ def test_vs_RADEX():
             datafilepath = os.path.join(LAMDA_folder,filename)
             specie = filename.split('.')[0]
             width_v = RADEX_test_cases.width_v
-            for collider_densities,N,Tkin in\
+            for collider_densities,N,Tkin,T_bg in\
                              itertools.product(test_case['collider_densities_values'],
                                                test_case['N_values'],
-                                               test_case['Tkin_values']):
+                                               test_case['Tkin_values'],
+                                               test_case["T_background_values"]):
                 #need to enter test mode to allow Gaussian line profile with LVG slab:
                 source = radiative_transfer.Source(
                            datafilepath=datafilepath,geometry=geo,
                            line_profile_type=line_profile_type,width_v=width_v,
                            use_Ng_acceleration=True,
                            treat_line_overlap=False,test_mode=True)
+                if T_bg == 0:
+                    ext_background = lambda nu: np.zeros_like(nu)
+                else:
+                    ext_background = lambda nu: helpers.B_nu(nu=nu,T=T_bg)
+                print(T_bg)
                 source.update_parameters(
                        ext_background=ext_background,N=N,Tkin=Tkin,
                        collider_densities=collider_densities,T_dust=0,
@@ -124,7 +142,7 @@ def test_vs_RADEX():
                 #print(f'tau: {np.min(source.tau_nu0)}, {np.max(source.tau_nu0)}')
                 RADEX_output_filename = RADEX_test_cases.RADEX_out_filename(
                                          radex_geometry=geo_RADEX,specie=specie,
-                                         Tkin=Tkin,N=N,
+                                         Tkin=Tkin,T_background=T_bg,N=N,
                                          collider_densities=collider_densities)
                 RADEX_results_filepath = os.path.join(RADEX_output_folder,
                                                       RADEX_output_filename)
@@ -142,18 +160,39 @@ def test_vs_RADEX():
                 assert cleaned_RADEX_colliders == collider_densities
                 assert RADEX_results['column_density'] == N
                 assert RADEX_results['width_v'] == width_v
-                level_pop_selection =\
-                    source.level_pop > frac_max_level_pop_to_consider[geo]*np.max(source.level_pop)
-                taus = []
-                for i,trans in enumerate(source.emitting_molecule.rad_transitions):
-                    if level_pop_selection[trans.up.index]:
-                        taus.append(source.tau_nu0_individual_transitions[i])
-                if len(taus) > 0:
-                    max_taus.append(np.max(taus))
                 print(specie)
                 print(geo)
                 print(N,Tkin,collider_densities)
+                level_pop_selection =\
+                    source.level_pop > frac_max_level_pop_to_consider[geo]*np.max(source.level_pop)
+                #check Tex, tau, TR, flux for individual transitions:
+                taus = []
+                for i,trans in enumerate(source.emitting_molecule.rad_transitions):
+                    if level_pop_selection[trans.up.index]:
+                        tau_i = source.tau_nu0_individual_transitions[i]
+                        taus.append(tau_i)
+                        if RADEX_results['Tex'][i] < 0 or RADEX_results["tau"][i] < 0:
+                            print("negative RADEX Tex or tau, skipping")
+                            continue
+                        assert np.isclose(RADEX_results['Tex'][i],
+                                          source.Tex[i],atol=0,rtol=rtol_Tex[geo])
+                        assert np.isclose(RADEX_results['tau'][i],tau_i,
+                                          atol=0,rtol=rtol_tau[geo])
+                        B_Tex = helpers.B_nu(nu=trans.nu0,T=source.Tex[i])
+                        I_bg = ext_background(trans.nu0)
+                        I_bg_sub = (B_Tex-I_bg)*(1-np.exp(-tau_i))
+                        T_R = helpers.RJ_brightness_temperature(
+                                    specific_intensity=I_bg_sub,nu=trans.nu0)
+                        assert np.isclose(RADEX_results['T_R'][i],T_R,atol=0,
+                                          rtol=rtol_TR_flux[geo])
+                        #apply same correction factor as RADEX, and multiply by 4pi:
+                        flux = I_bg_sub*1.0645*4*np.pi*trans.line_profile.width_nu
+                        assert np.isclose(RADEX_results['flux'][i],flux,
+                                          atol=0,rtol=rtol_TR_flux[geo])
+                if len(taus) > 0:
+                    max_taus.append(np.max(taus))
+                #check level pop:
                 assert np.allclose(RADEX_results['level_pop'][level_pop_selection],
                                    source.level_pop[level_pop_selection],atol=0,
-                                   rtol=rtol[geo])
+                                   rtol=rtol_level_pop[geo])
     print(f'max(taus): {np.max(max_taus)}')

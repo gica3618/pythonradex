@@ -18,7 +18,7 @@ def construct_old_GammaC(mol,Tkin,collider_densities):
             K21 = np.interp(Tkin,coll_trans.Tkin_data,coll_trans.K21_data)
             
             #here is fundamental problem with the K cube:
-            #1) interpolation of K21, and the compute K12, or
+            #1) interpolation of K21, and then compute K12, or
             #2) interpolation of both K21 and K12
             #with option 2), the interpolated values of K21 and K12 do not satisfy
             #anymore the equation relating them, so I think option 1 is preferable,
@@ -73,7 +73,7 @@ def compute_K_cube(mol):
         assert np.all(np.isfinite(K_cube[collider]))
     return K_cube
 
-def get_new_GammaC(mol,Tkin,collider_densities):
+def get_GammaC_with_interpolation(mol,Tkin,collider_densities):
     GammaC = np.zeros((mol.n_levels,)*2)
     K_cube = compute_K_cube(mol=mol)
     for collider,coll_dens in collider_densities.items():
@@ -108,8 +108,9 @@ mol = molecule.EmittingMolecule(datafilepath=f'../../tests/LAMDA_files/{filename
                                 line_profile_type='Gaussian',width_v=1*constants.kilo)
 old_GammaC,elements = construct_old_GammaC(mol=mol,Tkin=Tkin,
                                            collider_densities=collider_densities)
-new_GammaC = get_new_GammaC(mol=mol,Tkin=Tkin,collider_densities=collider_densities)
-diff = old_GammaC-new_GammaC
+GammaC_interp = get_GammaC_with_interpolation(mol=mol,Tkin=Tkin,
+                                           collider_densities=collider_densities)
+diff = old_GammaC-GammaC_interp
 print(diff.diagonal())
 print(elements)
 relative_diff = np.abs(diff/old_GammaC)

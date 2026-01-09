@@ -10,7 +10,8 @@ import numpy as np
 from scipy import constants
 
 width_v = 1*constants.kilo
-T_background = 2.73
+#to test flux, I also want zero background:
+background_temperatures = np.array([2.73,10])
 
 #TODO choose temperatures that involve interpolation
 
@@ -43,10 +44,12 @@ test_cases = [{'filename':'co.dat',
                                              'para-H2':1/constants.centi**3}],
                'N_values':np.array((1e12,1e15,1e20))/constants.centi**2,
                'Tkin_values':np.array((25,124,144))}]
+for t in test_cases:
+    t["T_background_values"] = background_temperatures
 
-def RADEX_out_filename(radex_geometry,specie,Tkin,N,collider_densities):
+def RADEX_out_filename(radex_geometry,specie,Tkin,T_background,N,collider_densities):
     rg = radex_geometry.replace(' ','').replace('\n','')
-    save_filename = f'radex_{rg}_{specie}_Tkin{Tkin}_'\
+    save_filename = f'radex_{rg}_{specie}_Tkin{Tkin}_Tbg{T_background}_'\
                     +f'N{N/constants.centi**-2:.1g}'
     for coll,dens in collider_densities.items():
         save_filename += f'_{coll}_{dens/constants.centi**-3:.1g}'

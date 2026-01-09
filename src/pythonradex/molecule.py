@@ -331,6 +331,10 @@ class EmittingMolecule(Molecule):
             y1 = self.K21_matrix[collider][:,j]
             x = Tkin
             K21 = (y0*(x1-x) + y1*(x-x0)) / (x1-x0)
+        #note that it is important to calculate K12 from the interpolated value
+        #of K21, rather than interpolating both K21 and K12. This is because
+        #the two values should satisfy the fundamental equation relating them
+        #see also check_GammaC_interpolation.py
         K12 = atomic_transition.compute_K12(
                   K21=K21,g_up=self.coll_gups[collider],
                   g_low=self.coll_glows[collider],

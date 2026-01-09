@@ -396,3 +396,53 @@ class LimeLevelPopOutput():
             species_name = table.header['MOL_NAME']
             self.levelpops[species_name] = table.data
             self.density[species_name] = grid.field('DENSMOL{:d}'.format(i+1))
+
+if __name__ == '__main__':
+    x = np.linspace(-100,100,30)*constants.au
+    y = x
+    z = np.linspace(-30,30,30)*constants.au
+    T = np.ones((x.size,y.size,z.size))*75
+    sigma_r = 20*constants.au
+    sigma_z = 5*constants.au
+    sigma_x = sigma_z
+    r0 = 50*constants.au
+    x3D,y3D,z3D = np.meshgrid(x,y,z,indexing='ij')
+    r = np.sqrt(x3D**2+y3D**2)
+    x0 = 25*constants.au
+    y0 = -25*constants.au
+    ne = 10*np.exp(-(r-r0)**2/(2*sigma_r**2))
+    ne = np.where(y3D<0,0,ne)
+    ne += 30*np.exp(-(x3D-x0)**2/(2*sigma_x**2))*np.exp(-(y3D-y0)**2/(2*sigma_x**2))
+    ne *= np.exp(-z3D**2/(2*sigma_z**2))
+    ne/=constants.centi**3
+    colliders = [Collider(name='e',density=ne),Collider(name='H',density=ne)]
+    axes = {'x':x,'y':y,'z':z}
+    datafolder = '/home/gianni/science/LAMDA_database_files'
+    radiating_species = [RadiatingSpecie(moldatfile=os.path.join(datafolder,'c.dat'),
+                                         density=ne),
+                         RadiatingSpecie(moldatfile=os.path.join(datafolder,'c+.dat'),
+                                         density=ne)]
+    Mstar = 2e30*1.75
+    vkep = np.sqrt(constants.G*Mstar/r)
+    velocity = {'x':y3D/r*vkep,'y':-x3D/r*vkep}
+    radius = 300*constants.au
+    broadening_param = 700
+    general_img_kwargs = {'nchan':201,'velres':297.4,'trans':0,'pxls':200,
+                          'imgres':0.1*constants.arcsec,'distance':20*constants.parsec,
+                          'phi':0,'units':'2 4'}
+    image_c = LimeImage(theta=0,filename='test_c.fits',molI=0,**general_img_kwargs)
+    image_cplus = LimeImage(theta=0,filename='test_c+.fits',molI=1,**general_img_kwargs)
+    images = [image_c,image_cplus]
+    lime = Lime(axes=axes,T=T,colliders=colliders,radiating_species=radiating_species,
+                velocity=velocity,radius=radius,broadening_param=broadening_param,
+                images=images)
+    lime.run()
+    for imgbase in ('test_c','test_c+'):
+        output_flux = LimeFitsOutputFluxSI('{:s}_SI.fits'.format(imgbase))
+        output_flux.compute_projections()
+        output_flux.plot_mom0()
+        output_flux.plot_pv()
+        output_tau = LimeFitsOutputTau('{:s}_Tau.fits'.format(imgbase))
+        output_tau.compute_max_map()
+        output_tau.plot_max_map()
+    plt.show()

@@ -14,9 +14,10 @@ Created on Wed Sep  4 19:03:24 2019
 #the flux formula is not correct, i.e. isotropic flux density is assumed, which is not
 #true
 
+#NOTE: If RADEX is crashing, check if it is because the path to the outfile is too long.
+#if that is the case, recompile RADEX with a modified radex.inc
+
 import sys
-sys.path.append('..')
-import general
 sys.path.append('../lime')
 import pyLime
 from pythonradex import radiative_transfer, helpers
@@ -26,6 +27,7 @@ import radex_wrapper
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
+import os
 
 filename = 'co.dat'
 Tkin = 100
@@ -33,7 +35,7 @@ coll_partner_density_cases = {'LTE':{'ortho-H2':1e8/constants.centi**3},
                               'non-LTE':{'ortho-H2':1e2/constants.centi**3}}
 #coll_partner_density_cases = {'non-LTE':{'ortho-H2':1e2/constants.centi**3}}
 N_cases = {'thick':5e18/constants.centi**2,'thin':1e15/constants.centi**2,
-              'general':1e17/constants.centi**2}
+           'general':1e17/constants.centi**2}
 ext_background = helpers.generate_CMB_background()
 T_background = 2.73
 line_profile_types = ['rectangular','Gaussian']
@@ -41,13 +43,16 @@ nu0 = 345.7959899*constants.giga
 trans_number = 2
 width_v = 1*constants.kilo
 distance = 10*constants.parsec
-filepath = general.datafilepath(filename)
+#this is SO stupid, but LIME crashes when the filepath is too long...
+#So I set it to something short on my machine...
+filepath = os.path.join('/home/gianni/science/LAMDA_database_files',filename)
 width_nu = width_v/constants.c*nu0
 epsilon_nu = 1*constants.giga
 freq_interval = radex_wrapper.Interval(min=nu0-epsilon_nu,max=nu0+epsilon_nu)
 
 #run with LIME output enable first, to check that it runs fine, then suppress it
 suppress_LIME_stdout_stderr = True
+n_threads = 4
 
 '''
 ################################################################
@@ -89,7 +94,6 @@ lime_radius = 4*r
 def density(N):
     return N/(2*r)
 ################################################################
-
 
 radex_wrapper_geo = {'sphere':'static sphere',
                      'slab':'LVG slab'}
@@ -142,12 +146,13 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
         key = '{:s} {:s}'.format(geo,line_profile_type)
         tau[key] = source.tau_nu0_individual_transitions[trans_number]
         Tex[key] = source.Tex[trans_number] 
-        obs_flux[key] = source.fluxes_of_individual_transitions(
-                                   solid_angle=Omega,transitions=[trans_number,])
+        obs_flux[key] = source.frequency_integrated_emission_of_individual_transitions(
+                                   output_type="flux",solid_angle=Omega,
+                                   transitions=[trans_number,])
         nu0 = source.emitting_molecule.rad_transitions[trans_number].nu0
         width_nu = width_v/constants.c*nu0
         nu = np.linspace(nu0-width_nu,nu0+width_nu,100)
-        spec = source.spectrum(solid_angle=Omega,nu=nu)
+        spec = source.spectrum(output_type="flux density",solid_angle=Omega,nu=nu)
         obs_flux_density[key] = np.max(spec)
 
     radex_input = radex_wrapper.RadexInput(
@@ -175,7 +180,8 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
                        broadening_param=broadening_param,
                        images=images,level_population_filename='levelpop.fits',
                        n_solve_iters=n_solve_iters[LTE_case],
-                       suppress_stdout_stderr=suppress_LIME_stdout_stderr)
+                       suppress_stdout_stderr=suppress_LIME_stdout_stderr,
+                       n_threads=n_threads)
     lime.run()
     output_flux = pyLime.LimeFitsOutputFluxSI('image_SI.fits')
     output_flux.compute_projections()

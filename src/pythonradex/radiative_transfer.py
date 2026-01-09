@@ -50,14 +50,15 @@ class Source():
         '''Initialises a new instance of the Source class.
 
         Args:
-            datafilepath (:obj:`str`): filepath to the LAMDA file that contains
+            datafilepath (:obj:`str`): filepath to the file in LAMDA format that contains
                 the atomic / molecular data
             geometry (:obj:`str`): determines how the escape probability
                 and flux are calculated. Available options: "static sphere", 
                 "static sphere RADEX", "static slab", "LVG slab", "LVG sphere" and
                 "LVG sphere RADEX". The options containing "RADEX" are meant to
                 mimic the behaviour of the original RADEX code by using the same
-                equations as RADEX.
+                equations for the escape probability and the (non-background-subtracted)
+                intensity as RADEX.
             line_profile_type (:obj:`str`): The type of the line profile.
                 Available options: "rectangular" or "Gaussian". Note that for
                 LVG geometries, only "rectangular" is allowed.
@@ -70,7 +71,7 @@ class Source():
                 of the source. So, for "LVG sphere", width_v=2*V, where V is the
                 velocity at the surface of the sphere. In terms of the constant
                 velocity gradient dv/dr=V/R (with R the radius of the sphere),
-                we can also say width_v=dv/dr*2*R. For "LVG slab", width_v=dv/dz*Z
+                we can also say that width_v=dv/dr*2*R. For "LVG slab", width_v=dv/dz*Z
                 where Z is the depth of the slab and dv/dz the constant velocity
                 gradient of the slab.
             use_Ng_acceleration (:obj:`bool`): Whether to use Ng acceleration. Defaults
@@ -84,7 +85,7 @@ class Source():
                 with static geometries (i.e. not with LVG geometries).
             warn_negative_tau (:obj:`bool`): Whether the raise a warning when negative
                 optical depth is encountered. Defaults to True. Setting this to False
-                is useful when calculating a grid of models.
+                may be useful when calculating a grid of models.
             verbose (:obj:`bool`): Whether to print additional information. Defaults to False.
             test_mode (:obj:`bool`): Enter test mode. Only for developer, should not be used
                 by general user. Defaults to False.
@@ -358,13 +359,14 @@ class Source():
             the dust does not hinder line photons from escaping the source). Thus, this
             function throws an error if the dust is not optically thin. Similarly,
             the calculation is not possible when lines are overlapping and are not
-            optically thin. The user needs to choose an appropriate
-            observational quantity to be compared to the line fluxes
-            calculated here. In particular, for optically thin lines, the
-            continuum-subtracted observation might be appropriate. On the other
-            hand, for optically thick lines, the non-continuum-subtracted
-            observations might be more appropriate (because the optically thick
-            line blocks the continuum at the line enter; see e.g. Weaver et al. 2018)
+            optically thin.
+            The user needs to choose an appropriate observational quantity to
+            be compared to the line fluxes calculated here. In particular, for
+            optically thin lines, the continuum-subtracted observation might be
+            appropriate. On the other hand, for optically thick lines, the
+            non-continuum-subtracted observations might be more appropriate
+            (because the optically thick line blocks the continuum at the
+             line enter; see e.g. Weaver et al. 2018)
 
         Args:
             output_type (str): Specifies the type of the output. Can either be
@@ -373,13 +375,13 @@ class Source():
             transitions (:obj:`list` of :obj:`int` or None): The indices of the
                 transitions for which to calculate the fluxes. If None, then the
                 fluxes of all transitions are calculated. Defaults to None. The
-                indices correspond to the list of transitions in the LAMDA file,
-                starting with 0.
+                indices correspond to the list of transitions in the
+                LAMDA-formatted file, with the first transition having index 0.
             solid_angle (:obj:`float`): The solid angle of the source in [sr].
-                    Needed for output_type "flux".
+                    Needed for output_type "flux". Defaults to None.
         
         Returns:
-            list: The list of intensities or fluxes in corresponding to the
+            list: The list of intensities or fluxes corresponding to the
             input list of requested transitions. If no specific transitions
             where requested (transitions=None), then the list of fluxes corresponds
             to the transitions as listed in the LAMDA file.
@@ -443,7 +445,7 @@ class Source():
                 "Planck" (brightness temperature calculated using the Planck
                 function, in [K]).
             solid_angle (:obj:`float`): The solid angle of the source in [sr].
-                Needed for output_type "flux density".
+                Needed for output_type "flux density". Defaults to None.
         
         Returns:
             np.ndarray: The emission for each input frequency.
@@ -465,9 +467,9 @@ class Source():
         Args:
             transitions (:obj:`list` of :obj:`int` or None): The indices of the
                 transitions for which to calculate the emission. If None, then
-                the emission of all transitions are calculated.
-                Defaults to None. The indices correspond to the list of
-                transitions in the LAMDA file, starting with 0.
+                the emission of all transitions are calculated. Defaults to None.
+                The indices correspond to the list of transitions in the
+                LAMDA-formatted file, with the first transitions having index 0.
             output_type (str): Specifies the type of the output.
                 Possible choices are "specific intensity" (in [W/m2/Hz/sr]),
                 "flux density" (in [W/m2/Hz]; solid_angle needs to be specified),
@@ -475,7 +477,7 @@ class Source():
                 "Planck" (brightness temperature calculated using the Planck
                 function, in [K]).
             solid_angle (:obj:`float`): The solid angle of the source in [sr].
-                    Needed for output_type "flux density".
+                    Needed for output_type "flux density". Defaults to None.
         
         Returns:
             list: The list of emission values corresponding to the
@@ -513,7 +515,7 @@ class Source():
             ext_backgrounds (:obj:`dict`): A dictionary, one entry for
                 each background that should be used. Each entry can be a function
                 of frequency, or a single number (interpreted as a radiation field
-                independent of frequency). The units are W/m2/Hz/sr. The keys
+                independent of frequency). The units are W/m\ :sup:2/Hz/sr. The keys
                 of the dictionary are used in the output to identify which
                 background was used.
             N_values (:obj:`list` or numpy.ndarray): The list of column densities to

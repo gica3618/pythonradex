@@ -73,8 +73,8 @@ intensity_kwargs["lvg sphere"]["nu0"] = trans.nu0
 intensity_kwargs["lvg sphere"]["V"] = width_v/2
 
 for geo_name,geo in geometries.items():
-    intensity = geo.intensity(**intensity_kwargs[geo_name])
-    flux = np.trapezoid(intensity,nu)*solid_angle
+    specific_intensity = geo.specific_intensity(**intensity_kwargs[geo_name])
+    flux = np.trapezoid(specific_intensity,nu)*solid_angle
     print(f"{geo_name}: {flux:.3g} W/m2")
 
 

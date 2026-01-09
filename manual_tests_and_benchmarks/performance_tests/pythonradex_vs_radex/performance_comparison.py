@@ -97,7 +97,8 @@ for grid_name,grid in grids.items():
                                         collider_densities=collider_densities,N=N,T_dust=0,
                                         tau_dust=0)
                 source.solve_radiative_transfer()
-                source.fluxes_of_individual_transitions(solid_angle=1,transitions=None)
+                source.frequency_integrated_emission_of_individual_transitions(
+                           output_type="flux",solid_angle=1,transitions=None)
             end = time.time()
             pythonradex_time = end-start
             print(f"time: {pythonradex_time:.3g}")

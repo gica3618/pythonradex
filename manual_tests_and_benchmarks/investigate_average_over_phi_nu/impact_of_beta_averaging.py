@@ -8,6 +8,7 @@ Created on Thu May 23 19:59:09 2024
 
 #check whether it makes a difference to the results whether beta is averaged over
 #the line profile or not
+#conclusion: probably not important
 
 import sys
 sys.path.append('..')
@@ -71,8 +72,9 @@ for test_case in test_cases:
             source.update_parameters(**cloud_params)
             source.solve_radiative_transfer()
             Tex.append(source.Tex[trans_index])
-            fluxes.append(source.fluxes_of_individual_transitions(
-                                       solid_angle=1,transitions=[trans_index,]))
+            fluxes.append(source.frequency_integrated_emission_of_individual_transitions(
+                                       output_type="flux",solid_angle=1,
+                                       transitions=[trans_index,]))
             taus.append(source.tau_nu0_individual_transitions[trans_index])
         Tex_relative_diff = relative_diff(Tex)
         flux_relative_diff = relative_diff(fluxes)

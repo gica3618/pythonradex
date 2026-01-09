@@ -54,8 +54,6 @@ for treat_overlap in treat_line_overlap_values:
         src.update_parameters(ext_background=ext_background,N=N,Tkin=Tkin,
                               collider_densities=collider_densities,**dust_p)
         src.solve_radiative_transfer()
-        expected_level_pop = src.emitting_molecule.LTE_level_pop(
-                                                      T=T_dust_value)
         ax.plot(src.level_pop[:max_plot_level],label=dust_case)
         if d==0:
             ax.plot(src.emitting_molecule.LTE_level_pop(Tkin)[:max_plot_level],

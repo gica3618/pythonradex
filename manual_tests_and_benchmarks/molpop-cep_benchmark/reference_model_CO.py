@@ -25,7 +25,7 @@ solid_angle = 1
 
 width_v = 2*np.sqrt(np.log(2))*Doppler
 source = radiative_transfer.Source(
-                      datafilepath=datafilepath,geometry='uniform slab',
+                      datafilepath=datafilepath,geometry='static slab',
                       line_profile_type='Gaussian',width_v=width_v)
 
 molpop_cep_N = np.array((1e16,1e17,1e18,1e19))*constants.centi**-2/constants.kilo
@@ -51,7 +51,7 @@ for i,N_molpop in enumerate(molpop_cep_N):
         v = np.linspace(-3*width_v,3*width_v,100)
         trans = source.emitting_molecule.rad_transitions[trans_index]
         nu = trans.nu0*(1-v/constants.c)
-        spec = source.spectrum(solid_angle=solid_angle,nu=nu)
+        spec = source.spectrum(output_type="flux density",solid_angle=solid_angle,nu=nu)
         ax = axes[j]
         ax.set_title(f"trans {trans_index}")
         ax.plot(v/constants.kilo,spec,label="pythonradex")

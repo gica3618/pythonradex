@@ -9,7 +9,7 @@ Created on Tue Feb  4 11:34:46 2025
 #benchmark overlapping transitions by using HCN
 #interestingly, when overlap is off, pythonradex and molpop-cep show quite
 #substantial differences in terms of spectra. Tex and tau are generally similar,
-#bad small differences can result in quite large differences in the spectra
+#but small differences can result in quite large differences in the spectra
 
 from scipy import constants
 import sys
@@ -47,7 +47,7 @@ Tkin = 25
 collider_densities = {'H2':1e5/constants.centi**3}
 ext_background = helpers.generate_CMB_background()
 solid_angle = 1
-geometry = 'uniform slab'
+geometry = 'static slab'
 
 
 #calculate molpop-cep spectra:
@@ -69,10 +69,10 @@ for overlap,tau_nu0s in molpop_cep_tau_nu0.items():
 molpop_cep_spectrum = {}
 for overlap,tau in molpop_cep_tau.items():
     molpop_cep_Stot[overlap] /= tau
-    assert geometry == "uniform slab"
-    intensity = escape_probability.UniformSlab.intensity(
+    assert geometry == "static slab"
+    specific_intensity = escape_probability.StaticSlab.specific_intensity(
                           tau_nu=tau,source_function=molpop_cep_Stot[overlap])
-    molpop_cep_spectrum[overlap] = intensity*solid_angle
+    molpop_cep_spectrum[overlap] = specific_intensity*solid_angle
 
 colors = {"pythonradex":"blue","molpop":"red"}
 linestyles = {"treat overlap True":"solid","treat overlap False":"dashed"}
@@ -97,7 +97,7 @@ for treat_line_overlap in (True,False):
         print(f'trans {i}:')
         print(f'Tex={source.Tex[i]:.3g} K (molpop: {Tex_molpop:.3g} K)')
         print(f'tau_nu0={source.tau_nu0_individual_transitions[i]:.3g} (molpop: {tau_molpop:.3g})')
-    spec = source.spectrum(solid_angle=solid_angle,nu=nu)
+    spec = source.spectrum(output_type="flux density",solid_angle=solid_angle,nu=nu)
     ax.plot(v/constants.kilo,spec,label="pythonradex",linestyle=linestyles[key],
             color=colors["pythonradex"])
     ax.plot(v/constants.kilo,molpop_cep_spectrum[key],label="molpop",

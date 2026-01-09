@@ -76,10 +76,11 @@ for i,n in enumerate(n_values):
         beta_fluxes[ID][i] = np.trapezoid(flux_no_beta*beta_nu,nu)
         geo = geometries[ID]
         if ID == 'LVG sphere':
-            intensity_pythonradex = geo.intensity(**intensity_kwargs,**LVG_sphere_kwargs)
+            specific_intensity_pythonradex = geo.specific_intensity(
+                                **intensity_kwargs,**LVG_sphere_kwargs)
         else:
-            intensity_pythonradex = geo.intensity(**intensity_kwargs)
-        pythonradex_fluxes[ID][i] = np.trapezoid(intensity_pythonradex,nu)*solid_angle#W/m2
+            specific_intensity_pythonradex = geo.specific_intensity(**intensity_kwargs)
+        pythonradex_fluxes[ID][i] = np.trapezoid(specific_intensity_pythonradex,nu)*solid_angle#W/m2
 
 for ID in beta_funcs.keys():
     fig,ax = plt.subplots()

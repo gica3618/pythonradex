@@ -48,7 +48,7 @@ for case in cases:
     print(f"tau molpopcep = {case['tau_molpop']}")
     for ID,v_mult in v_multiplier.items():
         N = case["N_kms"]*v_mult
-        N1 = N*LTE_level_pop[trans.low.number]
-        N2 = N*LTE_level_pop[trans.up.number]
+        N1 = N*LTE_level_pop[trans.low.index]
+        N2 = N*LTE_level_pop[trans.up.index]
         tau = trans.tau_nu0(N1=N1,N2=N2)
         print(f"{ID}: {tau:.3g}")

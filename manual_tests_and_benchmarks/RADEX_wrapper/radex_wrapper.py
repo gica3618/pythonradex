@@ -114,6 +114,7 @@ class RadexWrapper():
         if os.path.exists(radex_input.output_filepath):
             os.remove(radex_input.output_filepath)
         os.system(f'{self.exec_path} < {radex_input.input_filepath} > /dev/null')
+        #os.system(f'{self.exec_path} < {radex_input.input_filepath}')
         assert os.path.exists(radex_input.output_filepath),\
                                     "no output file produced, RADEX failed?"
         output = RadexOutput(radex_input.output_filepath).read()

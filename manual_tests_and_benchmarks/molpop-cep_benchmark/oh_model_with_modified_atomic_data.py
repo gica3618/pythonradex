@@ -13,7 +13,7 @@ Created on Tue Jan 28 12:08:41 2025
 #is via photons from the overlapping line
 #unfortunately molpop-cep is apparently not able to converge (?) when treating
 #line overlap if column density is higher than ~1e11 cm-2.
-#if you choose 1e14 cm-2 below, the contrast between treating and not treating
+#for 1e14 cm-2, the contrast between treating and not treating
 #line overlap is much larger
 
 from scipy import constants
@@ -47,7 +47,7 @@ for overlap,N in molpop_column_densities.items():
         raise RuntimeError
     print(f'treat_line_overlap={treat_line_overlap}')
     source = radiative_transfer.Source(
-                          datafilepath=datafilepath,geometry='uniform slab',
+                          datafilepath=datafilepath,geometry='static slab',
                           line_profile_type='Gaussian',width_v=width_v,
                           treat_line_overlap=treat_line_overlap,warn_negative_tau=False)
     for i in ref_transitions:

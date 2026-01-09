@@ -8,6 +8,7 @@ Created on Mon Aug  5 17:26:43 2024
 
 #dust is similar to an overlapping line, so in principle I should average over
 #the line profile. check here how much the results are different
+#conclusion: overlap treatment not necessary
 
 import sys
 sys.path.append('..')

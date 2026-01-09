@@ -42,6 +42,10 @@ def run_models(width_v,collider_densities,N,run_only_with_overlap_treatment=Fals
             print(f'trans {i}:')
             print(f'Tex={source.Tex[i]:.3g} K')
             print(f'tau_nu0={source.tau_nu0_individual_transitions[i]:.3g}')
+            trans = source.emitting_molecule.rad_transitions[i]
+            #tau remains constant although Tex changes, impossible? It's because
+            #the lower level is very sparsely populated:
+            print(f"up,low: {source.level_pop[trans.up.index]:.3g}, {source.level_pop[trans.low.index]:.3g}")
         print('\n')
     print('\n\n')
 
