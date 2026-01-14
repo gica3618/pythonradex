@@ -128,3 +128,5 @@ docs/notebooks/grid.out
 joss_paper/code/co.inp
 joss_paper/code/co.out
 joss_paper/code/radex_log.txt
+joss_paper/code/molpop-cep-master
+joss_paper/code/molpopcep_models/*.out
