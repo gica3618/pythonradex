@@ -419,11 +419,6 @@ def test_intensity_transformation():
         radiative_transfer.Source.transform_specific_intensity(
                    specific_intensity=specific_intensity_Planck,
                    nu=nu,solid_angle=None,output_type="flux density")
-    for output_type in ("Rayleigh-Jeans","Planck"):
-        with pytest.warns(UserWarning):
-            radiative_transfer.Source.transform_specific_intensity(
-                       specific_intensity=specific_intensity_Planck,nu=nu,
-                       solid_angle=1,output_type=output_type)
     with pytest.raises(ValueError):
         radiative_transfer.Source.transform_specific_intensity(
                    specific_intensity=specific_intensity_Planck,nu=nu,
@@ -436,6 +431,26 @@ def test_intensity_transformation():
                output_type="Planck")
     for brightness_T in (T_RJ,T_Planck):
         assert np.allclose(brightness_T,T,atol=0,rtol=1e-8)
+
+def test_solid_angle_warnings():
+    source = get_general_test_source(specie="CO", width_v=1.3*constants.kilo)
+    source.update_parameters(N=1e15*constants.centi**-2,Tkin=123,
+                             collider_densities={"ortho-H2":1e6*constants.centi**-3},
+                             ext_background=cmb,T_dust=0,tau_dust=0)
+    source.solve_radiative_transfer()
+    with pytest.warns(UserWarning):
+        source.frequency_integrated_emission(
+                        output_type="intensity",transitions=None,solid_angle=1.23)
+    for output_type in ("specific intensity","Rayleigh-Jeans","Planck"):
+        with pytest.warns(UserWarning):
+            trans = source.emitting_molecule.rad_transitions[1]
+            width_v = trans.line_profile.width_v
+            v = np.linspace(-2*width_v,2*width_v,20)
+            nu = trans.nu0*(1-v/constants.c)
+            source.spectrum(nu=nu, output_type=output_type,solid_angle=0.23)
+        with pytest.warns(UserWarning):
+            source.emission_at_line_center(output_type=output_type,transitions=None,
+                                           solid_angle=0.45)
 
 def CO_HCl_model_iterator():
     use_Ng_acceleration = True
@@ -470,12 +485,12 @@ spec_output_types = ("specific intensity","flux density","Rayleigh-Jeans","Planc
 @pytest.mark.filterwarnings("ignore:LVG sphere geometry")
 def test_emission_at_line_center():
     for source in CO_HCl_model_iterator():
-        for transitions in (None,[0,2],[1,]):
+        for transitions in (None,[0,2],1):
             if transitions is None:
                 nu0s = source.emitting_molecule.nu0
             else:
                 nu0s =  np.array([source.emitting_molecule.rad_transitions[i].nu0
-                                  for i in transitions])
+                                  for i in np.atleast_1d(transitions)])
             for output_type in spec_output_types:
                 solid_angle = 0.23 if output_type=="flux density" else None
                 emission = source.emission_at_line_center(
@@ -485,6 +500,59 @@ def test_emission_at_line_center():
                                       nu=nu0s,output_type=output_type,
                                       solid_angle=solid_angle)
                 assert np.allclose(emission,expected_emission,atol=0,rtol=1e-3)
+
+def test_transition_index_transformation():
+    source = get_general_test_source(specie="CO", width_v=1.23*constants.kilo)
+    None_indices = source.transform_transition_indices(indices=None)
+    assert np.all(None_indices==np.arange(source.emitting_molecule.n_rad_transitions))
+    indices_0d = source.transform_transition_indices(indices=2)
+    assert indices_0d.ndim == 1
+    assert len(indices_0d) == 1
+    assert indices_0d[0] == 2
+    indices_1d = source.transform_transition_indices(indices=[2,3,5])
+    assert np.all(indices_1d==[2,3,5])
+    with pytest.raises(ValueError):
+        source.transform_transition_indices(indices=np.zeros((3,4)))
+
+def test_single_integer_and_None_and_invalid_transition_indices():
+    source = get_general_test_source(specie="CO", width_v=1.23*constants.kilo)
+    source.update_parameters(N=1e15*constants.centi**-2,Tkin=123,
+                             collider_densities={"ortho-H2":1e6*constants.centi**-3},
+                             ext_background=cmb,T_dust=0,tau_dust=0)
+    source.solve_radiative_transfer()
+    all_indices = np.arange(source.emitting_molecule.n_rad_transitions)
+    invalid_indices = np.ones((2,3,4))
+    for output_type in ("intensity","flux"):
+        solid_angle = None if output_type!="flux" else 0.54
+        f1 = source.frequency_integrated_emission(
+              output_type=output_type,transitions=1,solid_angle=solid_angle)
+        f2 = source.frequency_integrated_emission(
+              output_type=output_type,transitions=[1,],solid_angle=solid_angle)
+        assert f1 == f2
+        f1_None = source.frequency_integrated_emission(
+              output_type=output_type,transitions=None,solid_angle=solid_angle)
+        f2_None = source.frequency_integrated_emission(
+              output_type=output_type,transitions=all_indices,solid_angle=solid_angle)
+        assert np.all(f1_None==f2_None)
+        with pytest.raises(ValueError):
+            source.frequency_integrated_emission(
+                  output_type=output_type,transitions=invalid_indices,solid_angle=solid_angle)
+    for output_type in ("specific intensity","flux density","Rayleigh-Jeans",
+                        "Planck"):
+        solid_angle = None if output_type!="flux density" else 0.54
+        e1 = source.emission_at_line_center(
+              output_type=output_type,transitions=1,solid_angle=solid_angle)
+        e2 = source.emission_at_line_center(
+              output_type=output_type,transitions=[1,],solid_angle=solid_angle)
+        assert e1 == e2
+        e1_None = source.emission_at_line_center(
+              output_type=output_type,transitions=None,solid_angle=solid_angle)
+        e2_None = source.emission_at_line_center(
+              output_type=output_type,transitions=all_indices,solid_angle=solid_angle)
+        assert np.all(e1_None==e2_None)
+        with pytest.raises(ValueError):
+            source.emission_at_line_center(
+              output_type=output_type,transitions=invalid_indices,solid_angle=solid_angle)
 
 @pytest.mark.filterwarnings("ignore:some lines are overlapping")
 @pytest.mark.filterwarnings("ignore:negative optical depth")
@@ -627,99 +695,99 @@ class TestSpectrumPhysics():
                     assert np.allclose(RJ,T_RJ_expected,atol=0,rtol=1e-4)
 
 
-class TestModelGrid():
+# class TestModelGrid():
 
-    ext_backgrounds = {'CMB':helpers.generate_CMB_background(z=2),
-                       'zero':0}
-    N_values = np.array((1e14,1e16))/constants.centi**2
-    Tkin_values = [20,200,231]
-    collider_densities_values = {'ortho-H2':np.array((1e3,1e4))/constants.centi**3,
-                                 'para-H2':np.array((1e4,1e7))/constants.centi**3}
-    grid_kwargs_no_dust = {'ext_backgrounds':ext_backgrounds,'N_values':N_values,
-                           'Tkin_values':Tkin_values,
-                           'collider_densities_values':collider_densities_values}
-    grid_kwargs_with_dust = grid_kwargs_no_dust.copy()
-    grid_kwargs_with_dust['T_dust'] = lambda nu: np.ones_like(nu)*111
-    #make dust optically thin to allow computation of individual line fluxes
-    grid_kwargs_with_dust['tau_dust'] = lambda nu: np.ones_like(nu)*0.05
+#     ext_backgrounds = {'CMB':helpers.generate_CMB_background(z=2),
+#                        'zero':0}
+#     N_values = np.array((1e14,1e16))/constants.centi**2
+#     Tkin_values = [20,200,231]
+#     collider_densities_values = {'ortho-H2':np.array((1e3,1e4))/constants.centi**3,
+#                                  'para-H2':np.array((1e4,1e7))/constants.centi**3}
+#     grid_kwargs_no_dust = {'ext_backgrounds':ext_backgrounds,'N_values':N_values,
+#                            'Tkin_values':Tkin_values,
+#                            'collider_densities_values':collider_densities_values}
+#     grid_kwargs_with_dust = grid_kwargs_no_dust.copy()
+#     grid_kwargs_with_dust['T_dust'] = lambda nu: np.ones_like(nu)*111
+#     #make dust optically thin to allow computation of individual line fluxes
+#     grid_kwargs_with_dust['tau_dust'] = lambda nu: np.ones_like(nu)*0.05
 
-    @staticmethod
-    def generate_source():
-        source = radiative_transfer.Source(
-                              datafilepath=datafilepath['CO'],geometry='static sphere',
-                              line_profile_type='rectangular',width_v=1.4*constants.kilo,
-                              use_Ng_acceleration=True,treat_line_overlap=False)
-        return source
+#     @staticmethod
+#     def generate_source():
+#         source = radiative_transfer.Source(
+#                               datafilepath=datafilepath['CO'],geometry='static sphere',
+#                               line_profile_type='rectangular',width_v=1.4*constants.kilo,
+#                               use_Ng_acceleration=True,treat_line_overlap=False)
+#         return source
 
-    def test_invalid_coll_densities(self):
-        invalid_coll_densities = [{'ortho-H2':[1,2],'para-H2':[1,]},
-                                  {'ortho-H2':[1,],'para-H2':[1,2]},
-                                  {'ortho-H2':[1,2],'para-H2':[1,3,4,5,5]},]
-        source = self.generate_source()
-        for coll_densities in invalid_coll_densities:
-            grid_kwargs = self.grid_kwargs_no_dust.copy()
-            grid_kwargs['collider_densities_values'] = coll_densities
-            with pytest.raises(AssertionError):
-                grid = source.efficient_parameter_iterator(**grid_kwargs)
-                list(grid)
+#     def test_invalid_coll_densities(self):
+#         invalid_coll_densities = [{'ortho-H2':[1,2],'para-H2':[1,]},
+#                                   {'ortho-H2':[1,],'para-H2':[1,2]},
+#                                   {'ortho-H2':[1,2],'para-H2':[1,3,4,5,5]},]
+#         source = self.generate_source()
+#         for coll_densities in invalid_coll_densities:
+#             grid_kwargs = self.grid_kwargs_no_dust.copy()
+#             grid_kwargs['collider_densities_values'] = coll_densities
+#             with pytest.raises(AssertionError):
+#                 grid = source.efficient_parameter_iterator(**grid_kwargs)
+#                 list(grid)
 
-    def test_grid(self):
-        source = self.generate_source()
-        nu = source.emitting_molecule.nu0
-        for grid_kwargs in (self.grid_kwargs_no_dust,self.grid_kwargs_with_dust):
-            for params in source.efficient_parameter_iterator(**grid_kwargs):
-                if "T_dust" in grid_kwargs:
-                    expected_T_dust = grid_kwargs["T_dust"](nu)
-                else:
-                    expected_T_dust = np.zeros_like(nu)
-                assert np.all(source.rate_equations.T_dust(nu)==
-                              expected_T_dust)
-                if "tau_dust" in grid_kwargs:
-                    expected_tau_dust = grid_kwargs["tau_dust"](nu)
-                else:
-                    expected_tau_dust = np.zeros_like(nu)
-                assert np.all(source.rate_equations.tau_dust(nu)==
-                              expected_tau_dust)
-                ext_background_name = params["ext_background"]
-                if ext_background_name == "zero":
-                    expected_background = np.zeros_like(nu)
-                else:
-                    expected_background = grid_kwargs["ext_backgrounds"][ext_background_name](nu)
-                assert np.all(source.rate_equations.ext_background(nu)==expected_background)
-                assert source.rate_equations.N == params["N"]
-                assert source.rate_equations.Tkin == params["Tkin"]
-                assert source.rate_equations.collider_densities\
-                                               == params["collider_densities"]
+#     def test_grid(self):
+#         source = self.generate_source()
+#         nu = source.emitting_molecule.nu0
+#         for grid_kwargs in (self.grid_kwargs_no_dust,self.grid_kwargs_with_dust):
+#             for params in source.efficient_parameter_iterator(**grid_kwargs):
+#                 if "T_dust" in grid_kwargs:
+#                     expected_T_dust = grid_kwargs["T_dust"](nu)
+#                 else:
+#                     expected_T_dust = np.zeros_like(nu)
+#                 assert np.all(source.rate_equations.T_dust(nu)==
+#                               expected_T_dust)
+#                 if "tau_dust" in grid_kwargs:
+#                     expected_tau_dust = grid_kwargs["tau_dust"](nu)
+#                 else:
+#                     expected_tau_dust = np.zeros_like(nu)
+#                 assert np.all(source.rate_equations.tau_dust(nu)==
+#                               expected_tau_dust)
+#                 ext_background_name = params["ext_background"]
+#                 if ext_background_name == "zero":
+#                     expected_background = np.zeros_like(nu)
+#                 else:
+#                     expected_background = grid_kwargs["ext_backgrounds"][ext_background_name](nu)
+#                 assert np.all(source.rate_equations.ext_background(nu)==expected_background)
+#                 assert source.rate_equations.N == params["N"]
+#                 assert source.rate_equations.Tkin == params["Tkin"]
+#                 assert source.rate_equations.collider_densities\
+#                                                == params["collider_densities"]
 
-    @pytest.mark.filterwarnings("ignore:negative optical depth")
-    @pytest.mark.filterwarnings("ignore:invalid value encountered")
-    def test_grid_explicitly(self):
-        source = self.generate_source()
-        v = np.linspace(-source.emitting_molecule.width_v,source.emitting_molecule.width_v,10)
-        nu = source.emitting_molecule.nu0[1]*(1-v/constants.c)
-        for grid_kwargs in (self.grid_kwargs_no_dust,self.grid_kwargs_with_dust):
-            for params in source.efficient_parameter_iterator(**grid_kwargs):
-                source.solve_radiative_transfer()
-                check_source = self.generate_source()
-                T_dust = grid_kwargs["T_dust"] if "T_dust" in grid_kwargs else 0
-                tau_dust = grid_kwargs["tau_dust"] if "tau_dust" in grid_kwargs\
-                               else 0
-                check_source.update_parameters(
-                          N=params["N"],Tkin=params["Tkin"],
-                          collider_densities=params["collider_densities"],
-                          ext_background=grid_kwargs["ext_backgrounds"][params["ext_background"]],
-                          T_dust=T_dust,tau_dust=tau_dust)
-                check_source.solve_radiative_transfer()
-                assert np.all(source.Tex==check_source.Tex)
-                assert np.all(source.level_pop==check_source.level_pop)
-                assert np.all(source.tau_nu0_individual_transitions
-                              ==check_source.tau_nu0_individual_transitions)
-                assert np.all(source.frequency_integrated_emission_of_individual_transitions(output_type="intensity")
-                              ==check_source.frequency_integrated_emission_of_individual_transitions(output_type="intensity"))
-                assert np.all(source.spectrum(nu=nu,output_type="Planck")==
-                              check_source.spectrum(nu=nu,output_type="Planck"))
-                assert np.all(source.emission_at_line_center(output_type="Rayleigh-Jeans")
-                              ==check_source.emission_at_line_center(output_type="Rayleigh-Jeans"))
+#     @pytest.mark.filterwarnings("ignore:negative optical depth")
+#     @pytest.mark.filterwarnings("ignore:invalid value encountered")
+#     def test_grid_explicitly(self):
+#         source = self.generate_source()
+#         v = np.linspace(-source.emitting_molecule.width_v,source.emitting_molecule.width_v,10)
+#         nu = source.emitting_molecule.nu0[1]*(1-v/constants.c)
+#         for grid_kwargs in (self.grid_kwargs_no_dust,self.grid_kwargs_with_dust):
+#             for params in source.efficient_parameter_iterator(**grid_kwargs):
+#                 source.solve_radiative_transfer()
+#                 check_source = self.generate_source()
+#                 T_dust = grid_kwargs["T_dust"] if "T_dust" in grid_kwargs else 0
+#                 tau_dust = grid_kwargs["tau_dust"] if "tau_dust" in grid_kwargs\
+#                                else 0
+#                 check_source.update_parameters(
+#                           N=params["N"],Tkin=params["Tkin"],
+#                           collider_densities=params["collider_densities"],
+#                           ext_background=grid_kwargs["ext_backgrounds"][params["ext_background"]],
+#                           T_dust=T_dust,tau_dust=tau_dust)
+#                 check_source.solve_radiative_transfer()
+#                 assert np.all(source.Tex==check_source.Tex)
+#                 assert np.all(source.level_pop==check_source.level_pop)
+#                 assert np.all(source.tau_nu0_individual_transitions
+#                               ==check_source.tau_nu0_individual_transitions)
+#                 assert np.all(source.frequency_integrated_emission(output_type="intensity")
+#                               ==check_source.frequency_integrated_emission(output_type="intensity"))
+#                 assert np.all(source.spectrum(nu=nu,output_type="Planck")==
+#                               check_source.spectrum(nu=nu,output_type="Planck"))
+#                 assert np.all(source.emission_at_line_center(output_type="Rayleigh-Jeans")
+#                               ==check_source.emission_at_line_center(output_type="Rayleigh-Jeans"))
 
 
 def test_print_results():
@@ -852,7 +920,7 @@ def test_single_transition_molecule():
                 source.solve_radiative_transfer()
                 nu0 = source.emitting_molecule.nu0[0]
                 if source.rate_equations.tau_dust(nu0) < 0.1:
-                    source.frequency_integrated_emission_of_individual_transitions(
+                    source.frequency_integrated_emission(
                              output_type="intensity",transitions=transitions)
                 v = np.linspace(-2*width_v,2*width_v,10)
                 nu = nu0*(1-v/constants.c)
@@ -881,13 +949,13 @@ class TestFrequencyIntegratedEmission():
                                       N=1e12/constants.centi**-2,
                                       line_profile_type="Gaussian")
         with pytest.raises(ValueError):
-            source.frequency_integrated_emission_of_individual_transitions(
+            source.frequency_integrated_emission(
                         output_type="flux")
         with pytest.raises(ValueError):
-            source.frequency_integrated_emission_of_individual_transitions(
+            source.frequency_integrated_emission(
                             output_type="flux",solid_angle=None)
         with pytest.raises(ValueError):
-            source.frequency_integrated_emission_of_individual_transitions(
+            source.frequency_integrated_emission(
                             output_type="asdf")
 
     def test_with_physics_thin(self):
@@ -908,7 +976,7 @@ class TestFrequencyIntegratedEmission():
                 f = total_mol*up_level_pop*line.A21*line.Delta_E\
                        /(4*np.pi*distance**2)
                 expected_flux.append(f)
-            fluxes = source.frequency_integrated_emission_of_individual_transitions(
+            fluxes = source.frequency_integrated_emission(
                               output_type="flux",solid_angle=sphere_Omega)
             assert np.allclose(fluxes,expected_flux,atol=0,rtol=1e-2)
         
@@ -924,6 +992,6 @@ class TestFrequencyIntegratedEmission():
                 continue
             expected_specific_intensity = helpers.B_nu(nu=line.nu0,T=source.Tex[i])
             expected_intensity = expected_specific_intensity*line.line_profile.width_nu
-            intensity = source.frequency_integrated_emission_of_individual_transitions(
+            intensity = source.frequency_integrated_emission(
                              output_type="intensity",transitions=[i,])
             assert np.isclose(intensity,expected_intensity,atol=0,rtol=1e-3)

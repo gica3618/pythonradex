@@ -35,7 +35,7 @@ def generate_CMB_background(z=0):
 
     Returns:
         func: a function giving CMB background in [W/m\ :sup:`2`/Hz/sr] for an input frequency in [Hz]
-        '''
+    '''
     T_CMB = 2.73*(1+z)
     def CMB_background(nu):
         return B_nu(nu=nu,T=T_CMB)
@@ -74,12 +74,12 @@ def RJ_brightness_temperature(specific_intensity,nu):
     
     Args:
         specific_intensity (:obj:`float` or numpy.ndarray): the specific intensity in
-        [W/m\ :sup:`2`/Hz/sr]
+            [W/m\ :sup:`2`/Hz/sr]
         nu (:obj:`float` or numpy.ndarray): the frequency in [Hz]
 
     Returns:
         float or numpy.ndarray: the Rayleigh-Jeans brightness temperature in [K]
-        '''
+    '''
     return specific_intensity*constants.c**2/(2*nu**2*constants.k)
 
 @nb.jit(nopython=True,cache=True)
@@ -88,11 +88,11 @@ def Planck_brightness_temperature(specific_intensity,nu):
     
     Args:
         specific_intensity (:obj:`float` or numpy.ndarray): the specific intensity in
-        [W/m\ :sup:`2`/Hz/sr]
+            [W/m\ :sup:`2`/Hz/sr]
         nu (:obj:`float` or numpy.ndarray): the frequency in [Hz]
 
     Returns:
         float or numpy.ndarray: the Planck brightness temperature in [K]
-        '''
+    '''
     log_term = np.log(2*constants.h*nu**3/(constants.c**2*specific_intensity)+1)
     return constants.h*nu/constants.k*log_term**-1

@@ -1,8 +1,8 @@
 Differences between ``pythonradex`` and ``RADEX``
 ------------------------------------------------------
 
-Overlapping lines and continuum
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Overlapping lines and internal continuum
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ``pythonradex`` is able to handle excitation effects of overlapping lines (i.e. lines that are so close in frequency that photons emitted from one line can be absorbed by another line). ``pythonradex`` is also able to include effects of an internal radiation field specified by the user (typically arising from dust that is mixed with the gas). Both of these effects are not included in ``RADEX``.
 
 Programming language and performance
@@ -11,13 +11,13 @@ While ``RADEX`` is written in Fortran, ``pythonradex`` is written in python. Sim
 
 Different flux output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-There is a difference between the outputs of ``RADEX`` and ``pythonradex``. The ``RADEX`` output :math:`T_R` (or the corresponding flux outputs) is intended to be directly compared to telescope data. To be more specific, from the computed optical depth and excitation temperature, ``RADEX`` first computes :math:`I_\mathrm{tot} = B_\nu(T_\mathrm{ex})(1-e^{-\tau_\nu}) + I_\mathrm{bg}e^{-\tau_\nu}`, i.e. the total intensity at the line centre that is recorded at the telescope, where :math:`I_\mathrm{bg}` is the background radiation. This is the sum of the radiation from the gas (first term) and the background radiation attenuated by the gas (second term). From this, ``RADEX`` assumes the observer has subtracted the background, giving :math:`I_\mathrm{measured} = I_\mathrm{tot} - I_\mathrm{bg} = (B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})`. The ``RADEX`` output :math:`T_R` is the Rayleigh-Jeans temperature corresponding to :math:`I_\mathrm{measured}`. This output may or may not be the right quantity to be compared to observations. For example, it is almost certainly not appropriate to be compared to interferometric data. On the other hand, ``pythonradex`` outputs the pure line flux without any background subtraction, i.e. the output corresponds simply to the flux emitted by the gas (for a slab geometry, the fluxes would be based on the intensity given simply by :math:`B_\nu(T_\mathrm{ex})(1-e^{-\tau_\nu}))`. This allows the user to decide how the flux should be compared to observations.
+There is a difference between the outputs of ``RADEX`` and ``pythonradex``. The ``RADEX`` output :math:`T_R` (or the corresponding flux outputs) is intended to be directly compared to telescope data. To be more specific, from the optical depth and excitation temperature, ``RADEX`` first computes :math:`I_\mathrm{tot} = B_\nu(T_\mathrm{ex})(1-e^{-\tau_\nu}) + I_\mathrm{bg}e^{-\tau_\nu}`, i.e. the total specific intensity at the line centre that is recorded at the telescope, where :math:`I_\mathrm{bg}` is the background radiation. This is the sum of the radiation from the gas (first term) and the background radiation attenuated by the gas (second term). From this, ``RADEX`` assumes the observer has subtracted the background, giving :math:`I_\mathrm{measured} = I_\mathrm{tot} - I_\mathrm{bg} = (B_\nu(T_\mathrm{ex})-I_\mathrm{bg})(1-e^{-\tau_\nu})`. The ``RADEX`` output :math:`T_R` is the Rayleigh-Jeans temperature corresponding to :math:`I_\mathrm{measured}`. This output may or may not be the right quantity to be compared to observations. For example, it is almost certainly not appropriate to be compared to interferometric data. On the other hand, ``pythonradex`` outputs the pure line emission without any background subtraction, i.e. the output corresponds simply to the emission emitted by the gas (for a slab geometry, the fluxes would be based on the specific intensity given simply by :math:`B_\nu(T_\mathrm{ex})(1-e^{-\tau_\nu}))`. This allows the user to decide how the flux should be compared to observations.
 
 .. _sphere_flux_difference:
 
 Different flux for spherical geometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-For a given excitation temperature :math:`T_{ex}` and optical depth :math:`\tau_\nu`, ``RADEX`` calculates the intensity as
+For a given excitation temperature :math:`T_{ex}` and optical depth :math:`\tau_\nu`, ``RADEX`` calculates the specific intensity as
 
 .. math::
     I_\nu = B_\nu(T_{ex})(1-e^{-\tau_\nu})

@@ -29,7 +29,7 @@ Please see the :ref:`example notebooks<examples>` for an overview of the functio
    contact
    API
    citation
-   
+
 
 
 Acknowledgement

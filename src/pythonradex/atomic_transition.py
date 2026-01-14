@@ -178,7 +178,9 @@ class Level():
     Attributes:
         g (:obj:`float`): the statistical weight of the level
         E (:obj:`float`): the energy of the level in [J]
-        index (:obj:`int`): the index of the level
+        index (:obj:`int`): the index of the level; if constructed from a
+            LAMDA-formatted file, this index indicates the postiion in the file,
+            with the first level listed in the file having index 0.
     '''
 
     def __init__(self,g,E,index):

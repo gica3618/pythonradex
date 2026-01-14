@@ -72,7 +72,7 @@ for test_case in test_cases:
             source.update_parameters(**cloud_params)
             source.solve_radiative_transfer()
             Tex.append(source.Tex[trans_index])
-            fluxes.append(source.frequency_integrated_emission_of_individual_transitions(
+            fluxes.append(source.frequency_integrated_emission(
                                        output_type="flux",solid_angle=1,
                                        transitions=[trans_index,]))
             taus.append(source.tau_nu0_individual_transitions[trans_index])

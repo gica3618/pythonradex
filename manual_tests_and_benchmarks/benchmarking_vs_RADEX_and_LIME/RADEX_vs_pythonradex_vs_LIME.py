@@ -146,7 +146,7 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
         key = '{:s} {:s}'.format(geo,line_profile_type)
         tau[key] = source.tau_nu0_individual_transitions[trans_number]
         Tex[key] = source.Tex[trans_number] 
-        obs_flux[key] = source.frequency_integrated_emission_of_individual_transitions(
+        obs_flux[key] = source.frequency_integrated_emission(
                                    output_type="flux",solid_angle=Omega,
                                    transitions=[trans_number,])
         nu0 = source.emitting_molecule.rad_transitions[trans_number].nu0

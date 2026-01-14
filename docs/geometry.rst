@@ -3,9 +3,9 @@
 Source geometries
 ======================
 
-The calculations of the escape probability and the emerging flux depend on the adopted geometry. Below we give an overview of the geometries available in ``pyhonradex``. For all geometries, we assume a homogeneous medium (i.e. constant number density). For convenience, the escape probabilities are expressed as functions of optical depth :math:`\tau_\nu` rather than the absorption coefficient :math:`\alpha_\nu`. The fluxes are expressed using the source function :math:`S_\nu`. In absence of dust and overlapping lines, it is simply given by the Planck function evaluated at the excitation temperature of the transition: :math:`S_\nu=B_\nu(T_\mathrm{ex})`.
+The calculations of the escape probability and the emerging flux depend on the adopted geometry. Below we give an overview of the geometries available in ``pythonradex``. For all geometries, we assume a homogeneous medium (i.e. constant number density). For convenience, the escape probabilities are expressed as functions of optical depth :math:`\tau_\nu` rather than the absorption coefficient :math:`\alpha_\nu`. The specific intensities are expressed using the source function :math:`S_\nu`. In absence of dust and overlapping lines, it is simply given by the Planck function evaluated at the excitation temperature of the transition: :math:`S_\nu=B_\nu(T_\mathrm{ex})`.
 
-Note that ``RADEX`` always uses the formula for a slab geometry to calculate the flux, regardless of the adopted geometry. This is incorrect for spherical geometries. See :doc:`difference_pythonradex_RADEX` for more details.
+Note that ``RADEX`` always uses the formula for a slab geometry to calculate the specific intensity, regardless of the adopted geometry. This is incorrect for spherical geometries. See :doc:`difference_pythonradex_RADEX` for more details.
 
 
 Static sphere
@@ -17,18 +17,20 @@ A homogeneous, static sphere. The escape probability is given in [Osterbrock74]_
 
     \beta(\tau_\nu) = \frac{3}{2\tau_\nu}\left(1-\frac{2}{\tau_\nu^2}+\left(\frac{2}{\tau_\nu}+\frac{2}{\tau_\nu^2}\right) e^{-\tau_\nu}\right)
 
-where :math:`\tau_\nu` is the optical depth of the diameter of the sphere. The observed flux (in [W/m\ :sup:`2`/Hz]) can also be calculated from [Osterbrock74]_ and is given by:
+where :math:`\tau_\nu` is the optical depth of the diameter of the sphere. The observed specific intensity (in [W/m\ :sup:`2`/Hz/sr]) can also be calculated from [Osterbrock74]_ and is given by:
 
 .. math::
-    :name: eq:flux_static_sphere
+    :name: eq:intensity_static_sphere
 
-    F_\nu = \frac{2S_\nu\Omega}{\tau_\nu^2}\left(\frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)e^{-\tau_\nu}\right)
+    I_\nu = \frac{2S_\nu}{\tau_\nu^2}\left(\frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)e^{-\tau_\nu}\right)
 
-where :math:`S_\nu` is the source function and :math:`\Omega` is the solid angle of the source (given by :math:`\Omega=R^2\pi/d^2` with :math:`R` the radius of the sphere and :math:`d` the distance of the source).
+where :math:`S_\nu` is the source function. To get the flux density in [W/m\ :sup:`2`/Hz], one needs to multiply :math:`I_\nu` by the solid angle :math:`\Omega`, which is given by :math:`\Omega=R^2\pi/d^2` with :math:`R` the radius of the sphere and :math:`d` the distance of the source.
 
-Derivation of escape probability and flux by Osterbrock (1974)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Since the book by [Osterbrock74]_ is not easily accessible online, we present here the derivation of the escape probability and flux for a static sphere. Consider the following sketch showing a sphere with optical depth :math:`\tau_\nu` along its diameter:
+Note that if observations resolve the sphere, the specific intensity will not be constant across the source, unless it is completely optically thick. The specific intensity given above corresponds to the observed specific intensity for unresolved observations (or it can be interpreted as a kind of mean intensity).
+
+Derivation of escape probability and flux density by Osterbrock (1974)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Since the book by [Osterbrock74]_ is not easily accessible online, we present here the derivation of the escape probability and flux density for a static sphere. Consider the following sketch showing a sphere with optical depth :math:`\tau_\nu` along its diameter:
 
 .. figure:: images/sketch_static_sphere.jpg
    :align: center
@@ -37,25 +39,25 @@ Since the book by [Osterbrock74]_ is not easily accessible online, we present he
 
    Static sphere with optical depth :math:`\tau_\nu` along the diameter. We consider a ray that makes an angle :math:`\theta` with respect to the outward normal. The optical depth along that ray is :math:`\tau_{\nu,\theta}=\tau_\nu\cos(\theta)`.
 
-Consider a ray making an angle :math:`\theta` with respect to the outward normal. The optical depth along that ray is :math:`\tau_{\nu,\theta}=\tau_\nu\cos(\theta)`. Using the fact that the sphere is uniform (i.e. the emission coefficient :math:`j_\nu` is constant), the spectral radiance in the direction of the ray, at the surface of the sphere, is given by (see [Rybicki04]_, equation 1.30)
+Consider a ray making an angle :math:`\theta` with respect to the outward normal. The optical depth along that ray is :math:`\tau_{\nu,\theta}=\tau_\nu\cos(\theta)`. Using the fact that the sphere is uniform (i.e. the emission coefficient :math:`j_\nu` is constant), the specific intensity in the direction of the ray, at the surface of the sphere, is given by (see [Rybicki04]_, equation 1.30)
 
 .. math::
 
     I_\nu(\theta) = \frac{j_\nu}{\alpha_\nu}(1-e^{-\tau_{\nu,\theta}}) = \frac{j_\nu}{\alpha_\nu}(1-e^{-\tau_\nu\cos(\theta)})
 
-where :math:`\alpha_\nu` is the absorption coefficient. Next, we compute the outward flux at the surface of the sphere (per unit area, time and frequency) by integrating over all outward directions. Here we use the solid angle element :math:`\mathrm{d}\Omega=\sin\theta\mathrm{d}\theta\mathrm{d}\phi`:
+where :math:`\alpha_\nu` is the absorption coefficient. Next, we compute the outward flux density at the surface of the sphere (energy per unit area, time and frequency) by integrating over all outward directions. Here we use the solid angle element :math:`\mathrm{d}\Omega=\sin\theta\mathrm{d}\theta\mathrm{d}\phi`:
 
 .. math::
 
     F_\nu^s = \int_0^{2\pi}\int_0^{\pi/2}I_\nu(\theta)\cos\theta\sin\theta\mathrm{d}\theta\mathrm{d}\phi  = \frac{2\pi j_\nu}{\alpha_\nu\tau_\nu^2}\left( \frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)e^{-\tau_\nu} \right)
 
-In this expression, the cosine is necessary to take into account the projection of the surface of the sphere with respect to the outward direction. To calculate the flux observed at the telescope, we multiply :math:`F_\nu^s` with the surface of the sphere (:math:`4\pi R^2`) and divide by :math:`4\pi d^2` where :math:`d` is the distance to the source:
+In this expression, the cosine is necessary to take into account the projection of the surface of the sphere with respect to the outward direction. To calculate the flux density observed at the telescope, we multiply :math:`F_\nu^s` with the surface of the sphere (:math:`4\pi R^2`) and divide by :math:`4\pi d^2` where :math:`d` is the distance to the source:
 
 .. math::
 
     F_\nu =  \frac{2\pi j_\nu}{\alpha_\nu\tau_\nu^2}\left( \frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)e^{-\tau_\nu} \right)\frac{4\pi R^2}{4\pi d^2}
 
-Identifying the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}` and the solid angle of the sphere :math:`\Omega=\frac{R^2\pi}{d^2}`, we recover :ref:`Eq. 2 <eq:flux_static_sphere>`. To calculate the escape probability, we consider the flux at the surface of the sphere in the optically thin limit where all photons escape. It is simply given by the total emission within the spherical volume, divided by the surface of the sphere:
+Finally, :math:`F_\nu` is divided by the solid angle of the sphere :math:`\Omega=\frac{R^2\pi}{d^2}` to derive the observed specific intensity. Identifying the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`, we recover :ref:`Eq. 2 <eq:intensity_static_sphere>`. To calculate the escape probability, we consider the flux density at the surface of the sphere in the optically thin limit where all photons escape. It is simply given by the total emission within the spherical volume, divided by the surface of the sphere:
 
 .. math::
 
@@ -77,14 +79,14 @@ A homogeneous, static slab. The escape probability is given by (e.g. [Elitzur92]
 
     \beta(\tau_\nu) = \frac{\int_0^1 (1-e^{-\tau_\nu/\mu})\mu\mathrm{d}\mu}{\tau_\nu}
 
-The observed flux (in [W/m\ :sup:`2`/Hz]) is given by:
+The specific intensity (in [W/m\ :sup:`2`/Hz/sr]) is given by:
 
 .. math::
-    :name: eq:flux_static_slab
+    :name: eq:intensity_static_slab
 
-    F_\nu = S_\nu(1-e^{-\tau_\nu})\Omega
+    I_\nu = S_\nu(1-e^{-\tau_\nu})
 
-where :math:`\Omega` is the solid angle of the emitting region.
+To get the flux density in [W/m\ :sup:`2`/Hz], :math:`I_\nu` needs to be multiplied by the solid angle of the emitting region.
 
 
 LVG sphere
@@ -98,7 +100,7 @@ We use the model by [Goldreich74]_: A homogeneous sphere with a constant, radial
 
     \beta(\tau) = \frac{1-e^{-\tau}}{\tau}
 
-:math:`\tau` is the optical depth of the radiatively connected region. When looking through the centre of the sphere, the optical depth equals :math:`\tau` in the interval :math:`[-V,V]`, and is zero outside. The observed flux can be derived by using an approach similar to [deJong75]_. Consider the following sketch:
+:math:`\tau` is the optical depth of the radiatively connected region. When looking through the centre of the sphere, the optical depth equals :math:`\tau` in the interval :math:`[-V,V]`, and is zero outside. The observed specific intensity can be derived by using an approach similar to [deJong75]_. Consider the following sketch:
 
 .. figure:: images/sketch_LVG_sphere.jpg
    :align: center
@@ -115,7 +117,7 @@ The radiatively connected region along the line of sight is a thin slab perpendi
 
 which is independent of :math:`x`. Here we used the assumption that the radial velocity gradient is constant and given by :math:`V/R`. Note that :math:`v_p` is proportional to :math:`p` (and :math:`p<0` if the slab is located in the half sphere closer to the observer), so each slab will have a different projected velocity. We again see that any photon escapes, unless absorbed locally (within the radiatively connected region).
 
-To calculate the flux at velocity :math:`v_p`, we can simply integrate over the solid angle of the slab as seen by the observer. At each point of the slab, the spectral radiance is given by :math:`S_\nu(1-e^{-\tau})`, where it is understood that the frequency :math:`\nu` corresponds to the velocity :math:`v_p`, and :math:`\tau` is the optical depth of the slab. The element of solid angle is given by :math:`\mathrm{d}\Omega_p=\frac{r\mathrm{d}\phi\mathrm{d}r}{d^2}` where :math:`r` and :math:`\phi` are polar coordinates on the slab surface and :math:`d` is the distance to the observer. Thus, the flux is given by
+To calculate the flux density at velocity :math:`v_p`, we can simply integrate over the solid angle of the slab as seen by the observer. At each point of the slab, the specific intensity is given by :math:`S_\nu(1-e^{-\tau})`, where it is understood that the frequency :math:`\nu` corresponds to the velocity :math:`v_p`, and :math:`\tau` is the optical depth of the slab. The element of solid angle is given by :math:`\mathrm{d}\Omega_p=\frac{r\mathrm{d}\phi\mathrm{d}r}{d^2}` where :math:`r` and :math:`\phi` are polar coordinates on the slab surface and :math:`d` is the distance to the observer. Thus, the flux density is given by
 
 .. math::
 
@@ -127,9 +129,13 @@ Using :math:`p=\frac{v_p R}{V}` and the solid angle of the sphere :math:`\Omega=
 
     F_\nu = S_\nu(1-e^{-\tau})\Omega\left(1-\frac{v^2}{V^2}\right)
 
-where we dropped the index :math:`p` from the velocity :math:`v`. The latter can be converted to frequency as  :math:`v=c(1-\nu/\nu_0)` with :math:`c` the speed of light and :math:`\nu_0` the rest frequency. Note that the above equation applies for :math:`|v|\leq V`. For :math:`|v|>V`, the flux vanishes.
+where we dropped the index :math:`p` from the velocity :math:`v`. The latter can be converted to frequency as :math:`v=c(1-\nu/\nu_0)` with :math:`c` the speed of light and :math:`\nu_0` the rest frequency. Note that the above equation applies for :math:`|v|\leq V`. For :math:`|v|>V`, the flux vanishes. Finally, the observed specific intensity is simply
 
-As in the case of the static sphere, also for the LVG sphere ``RADEX`` incorrectly uses the formula for a slab geometry to calculate the flux (see :doc:`difference_pythonradex_RADEX` for more details).
+.. math::
+
+    I_\nu = F_\nu/\Omega = S_\nu(1-e^{-\tau})\left(1-\frac{v^2}{V^2}\right)
+
+As in the case of the static sphere, also for the LVG sphere ``RADEX`` incorrectly uses the formula for a slab geometry to calculate the specific intensity (see :doc:`difference_pythonradex_RADEX` for more details).
 
 
 LVG slab
@@ -140,7 +146,7 @@ Here we consider a homogeneous slab with a constant velocity gradient :math:`\ma
 
     \beta(\tau) = \frac{1-e^{-3\tau}}{3\tau}
 
-Here again, :math:`\tau` is the optical depth of the radiatively connected region. It is constant over the velocity interval with a width given by :math:`\frac{\mathrm{d}v}{\mathrm{d}z}Z` with :math:`Z` the total depth of the slab, and zero outside. The flux is given by the same formula as for the static slab.
+Here again, :math:`\tau` is the optical depth of the radiatively connected region. It is constant over the velocity interval with a width given by :math:`\frac{\mathrm{d}v}{\mathrm{d}z}Z` with :math:`Z` the total depth of the slab, and zero outside. The specific intensity is given by the same formula as for the static slab.
 
 Geometries emulating ``RADEX``
 -------------------------------------
@@ -148,7 +154,7 @@ Mainly for test and legacy purposes, ``pythonradex`` offers two additional geome
 
 Static sphere RADEX
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This geometry uses the same formula (:ref:`Eq. 1 <eq:beta_static_sphere>`) for the escape probability as the static sphere, but uses the formula (:ref:`Eq. 3 <eq:flux_static_slab>`) for the static slab to calculate the flux.
+This geometry uses the same formula (:ref:`Eq. 1 <eq:beta_static_sphere>`) for the escape probability as the static sphere, but uses the formula (:ref:`Eq. 3 <eq:intensity_static_slab>`) for the static slab to calculate the specific intensity.
 
 
 LVG sphere RADEX
@@ -165,7 +171,7 @@ and
 
     \beta(\tau) = \frac{4-4e^{-2.34\tau_\nu/2}}{4.68\tau_\nu} \qquad \text{if } \tau_\nu< 7
 
-Thus, the geometry "LVG sphere RADEX" uses this formula. For the flux, it uses the same formula (:ref:`Eq. 3 <eq:flux_static_slab>`) as for the static slab (despite the spherical geometry).
+Thus, the geometry "LVG sphere RADEX" uses this formula. For the flux density, it uses the same formula (:ref:`Eq. 3 <eq:intensity_static_slab>`) as for the static slab (despite the spherical geometry).
 
 The line width parameter ``width_v``
 ------------------------------------------

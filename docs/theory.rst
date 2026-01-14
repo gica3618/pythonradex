@@ -39,7 +39,7 @@ The total absorption and emission coefficients are simply given by the sum over 
 
     j_\nu = \sum_{l\succ l'}j_{ll'}(\nu) + j_c(\nu)
 
-We see that we need to know the fractional level population :math:`n_l` to calculate :math:`\alpha_\nu` and :math:`j_\nu`, which are needed to solve the radiative transfer. How can we do that? There are two kinds processes that can excite or de-excite an molecular level: radiative processes (emission or absorption of photons) or collisions. If the density of colliders (e.g. H\ :sub:`2`\  or electrons) is high enough (or if the emission is highly optically thick), the energy levels become thermalised and we are in local thermodynamic equilibrium (LTE). In this case, the level population is simply given by the Boltzmann distribution:
+We see that we need to know the fractional level population :math:`n_l` to calculate :math:`\alpha_\nu` and :math:`j_\nu`, which are needed to solve the radiative transfer. How can we do that? There are two kinds processes that can excite or de-excite a molecular level: radiative processes (emission or absorption of photons) or collisions. If the density of colliders (e.g. H\ :sub:`2`\  or electrons) is high enough, the energy levels become thermalised and we are in local thermodynamic equilibrium (LTE). In this case, the level population is simply given by the Boltzmann distribution:
 
 .. math::
     n_l = n\frac{e^{-E_l/(kT_\mathrm{kin})}}{Q}

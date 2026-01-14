@@ -49,11 +49,11 @@ If you have ideas for new features, feel free to [open an issue](https://github.
 
 To run the whole test suite, you can for example do:
 
-    python3 -m pytest
+    python3 -m pytest tests/
 
 To see detailed output:
 
-    python3 -m pytest -v
+    python3 -m pytest -v tests/
 
 If you only want to run the tests of a specific test file, for example `test_LAMDA_file.py`:
 

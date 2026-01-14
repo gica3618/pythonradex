@@ -193,7 +193,7 @@ class Source():
         '''
         #why do I put this into a seperate method rather than __init__? The reason
         #is that the stuff in __init__ is expensive (in particular reading the
-        #LAMDA file). So if I explore e.g. a grid of N, the stuff in __init__
+        #LAMDA file). So if I explore e.g. a grid of parameters, the stuff in __init__
         #should only be done once to save computation time. Then this method
         #can be called inside the loop over e.g. the N values
         #note that setting up the rate equations is expensive, so I only do it if
@@ -352,9 +352,24 @@ class Source():
     def all_transition_indices(self):
         return np.arange(self.emitting_molecule.n_rad_transitions)
 
-    def frequency_integrated_emission_of_individual_transitions(
-                          self,output_type,transitions=None,solid_angle=None):
-        r''' Calculates the frequency-integrated emission of individual transitions.
+    @staticmethod
+    def get_solid_angle_warning_text(output_type):
+        #if output_type != "flux density" and solid_angle is not None:
+        return "solid_angle specified, but not needed for"\
+                      +f" output_type \"{output_type}\", will be ignored"
+
+    def transform_transition_indices(self,indices):
+        if indices is None:
+            out = self.all_transition_indices()
+        else:
+            out = np.atleast_1d(indices)
+            if out.ndim > 1:
+                raise ValueError("transitions indices must be 0- or 1-dimensional")
+        return out
+
+    def frequency_integrated_emission(self,output_type,transitions=None,
+                                      solid_angle=None):
+        r'''Calculates the frequency-integrated emission of individual transitions.
             This calculation is only easily possible if the dust is optically thin (i.e.
             the dust does not hinder line photons from escaping the source). Thus, this
             function throws an error if the dust is not optically thin. Similarly,
@@ -366,19 +381,21 @@ class Source():
             appropriate. On the other hand, for optically thick lines, the
             non-continuum-subtracted observations might be more appropriate
             (because the optically thick line blocks the continuum at the
-             line enter; see e.g. Weaver et al. 2018)
+            line enter; see e.g. Weaver et al. 2018)
 
         Args:
             output_type (str): Specifies the type of the output. Can either be
                 "intensity" (in [W/m2/sr]) or "flux" (in [W/m2]; solid_angle
                 needs to be specified)
-            transitions (:obj:`list` of :obj:`int` or None): The indices of the
-                transitions for which to calculate the fluxes. If None, then the
-                fluxes of all transitions are calculated. Defaults to None. The
-                indices correspond to the list of transitions in the
-                LAMDA-formatted file, with the first transition having index 0.
+            transitions (0- or 1-dimensional array_like (dytpe int), or None):
+                The index or indices of the transitions for which to calculate the emission.
+                For a single transition, an integer can be provided. For several transitions,
+                a list of integers is provided. If None, then the emission of all transitions
+                is calculated. Defaults to None. The indices correspond to the
+                list of transitions in the LAMDA-formatted file, with the first
+                transition having index 0.
             solid_angle (:obj:`float`): The solid angle of the source in [sr].
-                    Needed for output_type "flux". Defaults to None.
+                Needed for output_type "flux". Defaults to None.
         
         Returns:
             list: The list of intensities or fluxes corresponding to the
@@ -386,8 +403,10 @@ class Source():
             where requested (transitions=None), then the list of fluxes corresponds
             to the transitions as listed in the LAMDA file.
         '''
-        if transitions is None:
-            transitions = self.all_transition_indices()
+        if output_type != "flux" and solid_angle is not None:
+            warning_text = self.get_solid_angle_warning_text(output_type=output_type)
+            warnings.warn(warning_text)
+        transitions = self.transform_transition_indices(indices=transitions)
         I = self.intensity_calculator.intensities_of_individual_transitions(
                                                   transitions=transitions)
         if output_type == "intensity":
@@ -418,9 +437,6 @@ class Source():
     def transform_specific_intensity(specific_intensity,nu,solid_angle,output_type):
         if output_type == "flux density" and solid_angle is None:
             raise ValueError("For flux density, solid angle needs to be specified")
-        if output_type != "flux density" and solid_angle is not None:
-            warnings.warn("solid_angle specified, but not needed for"
-                          +f" output_type \"{output_type}\", will be ignored")
         if output_type == "flux density":
             return specific_intensity*solid_angle
         elif output_type == "Rayleigh-Jeans":
@@ -431,6 +447,11 @@ class Source():
                                  specific_intensity=specific_intensity,nu=nu)
         else:
             raise ValueError(f"invalid output_type \"{output_type}\"")
+
+    def warn_if_solid_angle_not_needed(self,output_type,solid_angle):
+        if output_type != "flux density" and solid_angle is not None:
+            warning_text = self.get_solid_angle_warning_text(output_type=output_type)
+            warnings.warn(warning_text)
 
     def spectrum(self,nu,output_type,solid_angle=None):
         r''' Calculate the emission (lines + dust) as a function of frequency.
@@ -450,6 +471,8 @@ class Source():
         Returns:
             np.ndarray: The emission for each input frequency.
         '''
+        self.warn_if_solid_angle_not_needed(output_type=output_type,
+                                            solid_angle=solid_angle)
         self.intensity_calculator.set_nu(nu=nu)
         specific_intensity = self.intensity_calculator.specific_intensity_spectrum()
         if output_type == "specific intensity":
@@ -465,11 +488,13 @@ class Source():
         overlapping lines.
 
         Args:
-            transitions (:obj:`list` of :obj:`int` or None): The indices of the
-                transitions for which to calculate the emission. If None, then
-                the emission of all transitions are calculated. Defaults to None.
-                The indices correspond to the list of transitions in the
-                LAMDA-formatted file, with the first transitions having index 0.
+            transitions (0- or 1-dimensional array_like (dytpe int), or None):
+                The index or indices of the transitions for which to calculate the emission.
+                For a single transition, an integer can be provided. For several transitions,
+                a list of integers is provided. If None, then the emission of all transitions
+                is calculated. Defaults to None. The indices correspond to the
+                list of transitions in the LAMDA-formatted file, with the first
+                transition having index 0.
             output_type (str): Specifies the type of the output.
                 Possible choices are "specific intensity" (in [W/m2/Hz/sr]),
                 "flux density" (in [W/m2/Hz]; solid_angle needs to be specified),
@@ -485,8 +510,9 @@ class Source():
             where requested (transitions=None), then the list corresponds
             to all transitions as listed in the LAMDA file.
         '''
-        if transitions is None:
-            transitions = self.all_transition_indices()
+        self.warn_if_solid_angle_not_needed(output_type=output_type,
+                                            solid_angle=solid_angle)
+        transitions = self.transform_transition_indices(indices=transitions)
         nu0s = self.emitting_molecule.nu0[transitions]
         if self.emitting_molecule.any_line_has_overlap(line_indices=transitions):
             #do it the slow way
@@ -497,81 +523,82 @@ class Source():
             specific_intensity_nu0 = self.intensity_calculator.specific_intensity_nu0_no_overlap(
                               transitions=transitions)
         if output_type == "specific intensity":
-            return specific_intensity_nu0
+            out = specific_intensity_nu0
         else:
-            return self.transform_specific_intensity(
+            out = self.transform_specific_intensity(
                          specific_intensity=specific_intensity_nu0,nu=nu0s,
                          solid_angle=solid_angle,output_type=output_type)
+        return np.squeeze(out)
 
-    def efficient_parameter_iterator(self,ext_backgrounds,N_values,Tkin_values,
-                                     collider_densities_values,T_dust=0,
-                                     tau_dust=0):
-        r'''Iterator to update parameters in an efficient way.
-            For all possible combinations of the input parameters
-            ext_backgrounds, N_values, Tkin_values and collider_densities_values,
-            the parameters are updated in each iteration.
+    # def efficient_parameter_iterator(self,ext_backgrounds,N_values,Tkin_values,
+    #                                  collider_densities_values,T_dust=0,
+    #                                  tau_dust=0):
+    #     r'''Iterator to update parameters in an efficient way.
+    #         For all possible combinations of the input parameters
+    #         ext_backgrounds, N_values, Tkin_values and collider_densities_values,
+    #         the parameters are updated in each iteration.
 
-        Args:
-            ext_backgrounds (:obj:`dict`): A dictionary, one entry for
-                each background that should be used. Each entry can be a function
-                of frequency, or a single number (interpreted as a radiation field
-                independent of frequency). The units are W/m\ :sup:2/Hz/sr. The keys
-                of the dictionary are used in the output to identify which
-                background was used.
-            N_values (:obj:`list` or numpy.ndarray): The list of column densities to
-                compute models for, in [m\ :sup:`-2`].
-            Tkin_values (:obj:`list` or numpy.ndarray): The list of kinetic temperatures
-                to compute models for, in [K].
-            collider_densities_values (:obj:`dict`): A dictionary with one entry for each
-                collider. Each entry is a list of densities for which models should be
-                computed for, using a "zip" logic (i.e. calculate a model for the first
-                entries of each list, for the second entries of each list, etc).
-                Units are [m\ :sup:`-3`]. Example:
-                collider_densities_values={'para-H2':[4e9,6e9],'ortho-H2':[7e8,1e10]}
-            T_dust (func or number): The dust temperature in [K] as a function of frequency.
-                 It is assumed that the source function of the dust is a black body
-                 at temperature T_dust. A single number is interpreted as a constant value
-                 for all frequencies. Defaults to 0 (i.e. no internal dust
-                 radiation field).
-            tau_dust (func or number): optical depth of the dust as a function of frequency.
-                A single number is interpreted as a constant value
-                for all frequencies. Defaults to 0 (i.e. no internal dust
-                radiation field).
+    #     Args:
+    #         ext_backgrounds (:obj:`dict`): A dictionary, one entry for
+    #             each background that should be used. Each entry can be a function
+    #             of frequency, or a single number (interpreted as a radiation field
+    #             independent of frequency). The units are W/m\ :sup:2/Hz/sr. The keys
+    #             of the dictionary are used in the output to identify which
+    #             background was used.
+    #         N_values (:obj:`list` or numpy.ndarray): The list of column densities to
+    #             compute models for, in [m\ :sup:`-2`].
+    #         Tkin_values (:obj:`list` or numpy.ndarray): The list of kinetic temperatures
+    #             to compute models for, in [K].
+    #         collider_densities_values (:obj:`dict`): A dictionary with one entry for each
+    #             collider. Each entry is a list of densities for which models should be
+    #             computed for, using a "zip" logic (i.e. calculate a model for the first
+    #             entries of each list, for the second entries of each list, etc).
+    #             Units are [m\ :sup:`-3`]. Example:
+    #             collider_densities_values={'para-H2':[4e9,6e9],'ortho-H2':[7e8,1e10]}
+    #         T_dust (func or number): The dust temperature in [K] as a function of frequency.
+    #              It is assumed that the source function of the dust is a black body
+    #              at temperature T_dust. A single number is interpreted as a constant value
+    #              for all frequencies. Defaults to 0 (i.e. no internal dust
+    #              radiation field).
+    #         tau_dust (func or number): optical depth of the dust as a function of frequency.
+    #             A single number is interpreted as a constant value
+    #             for all frequencies. Defaults to 0 (i.e. no internal dust
+    #             radiation field).
 
-        Yields:
-            dict: A dictionary with fields 'ext_background', 'N', 'Tkin' and 
-                'collider_densities' to identify the values of the parameters
-                that were updated.
-        '''
-        #it is expensive to update Tkin and collider densities, so those should be in
-        #the outermost loops
-        n_coll_values = np.array([len(coll_values) for coll_values in
-                                  collider_densities_values.values()])
-        assert np.all(n_coll_values==n_coll_values[0]),\
-               'please provide the same number of collider densities for each collider'
-        n_coll_values = n_coll_values[0]
-        #set T_dust and tau_dust, other values are not important because they are
-        #going to change in the loop
-        initial_ext_bg = list(ext_backgrounds.values())[0]
-        initial_coll_dens = {coll_name:coll_values[0] for coll_name,coll_values
-                             in collider_densities_values.items()}
-        self.update_parameters(
-               ext_background=initial_ext_bg,N=N_values[0],Tkin=Tkin_values[0],
-               collider_densities=initial_coll_dens,T_dust=T_dust,
-               tau_dust=tau_dust)
-        for Tkin in Tkin_values:
-            for i in range(n_coll_values):
-                collider_densities = {collider:values[i] for collider,values
-                                      in collider_densities_values.items()}
-                #note: updating Tkin and coll dens together to avoid
-                #unnecessary overhead
-                self.update_parameters(Tkin=Tkin,collider_densities=collider_densities)
-                for ext_background_name,ext_background in ext_backgrounds.items():
-                    self.update_parameters(ext_background=ext_background)
-                    for N in N_values:
-                        self.update_parameters(N=N)
-                        yield {'ext_background':ext_background_name,'N':N,
-                               'Tkin':Tkin,'collider_densities':collider_densities}
+    #     Yields:
+    #         dict: A dictionary with fields 'ext_background', 'N', 'Tkin' and 
+    #             'collider_densities' to identify the values of the parameters
+    #             that were updated.
+    #     '''
+    #     #it is expensive to update Tkin and collider densities, so those should be in
+    #     #the outermost loops
+    #     n_coll_values = np.array([len(coll_values) for coll_values in
+    #                               collider_densities_values.values()])
+    #     assert np.all(n_coll_values==n_coll_values[0]),\
+    #            'please provide the same number of collider densities for each collider'
+    #     n_coll_values = n_coll_values[0]
+    #     #set T_dust and tau_dust, other values are not important because they are
+    #     #going to change in the loop
+    #     initial_ext_bg = list(ext_backgrounds.values())[0]
+    #     initial_coll_dens = {coll_name:coll_values[0] for coll_name,coll_values
+    #                          in collider_densities_values.items()}
+    #     self.update_parameters(
+    #            ext_background=initial_ext_bg,N=N_values[0],Tkin=Tkin_values[0],
+    #            collider_densities=initial_coll_dens,T_dust=T_dust,
+    #            tau_dust=tau_dust)
+    #     for Tkin in Tkin_values:
+    #         for i in range(n_coll_values):
+    #             collider_densities = {collider:values[i] for collider,values
+    #                                   in collider_densities_values.items()}
+    #             #note: updating Tkin and coll dens together to avoid
+    #             #unnecessary overhead
+    #             self.update_parameters(Tkin=Tkin,collider_densities=collider_densities)
+    #             for ext_background_name,ext_background in ext_backgrounds.items():
+    #                 self.update_parameters(ext_background=ext_background)
+    #                 for N in N_values:
+    #                     self.update_parameters(N=N)
+    #                     yield {'ext_background':ext_background_name,'N':N,
+    #                            'Tkin':Tkin,'collider_densities':collider_densities}
 
     def print_results(self):
         '''Prints the results from the radiative transfer computation.'''

@@ -15,12 +15,13 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
+save_figure = False
 
 data_filename = "co.dat"
 #can only use LVG slab and uniform sphere
 geometry = "LVG slab"
 geometry_radex = "LVG slab"
-# geometry = "uniform sphere"
+# geometry = "static sphere"
 # geometry_radex = "static sphere"
 
 #for grid comparison:
@@ -59,9 +60,9 @@ def compute_pythonradex_model(N,Tkin,coll_partner_densities):
                              collider_densities=coll_partner_densities,
                              T_dust=0,tau_dust=0)
     source.solve_radiative_transfer()
-    pop_up = [source.level_pop[t.up.number] for t in
+    pop_up = [source.level_pop[t.up.index] for t in
               source.emitting_molecule.rad_transitions]
-    pop_low = [source.level_pop[t.low.number] for t in
+    pop_low = [source.level_pop[t.low.index] for t in
                source.emitting_molecule.rad_transitions]
     return source.Tex,pop_up,pop_low
 
@@ -153,7 +154,7 @@ for i,nH2 in enumerate(nH2_grid):
                 Tex,pop_up,pop_low = model
                 S = helpers.B_nu(nu=nu,T=Tex)
                 tau_nu = plot_trans.tau_nu(N1=N*pop_low,N2=N*pop_up,nu=nu)
-                intensity = source.geometry.intensity(
+                intensity = source.geometry.specific_intensity(
                              tau_nu=tau_nu,source_function=S)
                 f = -np.trapz(intensity*solid_angle,nu) #nu is decreasing, so need to take minus
                 flux[ID][i,j,k] = f
@@ -213,5 +214,8 @@ for column,(quantity,values) in enumerate(zip(("Tex","flux"),(excitation_temp,fl
     else:
         raise RuntimeError
     cbar.set_label(colorbar_label, labelpad=10)
-if True:
+if save_figure:
+    print("saving figure")
     plt.savefig("pythonradex_vs_radex.pdf",format="pdf",bbox_inches="tight")
+else:
+    print("will not save figure")

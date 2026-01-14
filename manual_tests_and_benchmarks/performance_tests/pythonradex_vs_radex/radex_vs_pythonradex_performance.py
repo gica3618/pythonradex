@@ -125,7 +125,7 @@ for i,n in enumerate(n_elements):
                                 collider_densities=collider_densities,N=N,T_dust=0,
                                 tau_dust=0)
         source.solve_radiative_transfer()
-        source.frequency_integrated_emission_of_individual_transitions(
+        source.frequency_integrated_emission(
                      output_type="flux",solid_angle=1,transitions=None)
     end = time.time()
     pythonradex_times[i] = end-start
@@ -147,7 +147,7 @@ for i,n in enumerate(n_elements):
         source.level_pop
         source.Tex
         source.tau_nu0_individual_transitions
-        source.frequency_integrated_emission_of_individual_transitions(
+        source.frequency_integrated_emission(
                  output_type="flux",solid_angle=0.25)
     end = time.time()
     pythonradex_grid_times[i] = end-start

@@ -11,10 +11,10 @@ from scipy import constants
 import matplotlib.pyplot as plt
 import numpy as np
 
-save_figure = True
+save_figure = False
 
 datafilepath = '../../tests/LAMDA_files/hcn@hfs.dat'
-geometry = 'uniform slab'
+geometry = 'static slab'
 line_profile_type = 'Gaussian'
 Doppler = 1.502*constants.kilo
 Tkin = 25
@@ -87,8 +87,8 @@ for overlap,tau_nu0s in molpop_cep_tau_nu0.items():
 molpop_cep_spectrum = {}
 for overlap,tau in molpop_cep_tau.items():
     molpop_cep_Stot[overlap] /= tau
-    assert geometry == "uniform slab"
-    molpop_cep_intensiy = escape_probability.UniformSlab.intensity(
+    assert geometry == "static slab"
+    molpop_cep_intensiy = escape_probability.StaticSlab.specific_intensity(
                                tau_nu=tau,source_function=molpop_cep_Stot[overlap])
     molpop_cep_spectrum[overlap] = molpop_cep_intensiy*solid_angle
 
@@ -119,4 +119,7 @@ ax.set_ylabel(r'flux [$10^{-26}$W/m$^2$/Hz]')
 ax.legend(loc='best')
 
 if save_figure:
-    plt.savefig("HCN_spec.pdf",format="pdf",bbox_inches="tight") 
+    print("saving figure")
+    plt.savefig("HCN_spec.pdf",format="pdf",bbox_inches="tight")
+else:
+    print("figure will not be saved")
