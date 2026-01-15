@@ -42,3 +42,12 @@ where :math:`V_\mathrm{sphere}=\frac{4}{3}R^3\pi` is the volume of the sphere, :
 Different escape probability for LVG sphere
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 For the spherical LVG geometry, ``RADEX`` and ``pythonradex`` use different formulae to calculate the escape probability. Please see the :ref:`section about geometries<geometries>` for more details.
+
+
+Different behaviour for H\ :sub:`2` collider densities
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Whenever the LAMDA-formatted molecular data file contains collisional rates for H\ :sub:`2`, but the user does not provide an H\ :sub:`2` density, ``RADEX`` just adds an H\ :sub:`2` density of :math:`10^5` cm\ :sup:`-3` by default to the calculation.
+
+Furthermore, if the molecular data file contains rates for ortho-H\ :sub:`2` and para-H\ :sub:`2`, but not for H\ :sub:`2`, and the user supplies an H\ :sub:`2` density instead of densities for ortho-H\ :sub:`2` and para-H\ :sub:`2`, then ``RADEX`` will convert the supplied H\ :sub:`2` density into densities of H\ :sub:`2` and H\ :sub:`2` assuming a thermal ortho/para ratio.
+
+On the other hand, ``pythonradex`` does not add H\ :sub:`2` by default, nor allow the user to request colliders that are not present in the molecular data file.
