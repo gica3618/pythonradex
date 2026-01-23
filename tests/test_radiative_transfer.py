@@ -409,6 +409,16 @@ def test_compute_residual():
                                           min_tau=min_tau)\
             == expected_residual
 
+def test_upper_lower_level_pop():
+    source = get_general_test_source(specie="CO", width_v=1.3*constants.kilo)
+    source.update_parameters(N=1e15*constants.centi**-2,Tkin=123,
+                             collider_densities={"ortho-H2":1e6*constants.centi**-3},
+                             ext_background=cmb,T_dust=0,tau_dust=0)
+    source.solve_radiative_transfer()
+    for t,trans in enumerate(source.emitting_molecule.rad_transitions):
+        assert source.upper_level_population[t] == source.level_pop[trans.up.index]
+        assert source.lower_level_population[t] == source.level_pop[trans.low.index]
+
 def test_intensity_transformation():
     nu = np.linspace(100,101,10)*constants.giga
     T = 123.234

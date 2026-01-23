@@ -21,9 +21,14 @@ class Source():
             to the optical depth are not included)
         level_pop (numpy.ndarray): fractional population of each level
         Tex (numpy.ndarray): excitation temperature of each transition
+        lower_level_population (numpy.ndarray): for each transition, the fractional
+            population of the lower level of that transition
+        upper_level_population (numpy.ndarray): for each transition, the fractional
+            population of the upper level of that transition
 
     Note:
-        The attributes tau_nu0_individual_transitions, level_pop and Tex are available
+        The attributes tau_nu0_individual_transitions, level_pop, Tex,
+        lower_level_population and upper_level_population are available
         only after solving the radiative transfer by calling solve_radiative_transfer
         
     '''
@@ -348,6 +353,12 @@ class Source():
                                  tau_nu0_individual_transitions=self.tau_nu0_individual_transitions,
                                  tau_dust=self.rate_equations.tau_dust,
                                  S_dust=self.rate_equations.S_dust)
+        lower_level_population = [self.level_pop[t.low.index] for t in
+                                  self.emitting_molecule.rad_transitions]
+        self.lower_level_population = np.array(lower_level_population)
+        upper_level_population = [self.level_pop[t.up.index] for t in
+                                  self.emitting_molecule.rad_transitions]
+        self.upper_level_population = np.array(upper_level_population)
 
     def all_transition_indices(self):
         return np.arange(self.emitting_molecule.n_rad_transitions)
