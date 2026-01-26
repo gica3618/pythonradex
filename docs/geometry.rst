@@ -93,7 +93,7 @@ LVG sphere
 -------------------
 The Large Velocity Gradient (LVG) approximation is applicable if the characteristic flow velocity along the line of sight is much larger than the local random (e.g. thermal) velocities (e.g. [Scoville74]_, [Elitzur92]_). In other words, all photons escape due to Doppler shifting, unless absorbed locally, that is, close to the emission location. The local region where an emitted photon can be absorbed is sometimes referred to as the *radiatively connected region*.
 
-We use the model by [Goldreich74]_: A homogeneous sphere with a constant, radial velocity gradient :math:`\mathrm{d}v/\mathrm{d}r=V/R` where :math:`V` is the velocity at the sphere surface and :math:`R` is the radius of the sphere. The escape probability is given by
+We use the model by [Goldreich74]_: A homogeneous sphere with a constant, radial velocity gradient :math:`\mathrm{d}v/\mathrm{d}r=V/R` where :math:`V` is the velocity at the sphere surface and :math:`R` is the radius of the sphere. The escape probability is given by (see e.g. Eq. 5 in [Goldreich74]_)
 
 .. math::
     :name: eq:beta_LVG_sphere
@@ -140,7 +140,7 @@ As in the case of the static sphere, also for the LVG sphere ``RADEX`` incorrect
 
 LVG slab
 -------------------
-Here we consider a homogeneous slab with a constant velocity gradient :math:`\mathrm{d}v/\mathrm{d}z`, where :math:`z` is the coordinate perpendicular to the slab surface, along the line of sight. The escape probability is given by [Scoville74]_ as
+Here we consider a homogeneous slab with a constant velocity gradient :math:`\mathrm{d}v/\mathrm{d}z`, where :math:`z` is the coordinate perpendicular to the slab surface, along the line of sight. The escape probability is given by (see Section II of [Scoville74]_)
 
 .. math::
 

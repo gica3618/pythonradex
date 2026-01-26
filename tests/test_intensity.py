@@ -79,7 +79,7 @@ class TestFastIntensities():
                 tau_nu0 = np.ones(mol.n_rad_transitions)*test_tau
                 intensity_calculator = intensity.IntensityCalculator(
                                  emitting_molecule=mol,
-                                 level_population=mol.LTE_level_pop(T),
+                                 level_population=mol.Boltzmann_level_population(T),
                                  geometry_name=geo_name,
                                  specific_intensity=geo.specific_intensity,
                                  tau_nu0_individual_transitions=tau_nu0,
@@ -99,7 +99,7 @@ class TestFastIntensities():
         mol = self.molecules['rectangular']
         test_line = mol.rad_transitions[line_index]
         N = 1e12/constants.centi**2
-        level_pop = mol.LTE_level_pop(33)
+        level_pop = mol.Boltzmann_level_population(33)
         N1 = N*level_pop[test_line.low.index]
         N2 = N*level_pop[test_line.up.index]
         width_nu = mol.width_v/constants.c*test_line.nu0
@@ -144,7 +144,7 @@ class TestInvalidIntensityRequest():
                                       S_dust):
         geometry_name = 'static sphere'
         geometry = escape_probability.StaticSphere()
-        level_population = emitting_molecule.LTE_level_pop(T=45)
+        level_population = emitting_molecule.Boltzmann_level_population(T=45)
         intensitycalculator = intensity.IntensityCalculator(
                            emitting_molecule=emitting_molecule,
                            level_population=level_population,
@@ -238,7 +238,7 @@ class TestVarious():
         for lp in ('rectangular','Gaussian'):
             mol = molecule.EmittingMolecule(datafilepath=CO_datafilepath,
                                             line_profile_type=lp,width_v=self.width_v)
-            level_population = mol.LTE_level_pop(self.T)
+            level_population = mol.Boltzmann_level_population(self.T)
             tau_nu0 = mol.get_tau_nu0_lines(N=self.N,level_population=level_population)
             intensitycalculator = intensity.IntensityCalculator(
                                      emitting_molecule=mol,level_population=level_population,
@@ -387,7 +387,7 @@ class TestSpecificIntensityNu0NoOverlap():
         mol = molecule.EmittingMolecule(
                 datafilepath=datafilepath,line_profile_type=line_profile_type,
                 width_v=width_v)
-        level_population = mol.LTE_level_pop(T=self.Tkin)
+        level_population = mol.Boltzmann_level_population(T=self.Tkin)
         geometry = radiative_transfer.Source.geometries[geometry_name]
         tau_nu0_individual_transitions = np.arange(mol.n_rad_transitions,dtype=float)+0.1
         tau_nu0_individual_transitions = tau_nu0_individual_transitions[::-1]
@@ -520,7 +520,7 @@ class TestIntensitiesWithPhysics():
         elif specie == 'HCl':
             molecules = self.HCl_molecules
         for lp,mol in molecules.items():
-            level_pop = mol.LTE_level_pop(self.Tkin)
+            level_pop = mol.Boltzmann_level_population(self.Tkin)
             tau_nu0 = mol.get_tau_nu0_lines(N=N,level_population=level_pop)
             for geo_name,geo in radiative_transfer.Source.geometries.items():
                 if not allowed_param_combination(geometry=geo_name,

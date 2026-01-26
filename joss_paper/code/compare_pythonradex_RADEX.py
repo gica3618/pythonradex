@@ -26,7 +26,6 @@ geometry_radex = "static sphere"
 
 #for grid comparison:
 plot_trans_index = 1
-#grid_size = 25
 grid_size = 10
 
 vmin,vmax = 0.998,1.002
@@ -199,15 +198,7 @@ for column,(quantity,values) in enumerate(zip(("Tex","tau"),
         n_zero = (val==0).sum()
         print(f"{quantity} {code}: {n_zero}/{val.size} are 0")
     ratio = values["pythonradex"]/values["radex"]
-    either_negative = (values["pythonradex"] < 0) | (values["radex"] < 0)
     exceeding_vmin_vmax = (ratio < vmin) | (ratio > vmax)
-
-    #neither_negative = (values["pythonradex"] >= 0) & (values["radex"] >= 0)
-    #ratio = np.where(neither_negative,values["pythonradex"]/values["radex"],np.nan)
-    
-    # masked_ratio = ratio.copy()
-    # mask = (masked_ratio < vmin) | (masked_ratio > vmax)
-    # masked_ratio[mask] = np.nan
     print(f"{quantity} with large difference between pythonradex and RADEX:")
     for i,j,k in zip(*np.isnan(ratio).nonzero()):
         print(f"Tkin={Tkin_grid[i]:.3} K, nH2={nH2_grid[j]/constants.centi**-3:.3g} cm-3, "
@@ -220,9 +211,7 @@ for column,(quantity,values) in enumerate(zip(("Tex","tau"),
                            vmax=vmax)
         for j in range(nH2_grid.size):
             for k in range(N_grid.size):
-                if False:#either_negative[row,j,k]:
-                    color_pixel(ax=ax,X=X,Y=Y,j=j,k=k,color="red")
-                elif exceeding_vmin_vmax[row,j,k]:
+                if exceeding_vmin_vmax[row,j,k]:
                     color_pixel(ax=ax,X=X,Y=Y,j=j,k=k,color="black")
                     ax.text(X[j,k], Y[j,k],f"{ratio[row,j,k]:.4g}",
                             ha="center", va="center",color="white",fontsize=5)

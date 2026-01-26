@@ -852,8 +852,8 @@ class TestPhysics():
                                     tau_dust=0)
             source.solve_radiative_transfer()
             assert np.all(source.tau_nu0_individual_transitions<0.1)
-            LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=Tkin)
-            assert np.allclose(source.level_pop,LTE_level_pop,atol=1e-5,rtol=1e-2)
+            Boltzmann_level_population = source.emitting_molecule.Boltzmann_level_population(T=Tkin)
+            assert np.allclose(source.level_pop,Boltzmann_level_population,atol=1e-5,rtol=1e-2)
 
     @pytest.mark.filterwarnings("ignore:negative optical depth")
     @pytest.mark.filterwarnings("ignore:some lines are overlapping")
@@ -880,8 +880,8 @@ class TestPhysics():
                                     ext_background=ext_background,T_dust=0,
                                     tau_dust=0)
             source.solve_radiative_transfer()
-            LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=Tbg)
-            assert np.allclose(source.level_pop,LTE_level_pop,atol=1e-5,rtol=1e-2)
+            Boltzmann_level_population = source.emitting_molecule.Boltzmann_level_population(T=Tbg)
+            assert np.allclose(source.level_pop,Boltzmann_level_population,atol=1e-5,rtol=1e-2)
 
     @pytest.mark.filterwarnings("ignore:some lines are overlapping")
     def test_LTE_from_dust(self):
@@ -900,8 +900,10 @@ class TestPhysics():
                                     ext_background=0,T_dust=T_dust,
                                     tau_dust=tau_dust)
             source.solve_radiative_transfer()
-            LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=T_dust_value)
-            assert np.allclose(source.level_pop,LTE_level_pop,atol=1e-5,rtol=1e-2)
+            Boltzmann_level_population\
+                   = source.emitting_molecule.Boltzmann_level_population(T=T_dust_value)
+            assert np.allclose(source.level_pop,Boltzmann_level_population,
+                               atol=1e-5,rtol=1e-2)
 
 
 @pytest.mark.filterwarnings("ignore:invalid value encountered in divide")

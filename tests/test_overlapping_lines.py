@@ -61,8 +61,10 @@ class Test_Overlapping():
                                         geometry=geo)
             assert np.all(source.tau_nu0_individual_transitions[:3] < 1e-2)
             #make sure we are in non-LTE:
-            LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=self.Tkin)
-            assert not np.allclose(source.level_pop,LTE_level_pop,rtol=0,atol=1e-2)
+            Boltzmann_level_population\
+                   = source.emitting_molecule.Boltzmann_level_population(T=self.Tkin)
+            assert not np.allclose(source.level_pop,Boltzmann_level_population,
+                                   rtol=0,atol=1e-2)
         for level_pop in level_pops:
             assert np.allclose(level_pops[0],level_pop,atol=0,rtol=1e-2)
     
@@ -81,8 +83,9 @@ class Test_Overlapping():
                 assert np.all(source.tau_nu0_individual_transitions[:3] > 10)
             else:
                 raise ValueError
-            LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=self.Tkin)
-            assert np.allclose(source.level_pop,LTE_level_pop,atol=0,rtol=1e-2)
+            Boltzmann_level_population\
+                    = source.emitting_molecule.Boltzmann_level_population(T=self.Tkin)
+            assert np.allclose(source.level_pop,Boltzmann_level_population,atol=0,rtol=1e-2)
 
     @staticmethod
     def generate_nu_for_spectrum(source):
@@ -108,8 +111,10 @@ class Test_Overlapping():
                                             geometry=geo)
                 assert np.all(source.tau_nu0_individual_transitions[:3] < 1e-2)
                 #make sure we are in non-LTE:
-                LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=self.Tkin)
-                assert not np.allclose(source.level_pop,LTE_level_pop,rtol=0,atol=1e-2)
+                Boltzmann_level_population\
+                          = source.emitting_molecule.Boltzmann_level_population(T=self.Tkin)
+                assert not np.allclose(source.level_pop,Boltzmann_level_population,
+                                       rtol=0,atol=1e-2)
                 nu = self.generate_nu_for_spectrum(source=source)
                 spectra.append(source.spectrum(output_type="specific intensity",nu=nu))
             assert np.allclose(*spectra,atol=0,rtol=3e-2)

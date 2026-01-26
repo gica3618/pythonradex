@@ -31,7 +31,7 @@ n_values = np.logspace(-1,5,100)/constants.centi**3
 
 mol = molecule.EmittingMolecule(
             datafilepath=datafilepath,line_profile_type=line_profile_type,width_v=width_v)
-level_pop = mol.LTE_level_pop(T=T)
+level_pop = mol.Boltzmann_level_population(T=T)
 trans = mol.rad_transitions[trans_index]
 width_nu = width_v/constants.c*trans.nu0
 nu = np.linspace(trans.nu0-2*width_nu,trans.nu0+2*width_nu,500)

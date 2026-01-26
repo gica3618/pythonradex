@@ -218,7 +218,7 @@ for N_case,LTE_case in itertools.product(N_cases,coll_partner_density_cases):
         obs_flux_density[bb_key] = black_body_flux_density
         obs_flux[bb_key] = black_body_flux_density*width_nu
     elif N_case == 'thin' and LTE_case=='LTE':
-        up_level_pop = source.emitting_molecule.LTE_level_pop(Tkin)[up.index]
+        up_level_pop = source.emitting_molecule.Boltzmann_level_population(Tkin)[up.index]
         if general_geometry == 'slab':
             thin_LTE_flux = up_level_pop*N*slab_surface*transition.A21*Delta_E\
                              /(4*np.pi*slab_surface)*Omega

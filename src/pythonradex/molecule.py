@@ -87,8 +87,9 @@ class Molecule():
             energies = energies.reshape(shape)
         return np.sum(weights*np.exp(-energies/(constants.k*T)),axis=0)
 
-    def LTE_level_pop(self,T):
-        '''Computes the level populations in LTE for all levels
+    def Boltzmann_level_population(self,T):
+        '''Computes the level populations for all levels using a Boltzmann
+            distribution (e.g. LTE).
         
         Args:
             T (:obj:`float` or numpy.ndarray): The temperature.
@@ -99,11 +100,10 @@ class Molecule():
             populations corresponding to the levels in the order of the LAMDA file.
             If an array of temperatures was given as input, the output array has
             two dimensions, with the second corresponding to the different temperatures.
-            
         '''
         T = np.array(T)
         Z = self.Z(T)
-        pops = [l.LTE_level_pop(T=T,Z=Z) for l in self.levels]
+        pops = [l.Boltzmann_level_population(T=T,Z=Z) for l in self.levels]
         if T.ndim > 0:
             shape = [1,]+list(T.shape)
             return np.concatenate([p.reshape(shape) for p in pops],axis=0)
@@ -245,7 +245,7 @@ class EmittingMolecule(Molecule):
         Returns:
             numpy.ndarray: the optical depth at the rest frequency assuming LTE
         '''
-        level_population = self.LTE_level_pop(T=T)
+        level_population = self.Boltzmann_level_population(T=T)
         return self.get_tau_nu0_lines(N=N,level_population=level_population)
 
     def identify_overlapping_lines(self):

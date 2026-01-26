@@ -67,9 +67,12 @@ def test_LTE():
             cloud_params['N'] = N
             source.update_parameters(**cloud_params)
             source.solve_radiative_transfer()
-            LTE_level_pop = source.emitting_molecule.LTE_level_pop(T=Tkin)
-            selection = LTE_level_pop > min_level_pop[specie]*np.max(LTE_level_pop)
-            assert np.allclose(source.level_pop[selection],LTE_level_pop[selection],
-                               atol=1e-6,rtol=1e-2)
+            Boltzmann_level_population\
+                    = source.emitting_molecule.Boltzmann_level_population(T=Tkin)
+            selection = Boltzmann_level_population > min_level_pop[specie]\
+                                         *np.max(Boltzmann_level_population)
+            assert np.allclose(source.level_pop[selection],
+                               Boltzmann_level_population[selection],atol=1e-6,
+                               rtol=1e-2)
             max_taus.append(np.max(source.tau_nu0_individual_transitions))
     print(f'max tau: {np.max(max_taus)}')

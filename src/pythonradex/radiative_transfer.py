@@ -248,8 +248,9 @@ class Source():
 
     def get_initial_level_pop(self):
         #assume LTE for the first iteration
-        LTE_level_pop = self.emitting_molecule.LTE_level_pop(T=self.rate_equations.Tkin)
-        return self.rate_equations.solve(level_population=LTE_level_pop)        
+        Boltzmann_level_population\
+             = self.emitting_molecule.Boltzmann_level_population(T=self.rate_equations.Tkin)
+        return self.rate_equations.solve(level_population=Boltzmann_level_population)        
 
     @staticmethod
     @nb.jit(nopython=True,cache=True)

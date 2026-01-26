@@ -75,15 +75,15 @@ def test_partition_func():
             Q += level.g*np.exp(-level.E/(constants.k*T))
         assert np.isclose(Q,mol.Z(T),atol=0,rtol=1e-10)
 
-def test_LTE_level_pop():
+def test_Boltzmann_level_population():
     T = 30
     for mol in itertools.chain.from_iterable(test_molecules.values()):
-        LTE_level_pop = mol.LTE_level_pop(T=T)
-        assert np.isclose(np.sum(LTE_level_pop),1)
+        Boltzmann_level_population = mol.Boltzmann_level_population(T=T)
+        assert np.isclose(np.sum(Boltzmann_level_population),1)
         Q = mol.Z(T=T)
         for i,level in enumerate(mol.levels):
             expected_pop = level.g*np.exp(-level.E/(constants.k*T)) / Q
-            assert expected_pop == LTE_level_pop[i]
+            assert expected_pop == Boltzmann_level_population[i]
 
 def test_get_transition_number():
     for mol in itertools.chain.from_iterable(test_molecules.values()):
@@ -118,7 +118,7 @@ def test_tau_LTE():
     T = 123
     for N in N_values:
         for mol in emitting_molecules.values():
-            level_population = mol.LTE_level_pop(T=T)
+            level_population = mol.Boltzmann_level_population(T=T)
             tau_nu0_LTE = mol.get_tau_nu0_lines_LTE(N=N,T=T)
             expected_tau_nu0 = []
             for i,rad_trans in enumerate(mol.rad_transitions):
@@ -135,14 +135,14 @@ def test_tau_LTE():
 def test_LTE_Tex():
     T = 123
     for mol in emitting_molecules.values():
-        LTE_level_pop = mol.LTE_level_pop(T=T)
-        Tex = mol.get_Tex(level_population=LTE_level_pop)
+        Boltzmann_level_population = mol.Boltzmann_level_population(T=T)
+        Tex = mol.get_Tex(level_population=Boltzmann_level_population)
         assert np.allclose(a=T,b=Tex,atol=0,rtol=1e-10)
 
 def test_get_tau_line_nu():
     N = 1e15/constants.centi**2
     for mol in emitting_molecules.values():
-        level_pop = mol.LTE_level_pop(T=214)
+        level_pop = mol.Boltzmann_level_population(T=214)
         tau_line_funcs = [mol.get_tau_line_nu(line_index=i,level_population=level_pop,N=N)
                           for i in range(mol.n_rad_transitions)]
         for i,line in enumerate(mol.rad_transitions):
@@ -381,7 +381,7 @@ class TestTotalQuantities():
         line = self.CO_molecule.rad_transitions[line_index]
         width_nu = line.line_profile.width_nu
         nu = np.linspace(line.nu0-3*width_nu,line.nu0+3*width_nu,200)
-        level_population = self.CO_molecule.LTE_level_pop(T=23)
+        level_population = self.CO_molecule.Boltzmann_level_population(T=23)
         x1 = level_population[line.low.index]
         x2 = level_population[line.up.index]
         tau_line = line.tau_nu(nu=nu,N1=x1*self.N_CO,N2=x2*self.N_CO)
@@ -402,7 +402,7 @@ class TestTotalQuantities():
         nu_start = self.HCl_molecule.rad_transitions[0].nu0-3*width_nu
         nu_end = self.HCl_molecule.rad_transitions[2].nu0+3*width_nu
         nu = np.linspace(nu_start,nu_end,500)
-        level_population = self.CO_molecule.LTE_level_pop(T=23)
+        level_population = self.CO_molecule.Boltzmann_level_population(T=23)
 
         for tau_d,tau_dust in self.tau_dust_iterator():
             tau_tot = self.HCl_molecule.get_tau_tot_nu(

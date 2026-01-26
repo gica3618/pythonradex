@@ -42,7 +42,7 @@ datafilepath = general.datafilepath('co.dat')
 mol = molecule.EmittingMolecule(
             datafilepath=datafilepath,line_profile_type=line_profile_type,
             width_v=width_v)
-level_pop = mol.LTE_level_pop(T=Tex)
+level_pop = mol.Boltzmann_level_population(T=Tex)
 trans = mol.rad_transitions[trans_index]
 N1 = n*level_pop[trans.low.index]*2*r
 N2 = n*level_pop[trans.up.index]*2*r

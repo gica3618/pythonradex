@@ -188,15 +188,17 @@ class Level():
         self.E = E
         self.index = index
 
-    def LTE_level_pop(self,Z,T):
-        '''Calculates the fractional population of the level in LTE.
+    def Boltzmann_level_population(self,Z,T):
+        '''Calculates the fractional population of the level using a Boltzmann
+            distribution.
 
         Args:
             Z (:obj:`float`): The partition function.
             T (:obj:`float`): The temperature in [K].
         
         Returns:
-            float: The fractional population of the level in LTE.
+            float: The fractional population of the level using a Boltzmann
+                distribution.
         '''
         #this is a convenience function that is not used when solving the non-LTE
         #radiative transfer

@@ -192,17 +192,18 @@ class TestLevel():
     E = 3
     level = atomic_transition.Level(g=g,E=E,index=1)
 
-    def test_LTE_level_pop(self):
+    def test_Boltzmann_level_population(self):
         T = 50
         Z = 3
-        lte_level_pop = self.level.LTE_level_pop(Z=Z,T=T)
-        assert lte_level_pop == self.g*np.exp(-self.E/(constants.k*T))/Z
+        Boltzmann_level_population = self.level.Boltzmann_level_population(Z=Z,T=T)
+        assert Boltzmann_level_population == self.g*np.exp(-self.E/(constants.k*T))/Z
         shape = (5,5)
         T_array = np.ones(shape)*T
         Z_array = np.ones(shape)*Z
-        lte_level_pop_array = self.level.LTE_level_pop(Z=Z_array,T=T_array)
-        assert lte_level_pop_array.shape == shape
-        assert np.all(lte_level_pop==lte_level_pop_array)
+        Boltzmann_level_population_array\
+                   = self.level.Boltzmann_level_population(Z=Z_array,T=T_array)
+        assert Boltzmann_level_population_array.shape == shape
+        assert np.all(Boltzmann_level_population==Boltzmann_level_population_array)
 
 
 class TestTransition():

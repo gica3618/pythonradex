@@ -56,9 +56,9 @@ for treat_overlap in treat_line_overlap_values:
         src.solve_radiative_transfer()
         ax.plot(src.level_pop[:max_plot_level],label=dust_case)
         if d==0:
-            ax.plot(src.emitting_molecule.LTE_level_pop(Tkin)[:max_plot_level],
+            ax.plot(src.emitting_molecule.Boltzmann_level_population(Tkin)[:max_plot_level],
                     label='LTE Tkin',linestyle='dashed')
-            ax.plot(src.emitting_molecule.LTE_level_pop(T_dust_value)[:max_plot_level],
+            ax.plot(src.emitting_molecule.Boltzmann_level_population(T_dust_value)[:max_plot_level],
                     label='LTE Tdust',linestyle='dashed')
     ax.set_yscale('log')
     ax.set_xlabel('level')

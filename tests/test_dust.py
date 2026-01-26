@@ -90,6 +90,6 @@ class TestDust():
             for source in src_iter:
                 assert source.rate_equations.Tkin != T_dust,\
                             'if Tkin=Tdust, cannot say if LTE is caused by gas or dust'
-                expected_level_pop = source.emitting_molecule.LTE_level_pop(
+                expected_level_pop = source.emitting_molecule.Boltzmann_level_population(
                                                               T=T_dust)
                 assert np.allclose(source.level_pop,expected_level_pop,atol=5e-2)

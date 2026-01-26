@@ -43,12 +43,12 @@ hcn = molecule.EmittingMolecule(datafilepath=datafilepath,
 
 for case in cases:
     trans = hcn.rad_transitions[case["trans_index"]]
-    LTE_level_pop = hcn.LTE_level_pop(T=25)
+    Boltzmann_level_population = hcn.Boltzmann_level_population(T=25)
     v_multiplier = {"Doppler":Doppler,"FWHM":width_v}
     print(f"tau molpopcep = {case['tau_molpop']}")
     for ID,v_mult in v_multiplier.items():
         N = case["N_kms"]*v_mult
-        N1 = N*LTE_level_pop[trans.low.index]
-        N2 = N*LTE_level_pop[trans.up.index]
+        N1 = N*Boltzmann_level_population[trans.low.index]
+        N2 = N*Boltzmann_level_population[trans.up.index]
         tau = trans.tau_nu0(N1=N1,N2=N2)
         print(f"{ID}: {tau:.3g}")

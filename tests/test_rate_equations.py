@@ -63,7 +63,7 @@ class TestGeneral():
                           datafilepath=os.path.join(here,'LAMDA_files/o.dat'),
                           line_profile_type='Gaussian',
                           width_v=1*constants.kilo)
-    LTE_level_pop = test_molecule.LTE_level_pop(T=123)
+    Boltzmann_level_population = test_molecule.Boltzmann_level_population(T=123)
     collider_densities = {'para-H2':1e4/constants.centi**3,
                           'e':1e2/constants.centi**3,
                           'H':1.2e4/constants.centi**3}
@@ -126,7 +126,7 @@ class TestGeneral():
             assert np.all(expected_V==rate_eq.V_nu0)
 
     def test_tau_line_nu0(self):
-        level_pop = self.LTE_level_pop
+        level_pop = self.Boltzmann_level_population
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             tau_line_nu0 = rate_eq.tau_line_nu0(
                                level_population=level_pop,
@@ -145,7 +145,7 @@ class TestGeneral():
         general_kwargs = {'n_levels':self.test_molecule.n_levels,
                           'trans_low_index':self.test_molecule.ilow_rad_transitions,
                           'trans_up_index':self.test_molecule.iup_rad_transitions}
-        level_pop = self.LTE_level_pop
+        level_pop = self.Boltzmann_level_population
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             Iext_nu0 = rate_eq.ext_background(self.test_molecule.nu0)
             tau_tot_kwargs = {'level_population':level_pop,'N':N,
@@ -192,7 +192,7 @@ class TestGeneral():
 
     def test_mixed_term_nu0(self):
         A21 = self.test_molecule.A21
-        level_pop = self.LTE_level_pop
+        level_pop = self.Boltzmann_level_population
         general_kwargs = {'n_levels':self.test_molecule.n_levels,'A21':A21,
                           'trans_low_index':self.test_molecule.ilow_rad_transitions,
                           'trans_up_index':self.test_molecule.iup_rad_transitions}
@@ -233,17 +233,17 @@ class TestGeneral():
     def test_tau_line_functions(self):
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             tau_line_funcs = rate_eq.get_tau_line_functions(
-                                            level_population=self.LTE_level_pop)
+                                            level_population=self.Boltzmann_level_population)
             for i,line in enumerate(rate_eq.molecule.rad_transitions):
                 width_nu = rate_eq.molecule.width_v/constants.c*line.nu0
                 nu = np.linspace(line.nu0-width_nu,line.nu0+width_nu,100)
                 expected_tau_line = self.test_molecule.get_tau_line_nu(
-                                    line_index=i,level_population=self.LTE_level_pop,
+                                    line_index=i,level_population=self.Boltzmann_level_population,
                                     N=N)(nu)
                 assert np.all(tau_line_funcs[i](nu)==expected_tau_line)
         zero_tau_rate_eq = self.rate_eq_generator.get_zero_tau_rate_eq(ext_background=cmb)
         tau_line_funcs = zero_tau_rate_eq.get_tau_line_functions(
-                                                 level_population=self.LTE_level_pop)
+                                                 level_population=self.Boltzmann_level_population)
         for i,line in enumerate(zero_tau_rate_eq.molecule.rad_transitions):
             width_nu = rate_eq.molecule.width_v/constants.c*line.nu0
             nu = np.linspace(line.nu0-width_nu,line.nu0+width_nu,100)
@@ -251,7 +251,7 @@ class TestGeneral():
 
     @pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
     def test_V_Ieff_averaged_zero_N(self):
-        level_pop = self.LTE_level_pop
+        level_pop = self.Boltzmann_level_population
         rate_eq = self.rate_eq_generator.get_zero_tau_rate_eq(ext_background=cmb)
         tau_tot_functions = rate_eq.get_tau_tot_functions(level_population=level_pop)
         V_Ieff = rate_eq.V_Ieff_averaged(tau_tot_functions=tau_tot_functions)
@@ -264,7 +264,7 @@ class TestGeneral():
         assert np.all(V_Ieff==expected_V_Ieff)
 
     def test_V_Ieff_averaged(self):
-        level_pop = self.LTE_level_pop
+        level_pop = self.Boltzmann_level_population
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             tau_tot_functions = rate_eq.get_tau_tot_functions(level_population=level_pop)
             V_Ieff = rate_eq.V_Ieff_averaged(tau_tot_functions=tau_tot_functions)
@@ -293,7 +293,7 @@ class TestOverlapStuff():
                               width_v=1000*constants.kilo)
     print(f'test mol: {test_molecule.coll_transitions.keys()}')
     assert test_molecule.has_overlapping_lines
-    LTE_level_pop = test_molecule.LTE_level_pop(T=102)
+    Boltzmann_level_population = test_molecule.Boltzmann_level_population(T=102)
     collider_densities = {'H2':1e4/constants.centi**3,'e':1e2/constants.centi**3}
     rate_eq_generator = RateEqGenerator(molecule=test_molecule,
                                         collider_densities=collider_densities)
@@ -301,17 +301,17 @@ class TestOverlapStuff():
     def test_tau_tot_functions(self):
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             tau_tot_funcs = rate_eq.get_tau_tot_functions(
-                                            level_population=self.LTE_level_pop)
+                                            level_population=self.Boltzmann_level_population)
             for i,line in enumerate(rate_eq.molecule.rad_transitions):
                 width_nu = rate_eq.molecule.width_v/constants.c*line.nu0
                 nu = np.linspace(line.nu0-width_nu,line.nu0+width_nu,100)
                 expected_tau_tot = self.test_molecule.get_tau_tot_nu(
-                                    line_index=i,level_population=self.LTE_level_pop,
+                                    line_index=i,level_population=self.Boltzmann_level_population,
                                     N=N,tau_dust=rate_eq.tau_dust)(nu)
                 assert np.all(tau_tot_funcs[i](nu)==expected_tau_tot)
         zero_tau_rate_eq = self.rate_eq_generator.get_zero_tau_rate_eq(ext_background=cmb)
         tau_tot_funcs = zero_tau_rate_eq.get_tau_tot_functions(
-                                          level_population=self.LTE_level_pop)
+                                          level_population=self.Boltzmann_level_population)
         for i,line in enumerate(zero_tau_rate_eq.molecule.rad_transitions):
             width_nu = rate_eq.molecule.width_v/constants.c*line.nu0
             nu = np.linspace(line.nu0-width_nu,line.nu0+width_nu,100)
@@ -397,7 +397,7 @@ class TestOverlapStuff():
         return mixed_term
 
     def test_mixed_term_averaged(self):
-        level_pop = self.LTE_level_pop
+        level_pop = self.Boltzmann_level_population
         for rate_eq in self.rate_eq_generator.rate_eq_iterator():
             if not rate_eq.treat_line_overlap:
                 continue
@@ -420,14 +420,14 @@ class TestGammaR():
 
     def test_GammaR_diag(self):
         for rate_eq in self.all_rate_eqs_iterator():
-            level_pop = rate_eq.molecule.LTE_level_pop(T=102)
+            level_pop = rate_eq.molecule.Boltzmann_level_population(T=102)
             GammaR = rate_eq.GammaR(level_population=level_pop,)
             expected_diag = -(GammaR.sum(axis=0)-GammaR.diagonal())
             assert np.allclose(GammaR.diagonal(),expected_diag,atol=0,rtol=1e-10)
 
     def test_GammaR(self):
         for rate_eq in self.all_rate_eqs_iterator():
-            level_pop = rate_eq.molecule.LTE_level_pop(T=102)
+            level_pop = rate_eq.molecule.Boltzmann_level_population(T=102)
             if not rate_eq.treat_line_overlap:
                 tau_line_nu0 = rate_eq.tau_line_nu0(
                                    level_population=level_pop,
@@ -492,7 +492,7 @@ def test_square_line_profile_averaging():
               'ext_background':cmb,'T_dust':T_dust,'tau_dust':tau_dust}
     rate_eq_nu0 = rate_equations.RateEquations(**kwargs,treat_line_overlap=False)
     rate_eq_avg = rate_equations.RateEquations(**kwargs,treat_line_overlap=True)
-    level_pop = test_molecule.LTE_level_pop(20)
+    level_pop = test_molecule.Boltzmann_level_population(20)
     tau_line_nu0 = rate_eq_nu0.tau_line_nu0(
                        level_population=level_pop,
                        trans_low_index=rate_eq_nu0.molecule.ilow_rad_transitions,
