@@ -39,7 +39,7 @@ Representation of molecular levels and transitions
 .. _Molecule_API:
 
 .. autoclass:: pythonradex.molecule.Molecule
-    :members: __init__, LTE_level_pop
+    :members: __init__, Boltzmann_level_population
 
 .. autoclass:: pythonradex.molecule.EmittingMolecule
     :members: __init__, get_tau_nu0_lines, get_tau_nu0_lines_LTE, get_Tex
