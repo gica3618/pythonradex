@@ -11,28 +11,33 @@ from scipy import constants
 
 
 def test_relative_difference_arrays():
-    x = np.array((0,4,2,10,0,2, -1,-1))
-    y = np.array((0,0,4,10,2,2.1,1,-1))
-    relative_difference = helpers.relative_difference(x,y)
-    expected_relative_difference = np.array((0,1,1,0,1,0.05,2,0))
-    assert np.allclose(relative_difference,expected_relative_difference,atol=0,
-                       rtol=1e-10)
+    x = np.array((0, 4, 2, 10, 0, 2, -1, -1))
+    y = np.array((0, 0, 4, 10, 2, 2.1, 1, -1))
+    relative_difference = helpers.relative_difference(x, y)
+    expected_relative_difference = np.array((0, 1, 1, 0, 1, 0.05, 2, 0))
+    assert np.allclose(
+        relative_difference, expected_relative_difference, atol=0, rtol=1e-10
+    )
+
 
 def test_CMB_background():
-    test_nu = np.logspace(np.log10(1),np.log10(1000),20)*constants.giga
-    test_z = (0,2)
+    test_nu = np.logspace(np.log10(1), np.log10(1000), 20) * constants.giga
+    test_z = (0, 2)
     for z in test_z:
         CMB = helpers.generate_CMB_background(z=z)
-        assert np.all(CMB(test_nu) == helpers.B_nu(nu=test_nu,T=2.73*(1+z)))
+        assert np.all(CMB(test_nu) == helpers.B_nu(nu=test_nu, T=2.73 * (1 + z)))
+
 
 def test_brightness_temperatures():
     test_T = 123
-    test_nu = 50*constants.giga
-    RJ_intensity = 2*test_nu**2*constants.k*test_T/constants.c**2
+    test_nu = 50 * constants.giga
+    RJ_intensity = 2 * test_nu**2 * constants.k * test_T / constants.c**2
     RJ_temp = helpers.RJ_brightness_temperature(
-                   specific_intensity=RJ_intensity,nu=test_nu)
-    assert np.isclose(RJ_temp,test_T,atol=0,rtol=1e-6)
-    Planck_intensity = helpers.B_nu(nu=test_nu,T=test_T)
+        specific_intensity=RJ_intensity, nu=test_nu
+    )
+    assert np.isclose(RJ_temp, test_T, atol=0, rtol=1e-6)
+    Planck_intensity = helpers.B_nu(nu=test_nu, T=test_T)
     Planck_temp = helpers.Planck_brightness_temperature(
-                         specific_intensity=Planck_intensity,nu=test_nu)
-    assert np.isclose(Planck_temp,test_T,atol=0,rtol=1e-6)
+        specific_intensity=Planck_intensity, nu=test_nu
+    )
+    assert np.isclose(Planck_temp, test_T, atol=0, rtol=1e-6)

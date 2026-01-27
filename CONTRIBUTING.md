@@ -65,6 +65,11 @@ If you only want to run a specific test:
 
 **Please make sure all tests pass before submitting a pull request.**
 
+
+### Style Guide
+
+Please use `black` to auto-format the files or notebooks you modified. `black` is installed if you install `pythonradex` with development dependencies.
+
 ---
 
 ## Contributing to the documentation and example notebooks

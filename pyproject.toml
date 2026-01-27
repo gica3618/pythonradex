@@ -25,7 +25,7 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 notebooks = ["matplotlib", "jupyter", "pandas"]
-dev = ["pytest", "Sphinx", "nbsphinx", "matplotlib", "jupyter", "pandas"]
+dev = ["pytest", "Sphinx", "nbsphinx", "matplotlib", "jupyter", "pandas", "black[jupyter]"]
 
 [tool.hatch.version]
 source = "vcs"
