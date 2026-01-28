@@ -51,14 +51,14 @@ end = time.time()
 print(f"solve time: {end-start:.3g}")
 v = np.linspace(-3 * width_v, 3 * width_v, 50)
 nu = source.emitting_molecule.rad_transitions[1].nu0 * v / constants.c
-source.spectrum(solid_angle=1, nu=nu)
+source.spectrum(output_type="specific intensity", nu=nu)
 
 # the fast method works only if there is no dust and no overlapping lines (i.e.
 # source function is just B_nu(Tex)))
 start = time.time()
 nu0 = source.emitting_molecule.nu0
 source_function = helpers.B_nu(nu=nu0, T=source.Tex)
-intensity = source.geometry.intensity(
+intensity = source.geometry.specific_intensity(
     tau=source.tau_nu0_individual_transitions, source_function=source_function
 )
 T_RJ_fast = intensity * constants.c**2 / (2 * nu0**2 * constants.k)
@@ -68,27 +68,17 @@ print(f"fast method: {fast_time:.3g}")
 
 # the method I implemented
 # warm up
-T_RJ_imp = source.brightness_temperature_nu0(
-    transitions=np.arange(source.emitting_molecule.n_rad_transitions),
-    temperature_type="Rayleigh-Jeans",
-)
+T_RJ_imp = source.emission_at_line_center(output_type="Rayleigh-Jeans")
 start = time.time()
-T_RJ_imp = source.brightness_temperature_nu0(
-    transitions=np.arange(source.emitting_molecule.n_rad_transitions),
-    temperature_type="Rayleigh-Jeans",
-)
+T_RJ_imp = T_RJ_imp = source.emission_at_line_center(output_type="Rayleigh-Jeans")
 end = time.time()
 imp_time = end - start
 print(f"implemented: {imp_time:.3g}")
 print(f"imp/fast time ratio: {imp_time/fast_time:.3g}")
 
 start = time.time()
-mock_solid_angle = 1
 nu0 = source.emitting_molecule.nu0
-intensity = (
-    source.spectrum(solid_angle=mock_solid_angle, nu=nu0) / mock_solid_angle
-)  # W/m2/Hz/sr
-T_RJ_lazy = intensity * constants.c**2 / (2 * nu0**2 * constants.k)
+T_RJ_lazy = source.spectrum(output_type="Rayleigh-Jeans", nu=nu0)
 end = time.time()
 lazy_time = end - start
 print(f"lazy method: {lazy_time:.3g}")
@@ -96,3 +86,4 @@ print(f"lazy method: {lazy_time:.3g}")
 assert np.allclose(T_RJ_fast, T_RJ_lazy, rtol=1e-4, atol=0)
 
 print(f"lazy/fast time ratio: {lazy_time/fast_time:.3g}")
+print(f"lazy/implemented time ratio: {lazy_time/imp_time}")

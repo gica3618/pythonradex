@@ -49,7 +49,7 @@ dust_params = {
 
 for treat_overlap in treat_line_overlap_values:
     fig, ax = plt.subplots()
-    ax.set_title(f"treat lin overlap = {treat_overlap}")
+    ax.set_title(f"treat line overlap = {treat_overlap}")
     for d, (dust_case, dust_p) in enumerate(dust_params.items()):
         src = radiative_transfer.Source(
             datafilepath=datafilepath,

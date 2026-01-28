@@ -59,7 +59,7 @@ test_cases = [
 
 def relative_diff(x):
     assert len(x) == 2
-    return float(np.abs(np.diff(x) / x[0]))
+    return float(np.abs(np.diff(x)[0] / x[0]))
 
 
 ext_background = 0

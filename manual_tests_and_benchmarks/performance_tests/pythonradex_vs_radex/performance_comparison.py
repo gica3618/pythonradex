@@ -8,8 +8,7 @@ Created on Tue Nov 18 14:50:22 2025
 
 # this script is essentially a simplified version of radex_vs_pythonradex_performance.py
 # IMPORTANT: if you want to delete the numba compilation (__pycache__), you need to
-# run this in an environment where pythonradex is installed in editable mode, e.g.
-# the virtual environment virt_env_for_testing
+# run this in an environment where pythonradex is installed in editable mode
 
 
 import sys

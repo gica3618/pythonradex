@@ -42,7 +42,7 @@ for esc_prob_name, esc_prob in esc_probs.items():
             tau = np.atleast_1d(phi_nu / np.max(phi_nu) * tau_nu0)
             return esc_prob.beta(tau)
 
-        beta_nu0[i] = beta_func(nu=nu0)
+        beta_nu0[i] = beta_func(nu=nu0)[0]
         beta_averaged[i] = line_profile.average_over_phi_nu(beta_func)
     relative_diff = np.abs((beta_nu0 - beta_averaged) / beta_nu0)
     axes[0].plot(tau_nu0_values, beta_nu0, label="beta nu0")

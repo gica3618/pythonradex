@@ -83,7 +83,6 @@ radex_input_file = "radex_test_preformance.inp"
 radex_output_file = "radex_test_preformance.out"
 
 pythonradex_times = np.empty(len(n_elements))
-pythonradex_grid_times = np.empty_like(pythonradex_times)
 RADEX_times = np.empty_like(pythonradex_times)
 
 
@@ -148,31 +147,6 @@ for i, n in enumerate(n_elements):
     end = time.time()
     pythonradex_times[i] = end - start
 
-    print("running pythonradex in grid mode")
-    if remove_cache:
-        remove_pythonradex_cache()
-    start = time.time()
-    source = radiative_transfer.Source(**cloud_kwargs)
-    collider_densities_values = {
-        collider: coll_density_values for collider in colliders
-    }
-    iterator = source.efficient_parameter_iterator(
-        ext_backgrounds={"extbg": ext_background},
-        N_values=N_values,
-        Tkin_values=Tkin_values,
-        collider_densities_values=collider_densities_values,
-        T_dust=0,
-        tau_dust=0,
-    )
-    for param_values in iterator:
-        source.solve_radiative_transfer()
-        source.level_pop
-        source.Tex
-        source.tau_nu0_individual_transitions
-        source.frequency_integrated_emission(output_type="flux", solid_angle=0.25)
-    end = time.time()
-    pythonradex_grid_times[i] = end - start
-
     print("Running RADEX")
     start = time.time()
     for N, coll_dens, Tkin in itertools.product(
@@ -196,13 +170,9 @@ for i, n in enumerate(n_elements):
     end = time.time()
     RADEX_times[i] = end - start
     print(f"time ratio pythonradex/RADEX: {pythonradex_times[i]/RADEX_times[i]:.3g}")
-    print(
-        f"time ratio pythonradex grid/RADEX: {pythonradex_grid_times[i]/RADEX_times[i]:.3g}"
-    )
 
 fig, ax = plt.subplots()
 ax.plot(n_elements, pythonradex_times / RADEX_times, label="normal")
-ax.plot(n_elements, pythonradex_grid_times / RADEX_times, label="grid")
 secax = ax.secondary_xaxis("top", functions=(lambda x: x**3, lambda x: x ** (1 / 3)))
 secax.set_xlabel("total number of calculations")
 plt.xlabel("n_elements")
