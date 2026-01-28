@@ -304,7 +304,7 @@ class EmittingMolecule(Molecule):
     def any_line_has_overlap(self, line_indices):
         return np.any(self.line_has_overlap[line_indices])
 
-    def get_tau_line_nu(self, line_index, level_population, N):
+    def get_tau_line(self, line_index, level_population, N):
         line = self.rad_transitions[line_index]
 
         def tau_line_nu(nu):

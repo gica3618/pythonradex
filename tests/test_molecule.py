@@ -174,12 +174,12 @@ def test_LTE_Tex():
         assert np.allclose(a=T, b=Tex, atol=0, rtol=1e-10)
 
 
-def test_get_tau_line_nu():
+def test_get_tau_line():
     N = 1e15 / constants.centi**2
     for mol in emitting_molecules.values():
         level_pop = mol.Boltzmann_level_population(T=214)
         tau_line_funcs = [
-            mol.get_tau_line_nu(line_index=i, level_population=level_pop, N=N)
+            mol.get_tau_line(line_index=i, level_population=level_pop, N=N)
             for i in range(mol.n_rad_transitions)
         ]
         for i, line in enumerate(mol.rad_transitions):

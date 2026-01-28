@@ -299,7 +299,7 @@ class RateEquations:
     def get_tau_line_functions(self, level_population):
         kwargs = {"level_population": level_population, "N": self.N}
         return [
-            self.molecule.get_tau_line_nu(line_index=i, **kwargs)
+            self.molecule.get_tau_line(line_index=i, **kwargs)
             for i in range(self.molecule.n_rad_transitions)
         ]
 

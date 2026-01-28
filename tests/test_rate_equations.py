@@ -325,7 +325,7 @@ class TestGeneral:
             for i, line in enumerate(rate_eq.molecule.rad_transitions):
                 width_nu = rate_eq.molecule.width_v / constants.c * line.nu0
                 nu = np.linspace(line.nu0 - width_nu, line.nu0 + width_nu, 100)
-                expected_tau_line = self.test_molecule.get_tau_line_nu(
+                expected_tau_line = self.test_molecule.get_tau_line(
                     line_index=i, level_population=self.Boltzmann_level_population, N=N
                 )(nu)
                 assert np.all(tau_line_funcs[i](nu) == expected_tau_line)
