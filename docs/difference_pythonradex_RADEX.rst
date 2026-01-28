@@ -15,14 +15,16 @@ There is a difference between the outputs of ``RADEX`` and ``pythonradex``. The 
 
 .. _sphere_flux_difference:
 
-Different flux for spherical geometry
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Different specific intensity and flux for spherical geometry
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 For a given excitation temperature :math:`T_{ex}` and optical depth :math:`\tau_\nu`, ``RADEX`` calculates the specific intensity as
 
 .. math::
     I_\nu = B_\nu(T_{ex})(1-e^{-\tau_\nu})
 
-for all geometries. However, this expression is only valid for slab geometries, but not for spherical geometries ("static sphere" and "LVG sphere"). On the other hand, ``pythonradex`` uses the correct formulae for spherical geometries (see the :ref:`section about geometries<geometries>` for more details). The following figure illustrates the difference in flux that results from using different formulae. For a static sphere, ``RADEX`` overestimates the flux in the optically thin limit by a factor 1.5. This factor simply represents the volume ratio between a "spherical slab" (i.e. a cylinder) and a sphere. In the optically thick limit, only the surface of the static sphere is visible, so both codes agree despite using different formulae. On the other hand, for the LVG sphere, the difference is always a factor 1.5, regardless of optical depth. This is due to the LVG assumption that all photons escape unless absorbed locally.
+for all geometries. However, this expression is only valid for slab geometries, but not for spherical geometries ("static sphere" and "LVG sphere"). In contrast, ``pythonradex`` uses different formulae for spherical geometries (see the :ref:`section about geometries<geometries>` for more details).
+
+For a sphere, the specific intensity depends on the position on the sphere: if one looks towards the center of the sphere, it will be brighter than the sphere edges (because when looking through the center, the column density is higher), unless the sphere is completely optically thick. Therefore, the specific intensity, or brightness temperature, computed by ``RADEX`` using the above equation corresponds to what one would observe towards the center of the sphere if the observations resolved the sphere. On the other hand, ``pythonradex`` computes a sort of mean specific intensity, in the sense that if you multiply that specific intensity by the solid angle of the sphere (:math:`R^2\pi/d^2`, with :math:`R` the physical radius of the sphere and :math:`d` the distance), you get the correct total flux. So the specific intensity computed by ``pythonradex`` corresponds to what one would measure from unresolved observations (assuming the beam is filled, or a appropriate beam-filling factor is applied). Whether resolved or unresolved, ``pythonradex`` gives the correct total flux (W/m\ :sup:`2`), while ``RADEX`` might not (depending on the optical depth and geometry). The following figure illustrates the difference in flux that results from using different formulae. For a static sphere, ``RADEX`` overestimates the flux in the optically thin limit by a factor 1.5. This factor simply represents the volume ratio between a "spherical slab" (i.e. a cylinder) and a sphere. In the optically thick limit, only the surface of the static sphere is visible, so both codes agree despite using different formulae. On the other hand, for the LVG sphere, the difference is always a factor 1.5, regardless of optical depth. This is due to the LVG assumption that all photons escape unless absorbed locally.
 
 .. figure:: images/flux_comparison_spherical_geometries.png
    :align: center
@@ -37,7 +39,6 @@ To verify that ``pythonradex`` calculates the flux correctly, one may consider t
     F_\mathrm{thin} = V_\mathrm{sphere}nx_2A_{21}\Delta E \frac{1}{4\pi d^2}
 
 where :math:`V_\mathrm{sphere}=\frac{4}{3}R^3\pi` is the volume of the sphere, :math:`n` the constant number density, :math:`x_2` the fractional level population of the upper level, :math:`A_{21}` the Einstein coefficient, :math:`\Delta E` the energy difference between the upper and lower level, and :math:`d` the distance of the source. ``pythonradex`` correctly reproduces this limiting case, but ``RADEX`` overestimates the optically thin flux by a factor 1.5.
-
 
 Different escape probability for LVG sphere
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
