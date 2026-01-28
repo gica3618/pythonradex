@@ -12,7 +12,7 @@ import numba as nb
 
 
 @nb.jit(nopython=True, cache=True)
-def tau_nu(A21, phi_nu, g_low, g_up, N1, N2, nu):
+def tau(A21, phi_nu, g_low, g_up, N1, N2, nu):
     return (
         constants.c**2 / (8 * np.pi * nu**2) * A21 * phi_nu * (g_up / g_low * N1 - N2)
     )
@@ -316,7 +316,7 @@ class EmissionLine(RadiativeTransition):
             nu0=radiative_transition.nu0,
         )
 
-    def tau_nu(self, N1, N2, nu):
+    def tau(self, N1, N2, nu):
         r"""Computes the optical depth
 
         Args:
@@ -330,7 +330,7 @@ class EmissionLine(RadiativeTransition):
             numpy.ndarray: the optical depth at the requested frequencies
 
         """
-        return tau_nu(
+        return tau(
             phi_nu=self.line_profile.phi_nu(nu), N1=N1, N2=N2, nu=nu, **self.tau_kwargs
         )
 
@@ -347,7 +347,7 @@ class EmissionLine(RadiativeTransition):
             float or numpy.ndarray: the optical depth at the rest frequency
 
         """
-        return tau_nu(
+        return tau(
             phi_nu=self.line_profile.phi_nu0,
             N1=N1,
             N2=N2,

@@ -257,7 +257,7 @@ source.solve_radiative_transfer()
 nu0_21 = source.emitting_molecule.nu0[index_21]
 nu0 = float(nu0_21)
 
-tau0 = source.tau_nu(nu=nu0)
+tau0 = source.tau(nu=nu0)
 Tex = source.Tex[index_21]
 I0 = (pradex.helpers.B_nu(nu0, Tex) - ext_background(nu0)) * (1 - np.exp(-tau0))
 # I0 = cloud.spectrum(1., nu=np.array([nu0]))
@@ -318,7 +318,7 @@ for i in range(num_runs):
     cloud.solve_radiative_transfer()
     nu0_21 = cloud.emitting_molecule.nu0[index_21]
     nu0 = float(nu0_21)
-    tau0 = cloud.tau_nu(nu=nu0)
+    tau0 = cloud.tau(nu=nu0)
     I0 = (pradex.helpers.B_nu(nu0, Tex) - ext_background(nu0)) * (1 - np.exp(-tau0))
     Tb0 = I0 * constants.c**2 / (2 * nu0**2 * constants.Boltzmann)
     end = time.time()

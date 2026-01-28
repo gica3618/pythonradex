@@ -127,7 +127,7 @@ def test_tau():
                 N2 = N * level_population[i_up]
                 i_low = rad_trans.low.index
                 N1 = N * level_population[i_low]
-                t = atomic_transition.tau_nu(
+                t = atomic_transition.tau(
                     A21=rad_trans.A21,
                     phi_nu=rad_trans.line_profile.phi_nu(rad_trans.nu0),
                     g_low=rad_trans.low.g,
@@ -153,7 +153,7 @@ def test_tau_LTE():
                 N2 = N * level_population[i_up]
                 i_low = rad_trans.low.index
                 N1 = N * level_population[i_low]
-                t = atomic_transition.tau_nu(
+                t = atomic_transition.tau(
                     A21=rad_trans.A21,
                     phi_nu=rad_trans.line_profile.phi_nu(rad_trans.nu0),
                     g_low=rad_trans.low.g,
@@ -185,7 +185,7 @@ def test_get_tau_line():
         for i, line in enumerate(mol.rad_transitions):
             width_nu = width_v / constants.c * line.nu0
             nu = np.linspace(line.nu0 - width_nu, line.nu0 + width_nu, 100)
-            expected_tau = line.tau_nu(
+            expected_tau = line.tau(
                 N1=N * level_pop[line.low.index], N2=N * level_pop[line.up.index], nu=nu
             )
             assert np.all(expected_tau == tau_line_funcs[i](nu))
@@ -488,7 +488,7 @@ class TestTotalQuantities:
         level_population = self.CO_molecule.Boltzmann_level_population(T=23)
         x1 = level_population[line.low.index]
         x2 = level_population[line.up.index]
-        tau_line = line.tau_nu(nu=nu, N1=x1 * self.N_CO, N2=x2 * self.N_CO)
+        tau_line = line.tau(nu=nu, N1=x1 * self.N_CO, N2=x2 * self.N_CO)
         for tau_d, tau_dust in self.tau_dust_iterator():
             tau_tot = self.CO_molecule.get_tau_tot_nu(
                 line_index=line_index,
@@ -523,7 +523,7 @@ class TestTotalQuantities:
                 line_i = self.HCl_molecule.rad_transitions[i]
                 x1 = level_population[line_i.low.index]
                 x2 = level_population[line_i.up.index]
-                expected_tau_tot += line_i.tau_nu(
+                expected_tau_tot += line_i.tau(
                     N1=self.N_HCl * x1, N2=self.N_HCl * x2, nu=nu
                 )
             expected_tau_tot += tau_d

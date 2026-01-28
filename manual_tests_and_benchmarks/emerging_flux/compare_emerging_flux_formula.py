@@ -92,7 +92,7 @@ for ID, pythonradex_flux in pythonradex_fluxes.items():
     axes[2].axhline(expected_ratio_thin, color="black", linestyle="dashed")
     for ax in axes:
         ax.set_xscale("log")
-        ax.set_xlabel("tau_nu")
+        ax.set_xlabel("tau")
 
 fig, ax = plt.subplots(figsize=[6.4, 3])
 fig.suptitle("flux comparison (spherical geometries)")

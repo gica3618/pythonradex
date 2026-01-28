@@ -23,9 +23,9 @@ class StaticSphere(EscapeProbabilityStaticSphere):
 
     @staticmethod
     @nb.jit(nopython=True, cache=True)
-    def specific_intensity(tau_nu, source_function):
+    def specific_intensity(tau, source_function):
         """Computes the observed specific intensity in [W/m2/Hz/sr], given
-        the optical depth tau_nu and the source function in [W/m2/Hz/sr]."""
+        the optical depth tau and the source function in [W/m2/Hz/sr]."""
         # see old Osterbrock book for this formula, appendix 2
         # the observed flux in [W/m2/Hz] is given by
         # (flux at sphere surface)*4*pi*r**2/(4*pi*d**2) = F_surface*Omega*4/(4*pi)
@@ -41,22 +41,22 @@ class StaticSphere(EscapeProbabilityStaticSphere):
         # where cos(theta) is necessary to take into account surface inclination.
         # This evaluates to pi*I_nu if I_nu is assumed to be constant
 
-        # for small tau_nu, the Osterbrock formula becomes numerically unstable,
+        # for small tau, the Osterbrock formula becomes numerically unstable,
         # so we use a Taylor expansion
-        min_tau_nu = 1e-2
-        stable_region = tau_nu > min_tau_nu
+        min_tau = 1e-2
+        stable_region = tau > min_tau
         flux_nu = (
             2
             * np.pi
             * source_function
-            / tau_nu**2
-            * (tau_nu**2 / 2 - 1 + (tau_nu + 1) * np.exp(-tau_nu))
+            / tau**2
+            * (tau**2 / 2 - 1 + (tau + 1) * np.exp(-tau))
         )
         flux_nu_Taylor = (
             2
             * np.pi
             * source_function
-            * (tau_nu / 3 - tau_nu**2 / 8 + tau_nu**3 / 30 - tau_nu**4 / 144)
+            * (tau / 3 - tau**2 / 8 + tau**3 / 30 - tau**4 / 144)
         )  # from Wolfram Alpha
         flux_nu = np.where(stable_region, flux_nu, flux_nu_Taylor)
         assert np.all(np.isfinite(flux_nu))
@@ -64,10 +64,10 @@ class StaticSphere(EscapeProbabilityStaticSphere):
 
 
 @nb.jit(nopython=True, cache=True)
-def exp_tau_factor(tau_nu):
+def exp_tau_factor(tau):
     # for very small tau, the exp can introduce numerical errors, so we
     # take care of that when computing (1-exp(-tau))
-    return np.where(tau_nu < 1e-5, tau_nu, 1 - np.exp(-tau_nu))
+    return np.where(tau < 1e-5, tau, 1 - np.exp(-tau))
 
 
 class Flux1D:
@@ -75,10 +75,10 @@ class Flux1D:
 
     @staticmethod
     @nb.jit(nopython=True, cache=True)
-    def specific_intensity(tau_nu, source_function):
+    def specific_intensity(tau, source_function):
         """Computes the observed specific intensity in [W/m2/Hz/sr], given
-        the optical depth tau_nu and the source function in [W/m2/Hz/sr]."""
-        tau_factor = exp_tau_factor(tau_nu=tau_nu)
+        the optical depth tau and the source function in [W/m2/Hz/sr]."""
+        tau_factor = exp_tau_factor(tau=tau)
         return source_function * tau_factor
 
 
@@ -111,10 +111,10 @@ class LVGSlab(Flux1D):
 
 
 @nb.jit(nopython=True, cache=True)
-def specific_intensity_nu0_lvg_sphere(tau_nu, source_function):
+def specific_intensity_nu0_lvg_sphere(tau, source_function):
     # convenience function useful to compute brightness temperature for LVG sphere
     # in flux.py
-    tau_factor = exp_tau_factor(tau_nu=tau_nu)
+    tau_factor = exp_tau_factor(tau=tau)
     return source_function * tau_factor
 
 
@@ -127,12 +127,12 @@ class LVGSphere:
 
     @staticmethod
     @nb.jit(nopython=True, cache=True)
-    def specific_intensity(tau_nu, source_function, nu, nu0, V):
+    def specific_intensity(tau, source_function, nu, nu0, V):
         # V is the velocity at the surface of the sphere
         # this formula can be derived by using an approach similar to
         # de Jong et al. (1975, Fig. 3)
         intensity_nu0 = specific_intensity_nu0_lvg_sphere(
-            tau_nu=tau_nu, source_function=source_function
+            tau=tau, source_function=source_function
         )
         v = constants.c * (1 - nu / nu0)
         # actually, since the line profile is always rectangular for LVG, in principle

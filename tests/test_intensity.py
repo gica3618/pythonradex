@@ -49,17 +49,17 @@ class TestFastIntensities:
     test_tau_values = [1e-5, 1e-2, 0.5, 10, 100]
 
     @staticmethod
-    def calculate_nu_and_tau_nu(lp, nu0, width_v, peak_tau):
+    def calculate_nu_and_tau(lp, nu0, width_v, peak_tau):
         width_nu = width_v / constants.c * nu0
         if lp == "rectangular":
             nu = np.linspace(nu0 - 0.55 * width_nu, nu0 + 0.55 * width_nu, 10000)
-            tau_nu = np.where(np.abs(nu - nu0) < width_nu / 2, peak_tau, 0)
+            tau = np.where(np.abs(nu - nu0) < width_nu / 2, peak_tau, 0)
         elif lp == "Gaussian":
             nu = np.linspace(nu0 - 3 * width_nu, nu0 + 3 * width_nu, 10000)
             sigma_nu = helpers.FWHM2sigma(width_nu)
-            tau_nu = np.exp(-((nu - nu0) ** 2) / (2 * sigma_nu**2))
-            tau_nu *= peak_tau / np.max(tau_nu)
-        return nu, tau_nu
+            tau = np.exp(-((nu - nu0) ** 2) / (2 * sigma_nu**2))
+            tau *= peak_tau / np.max(tau)
+        return nu, tau
 
     def test_fast_intensities(self):
         for (geo_name, geo), lp in itertools.product(
@@ -76,10 +76,10 @@ class TestFastIntensities:
                 expected_intensity = []
                 for t in self.test_transitions:
                     S = helpers.B_nu(nu=mol.nu0[t], T=Tex[t])
-                    nu, tau_nu = self.calculate_nu_and_tau_nu(
+                    nu, tau = self.calculate_nu_and_tau(
                         lp=lp, nu0=mol.nu0[t], width_v=mol.width_v, peak_tau=test_tau
                     )
-                    intensity_kwargs = {"tau_nu": tau_nu, "source_function": S}
+                    intensity_kwargs = {"tau": tau, "source_function": S}
                     if is_LVG_sphere:
                         intensity_kwargs["nu"] = nu
                         intensity_kwargs["nu0"] = mol.nu0[t]
@@ -125,7 +125,7 @@ class TestFastIntensities:
         # add the edge points, otherwise the interpolation will mess things up...
         nu = np.append(nu, (test_line.nu0 - width_nu / 2, test_line.nu0 + width_nu / 2))
         nu.sort()
-        expected_tau_nu = test_line.tau_nu(N1=N1, N2=N2, nu=nu)
+        expected_tau = test_line.tau(N1=N1, N2=N2, nu=nu)
         geo_name = "static slab"
         geo = radiative_transfer.Source.geometries[geo_name]
         tau_nu0_individual_transitions = mol.get_tau_nu0_lines(
@@ -144,13 +144,13 @@ class TestFastIntensities:
         transitions = [
             line_index,
         ]
-        constructed_nu, constructed_tau_nu, constructed_source_function = (
+        constructed_nu, constructed_tau, constructed_source_function = (
             intensity_calculator.get_intensity_parameters_for_rectangular(
                 transitions=transitions
             )
         )
-        interp_tau_nu = np.interp(x=constructed_nu, xp=nu, fp=expected_tau_nu)
-        assert np.allclose(constructed_tau_nu, interp_tau_nu, atol=0, rtol=1e-3)
+        interp_tau = np.interp(x=constructed_nu, xp=nu, fp=expected_tau)
+        assert np.allclose(constructed_tau, interp_tau, atol=0, rtol=1e-3)
         Tex = mol.get_Tex(level_population=level_pop)[line_index]
         expected_S = helpers.B_nu(T=Tex, nu=nu)
         interp_S = np.interp(x=constructed_nu, xp=nu, fp=expected_S)
@@ -316,7 +316,7 @@ class TestVarious:
                 "level_population": level_population,
             }
 
-    def test_tau_nu_constructor(self):
+    def test_tau_constructor(self):
         test_transitions = [0, 3, 10]
         for f in self.generate_intensity_calculator(
             geo_name="static sphere", tau_dust=zero, S_dust=zero
@@ -325,16 +325,16 @@ class TestVarious:
                 line = f["mol"].rad_transitions[t]
                 width_nu = f["mol"].width_v / constants.c * line.nu0
                 nu = np.linspace(line.nu0 - 2 * width_nu, line.nu0 + 2 * width_nu, 200)
-                constructed_tau_nu = f[
+                constructed_tau = f[
                     "intensitycalculator"
-                ].construct_tau_nu_individual_line(
+                ].construct_tau_individual_line(
                     line=line, nu=nu, tau_nu0=f["tau_nu0"][t]
                 )
                 N1 = self.N * f["level_population"][line.low.index]
                 N2 = self.N * f["level_population"][line.up.index]
-                expected_tau_nu = line.tau_nu(N1=N1, N2=N2, nu=nu)
+                expected_tau = line.tau(N1=N1, N2=N2, nu=nu)
                 assert np.allclose(
-                    constructed_tau_nu, expected_tau_nu, atol=0, rtol=1e-3
+                    constructed_tau, expected_tau, atol=0, rtol=1e-3
                 )
 
     def test_line_identification(self):
@@ -596,7 +596,7 @@ class TestSpecificIntensityNu0NoOverlap:
                     / tau_tot,
                 )
                 intensity_kwargs = {
-                    "tau_nu": tau_tot,
+                    "tau": tau_tot,
                     "source_function": source_function,
                 }
                 if "LVG" in geo:
@@ -882,9 +882,9 @@ class TestIntensitiesWithPhysics:
                         LVG_kwargs = {}
                     N1 = level_pop[line.low.index] * N
                     N2 = level_pop[line.up.index] * N
-                    expected_tau_nu = line.tau_nu(N1, N2, nu)
+                    expected_tau = line.tau(N1, N2, nu)
                     expected_spec = intensitycalculator.specific_intensity(
-                        tau_nu=expected_tau_nu,
+                        tau=expected_tau,
                         source_function=source_func,
                         **LVG_kwargs,
                     )
@@ -894,7 +894,7 @@ class TestIntensitiesWithPhysics:
                         peak = np.max(spec)
                         assert np.isclose(a=peak, b=bb_intensity_nu0, atol=0, rtol=3e-2)
                 if ID == "thin":
-                    assert np.allclose(expected_tau_nu, 0, atol=1e-3, rtol=0)
+                    assert np.allclose(expected_tau, 0, atol=1e-3, rtol=0)
 
     @pytest.mark.filterwarnings("ignore:LVG sphere geometry")
     @pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
@@ -917,25 +917,25 @@ class TestIntensitiesWithPhysics:
             intensitycalculator.set_nu(nu=nu)
             spec = intensitycalculator.specific_intensity_spectrum()
             expected_spec = np.zeros_like(spec)
-            expected_tau_nu = np.zeros_like(spec)
+            expected_tau = np.zeros_like(spec)
             for line in lines:
                 N1 = level_pop[line.low.index] * N
                 N2 = level_pop[line.up.index] * N
-                tau_nu_line = line.tau_nu(N1, N2, nu)
-                expected_tau_nu += tau_nu_line
+                tau_line = line.tau(N1, N2, nu)
+                expected_tau += tau_line
                 source_func = helpers.B_nu(T=self.Tkin, nu=nu)
                 if intensitycalculator.geometry_name == "LVG sphere":
                     LVG_kwargs = {"nu": nu, "nu0": line.nu0, "V": width_v / 2}
                 else:
                     LVG_kwargs = {}
                 expected_spec += intensitycalculator.specific_intensity(
-                    tau_nu=tau_nu_line, source_function=source_func, **LVG_kwargs
+                    tau=tau_line, source_function=source_func, **LVG_kwargs
                 )
             assert np.allclose(
-                intensitycalculator.tau_nu_tot, expected_tau_nu, atol=1e-20, rtol=1e-3
+                intensitycalculator.tau_tot, expected_tau, atol=1e-20, rtol=1e-3
             )
             assert np.allclose(spec, expected_spec, atol=0, rtol=1e-3)
-            assert np.allclose(intensitycalculator.tau_nu_tot, 0, atol=1e-3, rtol=0)
+            assert np.allclose(intensitycalculator.tau_tot, 0, atol=1e-3, rtol=0)
 
     def test_spectrum_with_dust(self):
         N_values = {
@@ -979,7 +979,7 @@ class TestIntensitiesWithPhysics:
                         spec = intensitycalculator.specific_intensity_spectrum()
                         if line_thickness == "thin" and dust_thickness == "thick":
                             # dust should dominate
-                            for tau_line in intensitycalculator.tau_nu_lines:
+                            for tau_line in intensitycalculator.tau_lines:
                                 assert np.allclose(tau_line, 0, atol=1e-3, rtol=0)
                             expected_spec = self.S_dust(nu=nu)
                             assert np.allclose(spec, expected_spec, atol=0, rtol=1e-3)
@@ -989,7 +989,7 @@ class TestIntensitiesWithPhysics:
                                 S_line_nu0 = helpers.B_nu(nu=line.nu0, T=self.Tkin)
                                 tau_nu0_alllines = 0
                                 for lineline in lines:
-                                    tau_nu0_alllines += lineline.tau_nu(
+                                    tau_nu0_alllines += lineline.tau(
                                         N1=N * level_pop[lineline.low.index],
                                         N2=N * level_pop[lineline.up.index],
                                         nu=line.nu0,
@@ -1013,13 +1013,13 @@ class TestIntensitiesWithPhysics:
                             # expect that I can just add together the line and dust specs
                             dust_S = helpers.B_nu(nu=nu, T=self.T_dust)
                             dust_spec = intensitycalculator.specific_intensity(
-                                tau_nu=tau_dust(nu), source_function=dust_S
+                                tau=tau_dust(nu), source_function=dust_S
                             )
                             expected_spec = dust_spec
                             S_line = helpers.B_nu(nu=nu, T=self.Tkin)
-                            for tau_line in intensitycalculator.tau_nu_lines:
+                            for tau_line in intensitycalculator.tau_lines:
                                 line_spec = intensitycalculator.specific_intensity(
-                                    tau_nu=tau_line, source_function=S_line
+                                    tau=tau_line, source_function=S_line
                                 )
                                 expected_spec += line_spec
                             assert np.allclose(spec, expected_spec, atol=0, rtol=1e-3)
@@ -1037,7 +1037,7 @@ class TestIntensitiesWithPhysics:
                         # dust emission
                         nu_edge = nu[[0, -1]]
                         expected_dust_spec = intensitycalculator.specific_intensity(
-                            tau_nu=tau_dust(nu_edge),
+                            tau=tau_dust(nu_edge),
                             source_function=helpers.B_nu(nu=nu_edge, T=self.T_dust),
                         )
                         assert np.allclose(

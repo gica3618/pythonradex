@@ -154,7 +154,7 @@ class RateEquations:
         for i in range(len(trans_low_index)):
             N1 = N * level_population[trans_low_index[i]]
             N2 = N * level_population[trans_up_index[i]]
-            tau_nu0[i] = atomic_transition.tau_nu(
+            tau_nu0[i] = atomic_transition.tau(
                 A21=A21[i],
                 phi_nu=phi_nu0[i],
                 g_low=glow_rad_transitions[i],

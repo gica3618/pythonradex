@@ -74,7 +74,7 @@ beta_fluxes = {ID: np.empty(n_values.size) for ID in beta_funcs.keys()}
 for i, n in enumerate(n_values):
     N1 = n * level_pop[trans.low.index] * 2 * r
     N2 = n * level_pop[trans.up.index] * 2 * r
-    tau_nu = atomic_transition.tau_nu(
+    tau = atomic_transition.tau(
         A21=trans.A21,
         phi_nu=phi_nu,
         g_low=trans.low.g,
@@ -84,7 +84,7 @@ for i, n in enumerate(n_values):
         nu=nu,
     )
     source_func = helpers.B_nu(nu=nu, T=T)
-    intensity_kwargs = {"tau_nu": tau_nu, "source_function": source_func}
+    intensity_kwargs = {"tau": tau, "source_function": source_func}
     LVG_sphere_kwargs = {"nu": nu, "nu0": trans.nu0, "V": width_v / 2}
     flux_no_beta = (
         volume
@@ -96,10 +96,10 @@ for i, n in enumerate(n_values):
         * phi_nu
     )  # W/m2/Hz
     if i == 0:
-        assert np.max(tau_nu) < 0.01
+        assert np.max(tau) < 0.01
         thin_flux = np.trapezoid(flux_no_beta, nu)
     for ID, beta_func in beta_funcs.items():
-        beta_nu = beta_func(tau_nu=tau_nu)
+        beta_nu = beta_func(tau=tau)
         beta_fluxes[ID][i] = np.trapezoid(flux_no_beta * beta_nu, nu)
         geo = geometries[ID]
         if ID == "LVG sphere":

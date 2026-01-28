@@ -52,7 +52,7 @@ N2 = n * level_pop[trans.up.index] * 2 * r
 width_nu = width_v / constants.c * trans.nu0
 nu = np.linspace(trans.nu0 - 2 * width_nu, trans.nu0 + 2 * width_nu, 500)
 phi_nu = trans.line_profile.phi_nu(nu)
-tau_nu = atomic_transition.tau_nu(
+tau = atomic_transition.tau(
     A21=trans.A21,
     phi_nu=phi_nu,
     g_low=trans.low.g,
@@ -61,7 +61,7 @@ tau_nu = atomic_transition.tau_nu(
     N2=N2,
     nu=nu,
 )
-print(f"max tau nu: {np.max(tau_nu):.3g}")
+print(f"max tau nu: {np.max(tau):.3g}")
 
 volume = 4 / 3 * r**3 * np.pi
 solid_angle = r**2 * np.pi / d**2
@@ -83,7 +83,7 @@ geometries = {
     "static sphere RADEX": escape_probability.StaticSphereRADEX(),
     "lvg sphere RADEX": escape_probability.LVGSphereRADEX(),
 }
-intensity_kwargs_template = {"tau_nu": tau_nu, "source_function": source_func}
+intensity_kwargs_template = {"tau": tau, "source_function": source_func}
 intensity_kwargs = {
     geo_name: intensity_kwargs_template.copy() for geo_name in geometries.keys()
 }

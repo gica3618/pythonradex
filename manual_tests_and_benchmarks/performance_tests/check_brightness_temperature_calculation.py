@@ -59,7 +59,7 @@ start = time.time()
 nu0 = source.emitting_molecule.nu0
 source_function = helpers.B_nu(nu=nu0, T=source.Tex)
 intensity = source.geometry.intensity(
-    tau_nu=source.tau_nu0_individual_transitions, source_function=source_function
+    tau=source.tau_nu0_individual_transitions, source_function=source_function
 )
 T_RJ_fast = intensity * constants.c**2 / (2 * nu0**2 * constants.k)
 end = time.time()

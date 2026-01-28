@@ -39,8 +39,8 @@ for esc_prob_name, esc_prob in esc_probs.items():
 
         def beta_func(nu):
             phi_nu = line_profile.phi_nu(nu)
-            tau_nu = np.atleast_1d(phi_nu / np.max(phi_nu) * tau_nu0)
-            return esc_prob.beta(tau_nu)
+            tau = np.atleast_1d(phi_nu / np.max(phi_nu) * tau_nu0)
+            return esc_prob.beta(tau)
 
         beta_nu0[i] = beta_func(nu=nu0)
         beta_averaged[i] = line_profile.average_over_phi_nu(beta_func)

@@ -43,7 +43,7 @@ def test_identify_tau_regions():
         small_tau_region,
         negative_tau_region,
         unreliable_negative_region,
-    ) = epf.identify_tau_regions(tau_nu=test_tau)
+    ) = epf.identify_tau_regions(tau=test_tau)
     assert np.all(np.where(normal_tau_region)[0] == np.array((5, 6, 7)))
     assert np.all(np.where(small_tau_region)[0] == np.array((3, 4)))
     assert np.all(np.where(negative_tau_region)[0] == np.array((2)))

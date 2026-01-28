@@ -934,7 +934,7 @@ class TestSpectrumPhysics:
                     assert np.allclose(RJ, T_RJ_from_intensity, atol=0, rtol=1e-5)
 
     def test_explicitly(self):
-        # calculate brightness temperature explicitly from Tex and tau_nu for a simple
+        # calculate brightness temperature explicitly from Tex and tau for a simple
         # case (no overlap)
         for source in general_source_iterator(specie=self.specie, width_v=self.width_v):
             for T_dust, tau_dust in zip(
@@ -970,7 +970,7 @@ class TestSpectrumPhysics:
                     nu=nu, T=source.Tex
                 )
                 S /= tau_tot
-                intensity_kwargs = {"tau_nu": tau_tot, "source_function": S}
+                intensity_kwargs = {"tau": tau_tot, "source_function": S}
                 if source.geometry_name == "LVG sphere":
                     specific_intensity = (
                         escape_probability.specific_intensity_nu0_lvg_sphere(
@@ -1278,7 +1278,7 @@ def test_single_transition_molecule():
                     )
                 v = np.linspace(-2 * width_v, 2 * width_v, 10)
                 nu = nu0 * (1 - v / constants.c)
-                source.tau_nu(nu=nu)
+                source.tau(nu=nu)
                 source.spectrum(
                     output_type="flux density", solid_angle=solid_angle, nu=nu
                 )

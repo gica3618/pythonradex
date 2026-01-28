@@ -38,7 +38,7 @@ def test_fast_tau():
     N1 = 1e14
     N2 = 1e13
     nu = 200 * constants.giga
-    test_tau = atomic_transition.tau_nu(
+    test_tau = atomic_transition.tau(
         A21=A21, phi_nu=phi_nu, g_low=g_low, g_up=g_up, N1=N1, N2=N2, nu=nu
     )
     explicit_tau = (
@@ -56,7 +56,7 @@ def test_fast_tau():
         / (np.sqrt(2 * np.pi) * sigma_nu)
         * np.exp(-((nu_array - nu0) ** 2) / (2 * sigma_nu**2))
     )
-    atomic_transition.tau_nu(
+    atomic_transition.tau(
         A21=A21, phi_nu=phi_nu_array, g_low=g_low, g_up=g_up, N1=N1, N2=N2, nu=nu_array
     )
 
@@ -343,18 +343,18 @@ class TestTransition:
                 up=self.up, low=self.low, K21_data=negative_21, Tkin_data=self.Tkin_data
             )
 
-    def test_tau_nu_shape(self):
+    def test_tau_shape(self):
         nu = np.ones((2, 4, 7)) * 50
         N1 = 1
         N2 = 3
-        tau_nu = self.test_emission_line.tau_nu(N1=N1, N2=N2, nu=nu)
-        assert tau_nu.shape == nu.shape
+        tau = self.test_emission_line.tau(N1=N1, N2=N2, nu=nu)
+        assert tau.shape == nu.shape
 
     def test_tau_nu0(self):
         N1 = 1
         N2 = 3
         tau_nu0 = self.test_emission_line.tau_nu0(N1=N1, N2=N2)
-        assert tau_nu0 == self.test_emission_line.tau_nu(
+        assert tau_nu0 == self.test_emission_line.tau(
             N1=N1, N2=N2, nu=self.test_emission_line.nu0
         )
 

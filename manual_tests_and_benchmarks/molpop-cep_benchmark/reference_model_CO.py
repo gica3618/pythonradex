@@ -77,11 +77,11 @@ for i, N_molpop in enumerate(molpop_cep_N):
         ax.plot(v / constants.kilo, spec, label="pythonradex")
         width_nu = width_v / constants.c * trans.nu0
         sigma_nu = helpers.FWHM2sigma(width_nu)
-        molpop_tau_nu = molpop_cep_tau_nu0[j][i] * np.exp(
+        molpop_tau = molpop_cep_tau_nu0[j][i] * np.exp(
             -((nu - trans.nu0) ** 2) / (2 * sigma_nu**2)
         )
         molpop_cep_spec = helpers.B_nu(nu=nu, T=molpop_cep_Tex[j][i]) * (
-            1 - np.exp(-molpop_tau_nu)
+            1 - np.exp(-molpop_tau)
         )
         ax.plot(v / constants.kilo, molpop_cep_spec, label="molpop")
         if j == 0:

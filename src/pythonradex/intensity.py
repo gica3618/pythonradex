@@ -54,19 +54,19 @@ class IntensityCalculator:
         width_nu = self.emitting_molecule.width_v / constants.c * nu0
         # a matrix where first index is transition, second index is nu
         nu = np.linspace(nu0 - width_nu / 2, nu0 + width_nu / 2, n_nu_elements, axis=-1)
-        tau_nu = 1 / nu**2
+        tau = 1 / nu**2
         tau_nu0 = self.tau_nu0_individual_transitions[transitions]
-        tau_nu *= tau_nu0[:, None] / tau_nu[:, middle_index][:, None]
+        tau *= tau_nu0[:, None] / tau[:, middle_index][:, None]
         source_function = helpers.B_nu(T=self.Tex[transitions][:, None], nu=nu)
-        return nu, tau_nu, source_function
+        return nu, tau, source_function
 
     def fast_line_intensities_rectangular_without_overlap(self, transitions):
         # note that intensities only make sense for non-overlapping lines,
         # so this function can only be used for non-overlapping lines
-        nu, tau_nu, source_function = self.get_intensity_parameters_for_rectangular(
+        nu, tau, source_function = self.get_intensity_parameters_for_rectangular(
             transitions=transitions
         )
-        kwargs = {"tau_nu": tau_nu, "source_function": source_function}
+        kwargs = {"tau": tau, "source_function": source_function}
         if self.is_LVG_sphere:
             kwargs["nu"] = nu
             kwargs["nu0"] = self.emitting_molecule.nu0[transitions][:, None]
@@ -98,10 +98,10 @@ class IntensityCalculator:
         phi_nu_shape = np.exp(
             -((nu - nu0[:, None]) ** 2) / (2 * sigma_nu[:, None] ** 2)
         )
-        tau_nu = tau_nu0[:, None] * phi_nu_shape
+        tau = tau_nu0[:, None] * phi_nu_shape
         source_function = helpers.B_nu(T=self.Tex[:, None][transitions], nu=nu)
         specific_intensity = self.specific_intensity(
-            tau_nu=tau_nu, source_function=source_function
+            tau=tau, source_function=source_function
         )
         intensity = np.trapezoid(specific_intensity, nu, axis=1)
         return intensity
@@ -151,8 +151,8 @@ class IntensityCalculator:
         self.nu = nu
         self.nu_selected_lines, self.nu_selected_line_indices = self.identify_lines()
         self.tau_dust_nu = self.tau_dust(self.nu)
-        self.set_tau_nu_lines()
-        self.set_tau_nu_tot()
+        self.set_tau_lines()
+        self.set_tau_tot()
 
     def identify_lines(self):
         selected_lines = []
@@ -163,29 +163,29 @@ class IntensityCalculator:
                 selected_lines.append(line)
         return selected_lines, selected_line_indices
 
-    def construct_tau_nu_individual_line(self, line, nu, tau_nu0):
+    def construct_tau_individual_line(self, line, nu, tau_nu0):
         # tau is prop to phi_nu/nu**2
         normalisation = line.line_profile.phi_nu0 / line.nu0**2 / tau_nu0
         return line.line_profile.phi_nu(nu) / nu**2 / normalisation
 
-    def set_tau_nu_lines(self):
-        self.tau_nu_lines = []
+    def set_tau_lines(self):
+        self.tau_lines = []
         for line_index, line in zip(
             self.nu_selected_line_indices, self.nu_selected_lines
         ):
-            tau = self.construct_tau_nu_individual_line(
+            tau = self.construct_tau_individual_line(
                 line=line,
                 nu=self.nu,
                 tau_nu0=self.tau_nu0_individual_transitions[line_index],
             )
-            self.tau_nu_lines.append(tau)
+            self.tau_lines.append(tau)
 
-    def set_tau_nu_tot(self):
+    def set_tau_tot(self):
         # note that this function automatically takes overlapping lines into account
         # note also that I cannot use the get_tau_tot_nu method of the
         # emitting_molecule, because that method only considers a single line
         # and its overlaps
-        self.tau_nu_tot = np.sum(self.tau_nu_lines, axis=0) + self.tau_dust_nu
+        self.tau_tot = np.sum(self.tau_lines, axis=0) + self.tau_dust_nu
 
     def get_S_tot(self):
         # TODO can I speed this up for the case where there is no overlap?
@@ -195,10 +195,10 @@ class IntensityCalculator:
             x1 = self.level_population[line.low.index]
             x2 = self.level_population[line.up.index]
             S_line = line.source_function(x1=x1, x2=x2)
-            S_nu += self.tau_nu_lines[i] * S_line
+            S_nu += self.tau_lines[i] * S_line
         S_nu += self.S_dust(self.nu) * self.tau_dust_nu
-        S_tot = np.divide(S_nu, self.tau_nu_tot, out=np.zeros_like(S_nu),
-                          where=self.tau_nu_tot != 0)
+        S_tot = np.divide(S_nu, self.tau_tot, out=np.zeros_like(S_nu),
+                          where=self.tau_tot != 0)
         return S_tot
 
     def specific_intensity_spectrum(self):
@@ -222,8 +222,8 @@ class IntensityCalculator:
             for dust_func in (self.S_dust, self.tau_dust):
                 assert np.all(dust_func(self.nu) == 0), "LVG does not support dust"
             I = np.zeros_like(self.nu)
-            for line_index, line, tau_nu_line in zip(
-                self.nu_selected_line_indices, self.nu_selected_lines, self.tau_nu_lines
+            for line_index, line, tau_line in zip(
+                self.nu_selected_line_indices, self.nu_selected_lines, self.tau_lines
             ):
                 LVG_sphere_kwargs = {
                     "nu": self.nu,
@@ -232,14 +232,14 @@ class IntensityCalculator:
                 }
                 source_function = helpers.B_nu(T=self.Tex[line_index], nu=self.nu)
                 I += self.specific_intensity(
-                    tau_nu=tau_nu_line,
+                    tau=tau_line,
                     source_function=source_function,
                     **LVG_sphere_kwargs,
                 )
         else:
             source_function = self.get_S_tot()
             I = self.specific_intensity(
-                tau_nu=self.tau_nu_tot, source_function=source_function
+                tau=self.tau_tot, source_function=source_function
             )
         return I
 
@@ -258,7 +258,7 @@ class IntensityCalculator:
         source_function = np.where(
             tau_tot == 0, 0, (tau_lines * S_lines + tau_dust * S_dust) / tau_tot
         )
-        kwargs = {"tau_nu": tau_tot, "source_function": source_function}
+        kwargs = {"tau": tau_tot, "source_function": source_function}
         if self.is_LVG_sphere:
             for dust in (S_dust, tau_dust):
                 assert np.all(dust == 0), "LVG does not support dust"

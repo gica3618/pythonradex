@@ -12,25 +12,25 @@ import time
 import numba as nb
 
 
-def beta_sphere(tau_nu):
+def beta_sphere(tau):
     return (
         1.5
-        / tau_nu
-        * (1 - 2 / tau_nu**2 + (2 / tau_nu + 2 / tau_nu**2) * np.exp(-tau_nu))
+        / tau
+        * (1 - 2 / tau**2 + (2 / tau + 2 / tau**2) * np.exp(-tau))
     )
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_sphere_comp(tau_nu):
+def beta_sphere_comp(tau):
     return (
         1.5
-        / tau_nu
-        * (1 - 2 / tau_nu**2 + (2 / tau_nu + 2 / tau_nu**2) * np.exp(-tau_nu))
+        / tau
+        * (1 - 2 / tau**2 + (2 / tau + 2 / tau**2) * np.exp(-tau))
     )
 
 
 tau_data = np.logspace(-3, 3, 300)
-beta_data = beta_sphere(tau_nu=tau_data)
+beta_data = beta_sphere(tau=tau_data)
 
 lin_interp = interpolate.interp1d(
     x=tau_data, y=beta_data, kind="linear", assume_sorted=True

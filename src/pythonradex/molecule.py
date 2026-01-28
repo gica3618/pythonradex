@@ -257,7 +257,7 @@ class EmittingMolecule(Molecule):
         """
         N1 = level_population[self.ilow_rad_transitions] * N
         N2 = level_population[self.iup_rad_transitions] * N
-        tau_nu0 = atomic_transition.tau_nu(
+        tau_nu0 = atomic_transition.tau(
             A21=self.A21,
             phi_nu=self.phi_nu0,
             g_up=self.gup_rad_transitions,
@@ -308,7 +308,7 @@ class EmittingMolecule(Molecule):
         line = self.rad_transitions[line_index]
 
         def tau_line_nu(nu):
-            return line.tau_nu(
+            return line.tau(
                 N1=N * level_population[line.low.index],
                 N2=N * level_population[line.up.index],
                 nu=nu,
@@ -322,7 +322,7 @@ class EmittingMolecule(Molecule):
         overlapping_lines = [self.rad_transitions[i] for i in overlapping_indices]
 
         def tau_tot_nu(nu):
-            tau_tot = line.tau_nu(
+            tau_tot = line.tau(
                 N1=N * level_population[line.low.index],
                 N2=N * level_population[line.up.index],
                 nu=nu,
@@ -330,7 +330,7 @@ class EmittingMolecule(Molecule):
             for ovl_line in overlapping_lines:
                 x1 = level_population[ovl_line.low.index]
                 x2 = level_population[ovl_line.up.index]
-                tau_tot += ovl_line.tau_nu(N1=x1 * N, N2=x2 * N, nu=nu)
+                tau_tot += ovl_line.tau(N1=x1 * N, N2=x2 * N, nu=nu)
             tau_tot += tau_dust(nu)
             return tau_tot
 

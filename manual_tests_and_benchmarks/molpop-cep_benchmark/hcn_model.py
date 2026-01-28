@@ -84,7 +84,7 @@ for overlap, tau in molpop_cep_tau.items():
     molpop_cep_Stot[overlap] /= tau
     assert geometry == "static slab"
     specific_intensity = escape_probability.StaticSlab.specific_intensity(
-        tau_nu=tau, source_function=molpop_cep_Stot[overlap]
+        tau=tau, source_function=molpop_cep_Stot[overlap]
     )
     molpop_cep_spectrum[overlap] = specific_intensity * solid_angle
 

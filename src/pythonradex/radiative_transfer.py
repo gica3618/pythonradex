@@ -517,7 +517,7 @@ class Source:
         else:
             raise ValueError(f"output_type '{output_type}' not understood")
 
-    def tau_nu(self, nu):
+    def tau(self, nu):
         r"""Calculate the total optical depth (all lines plus dust) at each
         input frequencies
 
@@ -529,7 +529,7 @@ class Source:
             np.ndarray: The total optical depth at the input frequencies.
         """
         self.intensity_calculator.set_nu(nu=nu)
-        return self.intensity_calculator.tau_nu_tot
+        return self.intensity_calculator.tau_tot
 
     @staticmethod
     def transform_specific_intensity(specific_intensity, nu, solid_angle, output_type):

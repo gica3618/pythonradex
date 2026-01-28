@@ -27,14 +27,14 @@ def clip_prob(prob):
 
 
 @nb.jit(nopython=True, cache=True)
-def identify_tau_regions(tau_nu):
+def identify_tau_regions(tau):
     tau_epsilon = (
         0.05  # important that this is not too small, to avoid the unstable region
     )
-    normal_tau_region = tau_nu > tau_epsilon
-    small_tau_region = np.abs(tau_nu) <= tau_epsilon
-    negative_tau_region = (tau_nu >= min_reliable_tau) & (tau_nu < -tau_epsilon)
-    unreliable_negative_region = tau_nu < min_reliable_tau
+    normal_tau_region = tau > tau_epsilon
+    small_tau_region = np.abs(tau) <= tau_epsilon
+    negative_tau_region = (tau >= min_reliable_tau) & (tau < -tau_epsilon)
+    unreliable_negative_region = tau < min_reliable_tau
     total_region_points = (
         normal_tau_region.sum()
         + small_tau_region.sum()
@@ -42,8 +42,8 @@ def identify_tau_regions(tau_nu):
         + unreliable_negative_region.sum()
     )
     assert total_region_points == len(
-        tau_nu
-    ), "selection needs to cover all points of tau_nu"
+        tau
+    ), "selection needs to cover all points of tau"
     return (
         normal_tau_region,
         small_tau_region,
@@ -53,39 +53,39 @@ def identify_tau_regions(tau_nu):
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_analytical_static_sphere(tau_nu):
+def beta_analytical_static_sphere(tau):
     """Computes the escape probability for a static sphere analytically,
-    given the optical depth tau_nu"""
+    given the optical depth tau"""
     # see the RADEX manual for this formula; derivation is found in the old
     # Osterbrock (1974) book, appendix 2. Note that Osterbrock uses tau for
     # radius, while I use it for diameter
     return (
         1.5
-        / tau_nu
-        * (1 - 2 / tau_nu**2 + (2 / tau_nu + 2 / tau_nu**2) * np.exp(-tau_nu))
+        / tau
+        * (1 - 2 / tau**2 + (2 / tau + 2 / tau**2) * np.exp(-tau))
     )
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_Taylor_static_sphere(tau_nu):
+def beta_Taylor_static_sphere(tau):
     """Computes the escape probability of a static sphere using a Taylor expansion,
-    given the optical depth tau_nu"""
+    given the optical depth tau"""
     # Taylor expansion of beta for static sphere is easier to evaluate numerically
-    # (for small tau_nu)
+    # (for small tau)
     # Series calculated using Wolfram Alpha; not so easy analytically, to
     # calculate the limit as tau->0, use rule of L'Hopital
-    return 1 - 0.375 * tau_nu + 0.1 * tau_nu**2 - 0.0208333 * tau_nu**3
+    return 1 - 0.375 * tau + 0.1 * tau**2 - 0.0208333 * tau**3
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_analytical_LVG_slab(tau_nu):
+def beta_analytical_LVG_slab(tau):
     # see line 357 in matrix.f and RADEX paper, or Scoville & Solomon (1974)
-    return (1 - np.exp(-3 * tau_nu)) / (3 * tau_nu)
+    return (1 - np.exp(-3 * tau)) / (3 * tau)
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_Taylor_LVG_slab(tau_nu):
-    return 1 - (3 * tau_nu) / 2 + (3 * tau_nu**2) / 2 - (9 * tau_nu**3) / 8
+def beta_Taylor_LVG_slab(tau):
+    return 1 - (3 * tau) / 2 + (3 * tau**2) / 2 - (9 * tau**3) / 8
 
 
 # about the LVG sphere
@@ -101,20 +101,20 @@ def beta_Taylor_LVG_slab(tau_nu):
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_analytical_LVG_sphere(tau_nu):
+def beta_analytical_LVG_sphere(tau):
     # e.g Elitzur p. 44, or Ramos & Elitzur 2018, eq. 14
-    return (1 - np.exp(-tau_nu)) / tau_nu
+    return (1 - np.exp(-tau)) / tau
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_Taylor_LVG_sphere(tau_nu):
+def beta_Taylor_LVG_sphere(tau):
     # from Wolfram Alpha
-    return 1 - tau_nu / 2 + tau_nu**2 / 6 - tau_nu**3 / 24
+    return 1 - tau / 2 + tau**2 / 6 - tau**3 / 24
 
 
 def generate_Taylor_beta(beta_ana, beta_Taylor):
     @nb.jit(nopython=True, cache=True)
-    def beta(tau_nu):
+    def beta(tau):
         # use Taylor expansion if tau is below epsilon; this is to avoid numerical
         # problems with the anlytical formula to compute the escape probability.
         # Concerning negative optical depth, the RADEX paper advises that
@@ -128,14 +128,14 @@ def generate_Taylor_beta(beta_ana, beta_Taylor):
         # approximations for positive large, normal and small tau. But then they
         # use abs(tau) to decide which function to use, but then use tau in that
         # function (line 333 in matrix.f)
-        normal, small, negative, unreliable = identify_tau_regions(tau_nu=tau_nu)
-        prob = np.empty_like(tau_nu)
-        prob[normal] = beta_ana(tau_nu[normal])
+        normal, small, negative, unreliable = identify_tau_regions(tau=tau)
+        prob = np.empty_like(tau)
+        prob[normal] = beta_ana(tau[normal])
         # here I use tau even if tau < 0:
-        prob[small] = beta_Taylor(tau_nu[small])
-        prob[negative] = beta_ana(tau_nu[negative])
+        prob[small] = beta_Taylor(tau[small])
+        prob[negative] = beta_ana(tau[negative])
         # here I just use abs(tau) to stabilize the code
-        prob[unreliable] = beta_ana(np.abs(tau_nu[unreliable]))
+        prob[unreliable] = beta_ana(np.abs(tau[unreliable]))
         assert np.all(np.isfinite(prob))
         return clip_prob(prob)
 
@@ -185,12 +185,12 @@ def interpolated_integral_term(tau):
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_static_slab(tau_nu):
+def beta_static_slab(tau):
     # for negative tau, this function will also return 1, which is fine if tau
     # is close to 0, but not correct for very negative tau; in general, results
     # should be ignored for tau < -1
-    int_term = interpolated_integral_term(tau=tau_nu)
-    prob = np.where(tau_nu < min_grid_tau, 1, int_term / tau_nu)
+    int_term = interpolated_integral_term(tau=tau)
+    prob = np.where(tau < min_grid_tau, 1, int_term / tau)
     assert np.all(np.isfinite(prob))
     return clip_prob(prob)
 
@@ -199,19 +199,19 @@ def beta_static_slab(tau_nu):
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_LVG_sphere_RADEX_gtr7(tau_nu):
-    tau_nu_r = tau_nu / 2
-    return 2 / (tau_nu_r * 4 * (np.sqrt(np.log(tau_nu_r / np.sqrt(np.pi)))))
+def beta_LVG_sphere_RADEX_gtr7(tau):
+    tau_r = tau / 2
+    return 2 / (tau_r * 4 * (np.sqrt(np.log(tau_r / np.sqrt(np.pi)))))
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_LVG_sphere_RADEX_less7(tau_nu):
-    tau_nu_r = tau_nu / 2
-    return 2 * (1 - np.exp(-2.34 * tau_nu_r)) / (4.68 * tau_nu_r)
+def beta_LVG_sphere_RADEX_less7(tau):
+    tau_r = tau / 2
+    return 2 * (1 - np.exp(-2.34 * tau_r)) / (4.68 * tau_r)
 
 
 @nb.jit(nopython=True, cache=True)
-def beta_LVG_sphere_RADEX(tau_nu):
+def beta_LVG_sphere_RADEX(tau):
     # RADEX paper, eq. 18, claims that they use beta_analytical_LVG_sphere
     # (beta= (1-exp(-tau))/tau
     # but in fact they use a different formula from de Jong+80
@@ -220,12 +220,12 @@ def beta_LVG_sphere_RADEX(tau_nu):
     # handling negative tau turns out to be important, e.g. for CO, Tkin=200,
     # width_v=3 km/s, Ntot=1e20 cm-2, RADEX gives an invalid solution
     assert -7 < min_reliable_tau < -0.01
-    gtr7 = 7 <= tau_nu
-    less7 = (0.001 <= tau_nu) & (tau_nu < 7)
-    small = (-0.001 <= tau_nu) & (tau_nu < 0.001)
-    negative = (min_reliable_tau <= tau_nu) & (tau_nu < -0.001)
-    unreliable_less7 = (-7 <= tau_nu) & (tau_nu < min_reliable_tau)
-    unreliable_gtr7 = tau_nu < -7
+    gtr7 = 7 <= tau
+    less7 = (0.001 <= tau) & (tau < 7)
+    small = (-0.001 <= tau) & (tau < 0.001)
+    negative = (min_reliable_tau <= tau) & (tau < -0.001)
+    unreliable_less7 = (-7 <= tau) & (tau < min_reliable_tau)
+    unreliable_gtr7 = tau < -7
     assert (
         gtr7.sum()
         + less7.sum()
@@ -233,15 +233,15 @@ def beta_LVG_sphere_RADEX(tau_nu):
         + negative.sum()
         + unreliable_less7.sum()
         + unreliable_gtr7.sum()
-        == tau_nu.size
+        == tau.size
     )
-    beta = np.empty_like(tau_nu)
-    beta[gtr7] = beta_LVG_sphere_RADEX_gtr7(tau_nu[gtr7])
-    beta[less7] = beta_LVG_sphere_RADEX_less7(tau_nu[less7])
+    beta = np.empty_like(tau)
+    beta[gtr7] = beta_LVG_sphere_RADEX_gtr7(tau[gtr7])
+    beta[less7] = beta_LVG_sphere_RADEX_less7(tau[less7])
     beta[small] = 1.0
-    beta[negative] = beta_LVG_sphere_RADEX_less7(tau_nu[negative])
+    beta[negative] = beta_LVG_sphere_RADEX_less7(tau[negative])
     beta[unreliable_less7] = beta_LVG_sphere_RADEX_less7(
-        np.abs(tau_nu[unreliable_less7])
+        np.abs(tau[unreliable_less7])
     )
-    beta[unreliable_gtr7] = beta_LVG_sphere_RADEX_gtr7(np.abs(tau_nu[unreliable_gtr7]))
+    beta[unreliable_gtr7] = beta_LVG_sphere_RADEX_gtr7(np.abs(tau[unreliable_gtr7]))
     return clip_prob(beta)
