@@ -37,8 +37,9 @@ def get_general_test_source(specie, width_v):
         width_v=width_v,
     )
 
+
 def get_general_solved_test_source():
-    source = get_general_test_source(specie="CO", width_v=1.23*constants.kilo)
+    source = get_general_test_source(specie="CO", width_v=1.23 * constants.kilo)
     source.update_parameters(
         N=1e15 * constants.centi**-2,
         Tkin=123,
@@ -643,7 +644,7 @@ def test_solid_angle_warnings():
             )
 
 
-def CO_HCl_model_iterator(T_dust_values=(0,12),tau_dust_values=(0,0.5)):
+def CO_HCl_model_iterator(T_dust_values=(0, 12), tau_dust_values=(0, 0.5)):
     use_Ng_acceleration = True
     treat_line_overlap = False
     for specie in ("CO", "HCl"):
@@ -712,31 +713,32 @@ def test_emission_at_line_center():
 
 def test_transition_index_transformation():
     source = get_general_test_source(specie="CO", width_v=1.23 * constants.kilo)
-    None_shape,None_indices = source.transform_transition_indices(indices=None)
+    None_shape, None_indices = source.transform_transition_indices(indices=None)
     assert np.all(None_indices == np.arange(source.emitting_molecule.n_rad_transitions))
     assert None_shape == None_indices.shape
-    shape_0d,indices_0d = source.transform_transition_indices(indices=2)
+    shape_0d, indices_0d = source.transform_transition_indices(indices=2)
     assert indices_0d.ndim == 1
     assert len(indices_0d) == 1
     assert indices_0d[0] == 2
     assert shape_0d == ()
-    shape_1d,indices_1d = source.transform_transition_indices(indices=[2, 3, 5])
+    shape_1d, indices_1d = source.transform_transition_indices(indices=[2, 3, 5])
     assert np.all(indices_1d == [2, 3, 5])
     assert shape_1d == (3,)
     with pytest.raises(ValueError):
         source.transform_transition_indices(indices=np.zeros((3, 4)))
 
+
 def test_transition_indices_edge_cases_freq_integrated_emission():
     invalid_indices = np.ones((2, 3, 4))
-    for source in general_source_iterator(specie="CO", width_v=1.25*constants.kilo):
+    for source in general_source_iterator(specie="CO", width_v=1.25 * constants.kilo):
         source.update_parameters(
-               N=1e15 / constants.centi**2,
-               Tkin=123,
-               collider_densities={"para-H2": 1e5 / constants.centi**3},
-               ext_background=cmb,
-               T_dust=0,
-               tau_dust=0,
-               )
+            N=1e15 / constants.centi**2,
+            Tkin=123,
+            collider_densities={"para-H2": 1e5 / constants.centi**3},
+            ext_background=cmb,
+            T_dust=0,
+            tau_dust=0,
+        )
         source.solve_radiative_transfer()
         all_indices = np.arange(source.emitting_molecule.n_rad_transitions)
         for output_type in ("intensity", "flux"):
@@ -756,7 +758,9 @@ def test_transition_indices_edge_cases_freq_integrated_emission():
                 output_type=output_type, transitions=None, solid_angle=solid_angle
             )
             f2_None = source.frequency_integrated_emission(
-                output_type=output_type, transitions=all_indices, solid_angle=solid_angle
+                output_type=output_type,
+                transitions=all_indices,
+                solid_angle=solid_angle,
             )
             assert np.all(f1_None == f2_None)
             with pytest.raises(ValueError):
@@ -765,6 +769,7 @@ def test_transition_indices_edge_cases_freq_integrated_emission():
                     transitions=invalid_indices,
                     solid_angle=solid_angle,
                 )
+
 
 @pytest.mark.filterwarnings("ignore:some lines are overlapping")
 @pytest.mark.filterwarnings("ignore:negative optical depth")
@@ -795,7 +800,9 @@ def test_transition_indices_edge_cases_line_center_emission():
                 output_type=output_type, transitions=None, solid_angle=solid_angle
             )
             e2_None = source.emission_at_line_center(
-                output_type=output_type, transitions=all_indices, solid_angle=solid_angle
+                output_type=output_type,
+                transitions=all_indices,
+                solid_angle=solid_angle,
             )
             assert np.all(e1_None == e2_None)
             with pytest.raises(ValueError):
@@ -805,41 +812,46 @@ def test_transition_indices_edge_cases_line_center_emission():
                     solid_angle=solid_angle,
                 )
 
-def expected_shape_from_transitions(n_rad_transitions,transitions):
+
+def expected_shape_from_transitions(n_rad_transitions, transitions):
     if transitions is None:
         return (n_rad_transitions,)
     else:
         return np.array(transitions).shape
-    
+
 
 def test_freq_integrated_emission_shape():
-    test_transitions =[None,2,np.array(2),np.array((2,)),np.array((2,4,6))]
-    for source in general_source_iterator(specie="CO", width_v=1.25*constants.kilo):
+    test_transitions = [None, 2, np.array(2), np.array((2,)), np.array((2, 4, 6))]
+    for source in general_source_iterator(specie="CO", width_v=1.25 * constants.kilo):
         source.update_parameters(
-               N=1e15 / constants.centi**2,
-               Tkin=123,
-               collider_densities={"para-H2": 1e5 / constants.centi**3},
-               ext_background=cmb,
-               T_dust=0,
-               tau_dust=0,
-               )
+            N=1e15 / constants.centi**2,
+            Tkin=123,
+            collider_densities={"para-H2": 1e5 / constants.centi**3},
+            ext_background=cmb,
+            T_dust=0,
+            tau_dust=0,
+        )
         source.solve_radiative_transfer()
         for transitions in test_transitions:
             for output_type in ("intensity", "flux"):
                 solid_angle = None if output_type != "flux" else 0.54
                 emission = source.frequency_integrated_emission(
-                                 transitions=transitions,output_type=output_type,
-                                 solid_angle=solid_angle)
+                    transitions=transitions,
+                    output_type=output_type,
+                    solid_angle=solid_angle,
+                )
                 expected_shape = expected_shape_from_transitions(
-                                     n_rad_transitions=source.emitting_molecule.n_rad_transitions,
-                                     transitions=transitions)
+                    n_rad_transitions=source.emitting_molecule.n_rad_transitions,
+                    transitions=transitions,
+                )
                 assert emission.shape == expected_shape
+
 
 @pytest.mark.filterwarnings("ignore:some lines are overlapping")
 @pytest.mark.filterwarnings("ignore:negative optical depth")
 @pytest.mark.filterwarnings("ignore:LVG sphere geometry")
 def test_line_center_emission_shape():
-    test_transitions =[None,2,np.array(2),np.array((2,)),np.array((2,4,6))]
+    test_transitions = [None, 2, np.array(2), np.array((2,)), np.array((2, 4, 6))]
     for source in CO_HCl_model_iterator():
         for output_type in (
             "specific intensity",
@@ -850,35 +862,38 @@ def test_line_center_emission_shape():
             solid_angle = None if output_type != "flux density" else 0.54
             for transitions in test_transitions:
                 emission = source.emission_at_line_center(
-                                output_type=output_type,
-                                transitions=transitions,
-                                solid_angle=solid_angle,
-                                )
+                    output_type=output_type,
+                    transitions=transitions,
+                    solid_angle=solid_angle,
+                )
                 expected_shape = expected_shape_from_transitions(
-                                     n_rad_transitions=source.emitting_molecule.n_rad_transitions,
-                                     transitions=transitions)
+                    n_rad_transitions=source.emitting_molecule.n_rad_transitions,
+                    transitions=transitions,
+                )
                 assert emission.shape == expected_shape
 
+
 def test_nu_transformation():
-    source = get_general_test_source(specie="CO", width_v=1*constants.kilo)
-    invalid_nus = [np.ones((3,4)),np.ones((3,4,5),dtype=float)]
+    source = get_general_test_source(specie="CO", width_v=1 * constants.kilo)
+    invalid_nus = [np.ones((3, 4)), np.ones((3, 4, 5), dtype=float)]
     for i_nu in invalid_nus:
         with pytest.raises(ValueError):
             source.transform_nu(nu=i_nu)
-    zero_dim_nus = [1.2,4,1e3,np.array(8.8)]
+    zero_dim_nus = [1.2, 4, 1e3, np.array(8.8)]
     for znu in zero_dim_nus:
-        original_shape,tnu = source.transform_nu(nu=znu)
+        original_shape, tnu = source.transform_nu(nu=znu)
         assert tnu.ndim == 1
         assert tnu.size == 1
         assert tnu == znu
         assert original_shape == np.array(znu).shape
-    one_dim_nus = [np.array((1,)),np.array((1.2,)),np.linspace(1,2,10)]
+    one_dim_nus = [np.array((1,)), np.array((1.2,)), np.linspace(1, 2, 10)]
     for one_nu in one_dim_nus:
-        original_shape,tnu = source.transform_nu(nu=one_nu)
+        original_shape, tnu = source.transform_nu(nu=one_nu)
         assert tnu.ndim == 1
         assert tnu.size == one_nu.size
         assert np.all(tnu == one_nu)
         assert original_shape == np.array(one_nu).shape
+
 
 @pytest.mark.filterwarnings("ignore:some lines are overlapping")
 @pytest.mark.filterwarnings("ignore:negative optical depth")
@@ -911,6 +926,7 @@ def test_spectrum():
                 spec = spec / solid_angle
             assert np.allclose(spec, specific_intensity, atol=0, rtol=1e-6)
 
+
 @pytest.mark.filterwarnings("ignore:some lines are overlapping")
 @pytest.mark.filterwarnings("ignore:negative optical depth")
 @pytest.mark.filterwarnings("ignore:LVG sphere geometry")
@@ -918,13 +934,13 @@ def test_spectrum_and_tau_with_0D_frequency():
     trans_index = 3
     n_channels = 30
     solid_angle = 0.25
-    test_channel = int(n_channels/3)
+    test_channel = int(n_channels / 3)
     for source in CO_HCl_model_iterator():
         trans = source.emitting_molecule.rad_transitions[trans_index]
         width_v = trans.line_profile.width_v
-        v = np.linspace(-width_v,width_v,n_channels)
-        nu = trans.nu0*(1-v/constants.c)
-        for T_dust,tau_dust in zip((0,50),(0,2)):
+        v = np.linspace(-width_v, width_v, n_channels)
+        nu = trans.nu0 * (1 - v / constants.c)
+        for T_dust, tau_dust in zip((0, 50), (0, 2)):
             if T_dust != 0 and "LVG" in source.geometry_name:
                 continue
             source.update_parameters(
@@ -936,38 +952,54 @@ def test_spectrum_and_tau_with_0D_frequency():
                 tau_dust=tau_dust,
             )
             source.solve_radiative_transfer()
-            ref_spectra = {output_type:source.spectrum(nu=nu,output_type=output_type)
-                           for output_type in ("specific intensity","Rayleigh-Jeans","Planck")}
-            ref_spectra["flux density"] = source.spectrum(nu=nu, output_type="flux density",
-                                                          solid_angle=solid_angle)
+            ref_spectra = {
+                output_type: source.spectrum(nu=nu, output_type=output_type)
+                for output_type in ("specific intensity", "Rayleigh-Jeans", "Planck")
+            }
+            ref_spectra["flux density"] = source.spectrum(
+                nu=nu, output_type="flux density", solid_angle=solid_angle
+            )
             for ref_spec in ref_spectra.values():
-                assert not np.all(ref_spec==0)
+                assert not np.all(ref_spec == 0)
                 assert ref_spec[test_channel] != 0
             ref_tau = source.tau(nu=nu)
-            assert not np.all(ref_tau==0)
+            assert not np.all(ref_tau == 0)
             assert ref_tau[test_channel] != 0
-            test_nus = [nu[test_channel],np.array((nu[test_channel],))]
+            test_nus = [nu[test_channel], np.array((nu[test_channel],))]
             for test_nu in test_nus:
-                assert np.isclose(source.tau(nu=test_nu), ref_tau[test_channel],
-                                  atol=0,rtol=1e-6)
-                for output_type,ref_spec in ref_spectra.items():
-                    Omega = solid_angle if output_type=="flux density" else None
-                    spec = source.spectrum(nu=test_nu, output_type=output_type,
-                                           solid_angle=Omega)
-                    assert np.isclose(spec,ref_spec[test_channel],atol=0,rtol=1e-6)
+                assert np.isclose(
+                    source.tau(nu=test_nu), ref_tau[test_channel], atol=0, rtol=1e-6
+                )
+                for output_type, ref_spec in ref_spectra.items():
+                    Omega = solid_angle if output_type == "flux density" else None
+                    spec = source.spectrum(
+                        nu=test_nu, output_type=output_type, solid_angle=Omega
+                    )
+                    assert np.isclose(spec, ref_spec[test_channel], atol=0, rtol=1e-6)
+
 
 @pytest.mark.filterwarnings("ignore:some lines are overlapping")
 @pytest.mark.filterwarnings("ignore:negative optical depth")
 def test_spectrum_and_tau_shape():
-    test_nus = [100*constants.giga,np.array(100*constants.giga),
-                np.array((100*constants.giga)),
-                np.array((100,200))*constants.giga]
+    test_nus = [
+        100 * constants.giga,
+        np.array(100 * constants.giga),
+        np.array((100 * constants.giga)),
+        np.array((100, 200)) * constants.giga,
+    ]
     for source in CO_HCl_model_iterator():
         for test_nu in test_nus:
             expected_shape = np.array(test_nu).shape
-            for output_type in ("specific intensity","Rayleigh-Jeans","Planck","flux density"):
-                solid_angle = 1.23 if output_type=="flux density" else None
-                spec = source.spectrum(nu=test_nu, output_type=output_type, solid_angle=solid_angle)
+            for output_type in (
+                "specific intensity",
+                "Rayleigh-Jeans",
+                "Planck",
+                "flux density",
+            ):
+                solid_angle = 1.23 if output_type == "flux density" else None
+                spec = source.spectrum(
+                    nu=test_nu, output_type=output_type, solid_angle=solid_angle
+                )
                 assert spec.shape == expected_shape
             tau = source.tau(nu=test_nu)
             assert tau.shape == expected_shape

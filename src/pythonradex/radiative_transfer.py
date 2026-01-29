@@ -463,7 +463,7 @@ class Source:
                 raise ValueError("transitions indices must be 0- or 1-dimensional")
             original_shape = indices.shape
             transformed_indices = np.atleast_1d(indices)
-        return original_shape,transformed_indices
+        return original_shape, transformed_indices
 
     def frequency_integrated_emission(
         self, output_type, transitions=None, solid_angle=None
@@ -506,7 +506,9 @@ class Source:
         if output_type != "flux" and solid_angle is not None:
             warning_text = self.get_solid_angle_warning_text(output_type=output_type)
             warnings.warn(warning_text)
-        transitions_shape,transitions = self.transform_transition_indices(indices=transitions)
+        transitions_shape, transitions = self.transform_transition_indices(
+            indices=transitions
+        )
         I = self.intensity_calculator.intensities_of_individual_transitions(
             transitions=transitions
         )
@@ -529,7 +531,7 @@ class Source:
         nu = np.atleast_1d(nu)
         if nu.ndim != 1:
             raise ValueError("nu needs to be 1-dimensional")
-        return original_shape,nu
+        return original_shape, nu
 
     def tau(self, nu):
         r"""Calculate the total optical depth (all lines plus dust) at each
@@ -544,7 +546,7 @@ class Source:
             np.ndarray: The total optical depth at the input frequencies. The shape
             of the array is the same as nu.
         """
-        original_shape,nu = self.transform_nu(nu=nu)
+        original_shape, nu = self.transform_nu(nu=nu)
         self.intensity_calculator.set_nu(nu=nu)
         out = self.intensity_calculator.tau_tot
         return out.reshape(original_shape)
@@ -594,7 +596,7 @@ class Source:
         self.warn_if_solid_angle_not_needed(
             output_type=output_type, solid_angle=solid_angle
         )
-        original_shape,nu = self.transform_nu(nu=nu)
+        original_shape, nu = self.transform_nu(nu=nu)
         self.intensity_calculator.set_nu(nu=nu)
         specific_intensity = self.intensity_calculator.specific_intensity_spectrum()
         if output_type == "specific intensity":
@@ -640,7 +642,9 @@ class Source:
         self.warn_if_solid_angle_not_needed(
             output_type=output_type, solid_angle=solid_angle
         )
-        transitions_shape,transitions = self.transform_transition_indices(indices=transitions)
+        transitions_shape, transitions = self.transform_transition_indices(
+            indices=transitions
+        )
         nu0s = self.emitting_molecule.nu0[transitions]
         if self.emitting_molecule.any_line_has_overlap(line_indices=transitions):
             # do it the slow way

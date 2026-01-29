@@ -333,9 +333,7 @@ class TestVarious:
                 N1 = self.N * f["level_population"][line.low.index]
                 N2 = self.N * f["level_population"][line.up.index]
                 expected_tau = line.tau(N1=N1, N2=N2, nu=nu)
-                assert np.allclose(
-                    constructed_tau, expected_tau, atol=0, rtol=1e-3
-                )
+                assert np.allclose(constructed_tau, expected_tau, atol=0, rtol=1e-3)
 
     def test_line_identification(self):
         trans_indices = [2, 3]
@@ -524,8 +522,10 @@ class TestVarious:
             for f in self.generate_intensity_calculator(
                 geo_name=geo_name, tau_dust=zero, S_dust=zero
             ):
-                invalid_nu = [np.array((100*constants.giga)),
-                              np.ones((3,3))*100*constants.giga]
+                invalid_nu = [
+                    np.array((100 * constants.giga)),
+                    np.ones((3, 3)) * 100 * constants.giga,
+                ]
                 for inv_nu in invalid_nu:
                     print(inv_nu.ndim)
                     with pytest.raises(ValueError):

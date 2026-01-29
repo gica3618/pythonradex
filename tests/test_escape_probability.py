@@ -29,9 +29,7 @@ def test_intensities():
         assert np.all(intensity(tau=np.zeros(5), source_function=1, **kwargs) == 0)
         assert np.all(intensity(tau=1, source_function=np.zeros(5), **kwargs) == 0)
         test_source_func = 1
-        thick_I = intensity(
-            tau=large_tau, source_function=test_source_func, **kwargs
-        )
+        thick_I = intensity(tau=large_tau, source_function=test_source_func, **kwargs)
         assert np.allclose(thick_I, test_source_func, rtol=1e-3, atol=0)
 
 

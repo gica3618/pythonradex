@@ -13,20 +13,12 @@ import numba as nb
 
 
 def beta_sphere(tau):
-    return (
-        1.5
-        / tau
-        * (1 - 2 / tau**2 + (2 / tau + 2 / tau**2) * np.exp(-tau))
-    )
+    return 1.5 / tau * (1 - 2 / tau**2 + (2 / tau + 2 / tau**2) * np.exp(-tau))
 
 
 @nb.jit(nopython=True, cache=True)
 def beta_sphere_comp(tau):
-    return (
-        1.5
-        / tau
-        * (1 - 2 / tau**2 + (2 / tau + 2 / tau**2) * np.exp(-tau))
-    )
+    return 1.5 / tau * (1 - 2 / tau**2 + (2 / tau + 2 / tau**2) * np.exp(-tau))
 
 
 tau_data = np.logspace(-3, 3, 300)

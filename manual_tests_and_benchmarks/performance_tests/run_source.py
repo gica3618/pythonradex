@@ -76,7 +76,9 @@ for i in range(niter):
     tot_time += end - start
     print(f"solve time: {end-start:.3g}")
     start = time.time()
-    source.frequency_integrated_emission(output_type="flux",solid_angle=1, transitions=None)
+    source.frequency_integrated_emission(
+        output_type="flux", solid_angle=1, transitions=None
+    )
     end = time.time()
     tot_time += end - start
     print(f"flux time: {end-start:.3g}")

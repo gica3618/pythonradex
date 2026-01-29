@@ -55,11 +55,13 @@ end = time.time()
 print(f"solve time again: {end-start}")
 start = time.time()
 fluxes = source.frequency_integrated_emission(
-                     output_type="flux",solid_angle=0.1, transitions=None)
+    output_type="flux", solid_angle=0.1, transitions=None
+)
 end = time.time()
 print(f"flux time: {end-start}")
 start = time.time()
 fluxes = source.frequency_integrated_emission(
-                output_type="flux",solid_angle=0.1, transitions=None)
+    output_type="flux", solid_angle=0.1, transitions=None
+)
 end = time.time()
 print(f"flux time again: {end-start}")

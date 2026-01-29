@@ -41,9 +41,7 @@ def identify_tau_regions(tau):
         + negative_tau_region.sum()
         + unreliable_negative_region.sum()
     )
-    assert total_region_points == len(
-        tau
-    ), "selection needs to cover all points of tau"
+    assert total_region_points == len(tau), "selection needs to cover all points of tau"
     return (
         normal_tau_region,
         small_tau_region,
@@ -59,11 +57,7 @@ def beta_analytical_static_sphere(tau):
     # see the RADEX manual for this formula; derivation is found in the old
     # Osterbrock (1974) book, appendix 2. Note that Osterbrock uses tau for
     # radius, while I use it for diameter
-    return (
-        1.5
-        / tau
-        * (1 - 2 / tau**2 + (2 / tau + 2 / tau**2) * np.exp(-tau))
-    )
+    return 1.5 / tau * (1 - 2 / tau**2 + (2 / tau + 2 / tau**2) * np.exp(-tau))
 
 
 @nb.jit(nopython=True, cache=True)
@@ -240,8 +234,6 @@ def beta_LVG_sphere_RADEX(tau):
     beta[less7] = beta_LVG_sphere_RADEX_less7(tau[less7])
     beta[small] = 1.0
     beta[negative] = beta_LVG_sphere_RADEX_less7(tau[negative])
-    beta[unreliable_less7] = beta_LVG_sphere_RADEX_less7(
-        np.abs(tau[unreliable_less7])
-    )
+    beta[unreliable_less7] = beta_LVG_sphere_RADEX_less7(np.abs(tau[unreliable_less7]))
     beta[unreliable_gtr7] = beta_LVG_sphere_RADEX_gtr7(np.abs(tau[unreliable_gtr7]))
     return clip_prob(beta)

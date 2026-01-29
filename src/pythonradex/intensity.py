@@ -148,8 +148,8 @@ class IntensityCalculator:
 
     def set_nu(self, nu):
         if nu.ndim != 1:
-            #actually I am not 100% sure that this is really necessary... maybe
-            #higher dimensions are ok?
+            # actually I am not 100% sure that this is really necessary... maybe
+            # higher dimensions are ok?
             raise ValueError("nu needs to be 1-dimensional")
         self.nu = nu
         self.nu_selected_lines, self.nu_selected_line_indices = self.identify_lines()
@@ -200,8 +200,9 @@ class IntensityCalculator:
             S_line = line.source_function(x1=x1, x2=x2)
             S_nu += self.tau_lines[i] * S_line
         S_nu += self.S_dust(self.nu) * self.tau_dust_nu
-        S_tot = np.divide(S_nu, self.tau_tot, out=np.zeros_like(S_nu),
-                          where=self.tau_tot != 0)
+        S_tot = np.divide(
+            S_nu, self.tau_tot, out=np.zeros_like(S_nu), where=self.tau_tot != 0
+        )
         return S_tot
 
     def specific_intensity_spectrum(self):
