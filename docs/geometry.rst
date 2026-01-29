@@ -3,7 +3,7 @@
 Source geometries
 ======================
 
-The calculations of the escape probability and the emerging flux depend on the adopted geometry. Below we give an overview of the geometries available in ``pythonradex``. For all geometries, we assume a homogeneous medium (i.e. constant number density). For convenience, the escape probabilities are expressed as functions of optical depth :math:`\tau_\nu` rather than the absorption coefficient :math:`\alpha_\nu`. The specific intensities are expressed using the source function :math:`S_\nu`. In absence of dust and overlapping lines, it is simply given by the Planck function evaluated at the excitation temperature of the transition: :math:`S_\nu=B_\nu(T_\mathrm{ex})`.
+The calculations of the escape probability and the emerging flux depend on the adopted geometry. Below we give an overview of the geometries available in ``pythonradex``. For all geometries, we assume a homogeneous medium (i.e. constant number density). For convenience, the escape probabilities are expressed as functions of optical depth :math:`\tau` rather than the absorption coefficient :math:`\alpha`. The specific intensities are expressed using the source function :math:`S_\nu`. In absence of dust and overlapping lines, it is simply given by the Planck function evaluated at the excitation temperature of the transition: :math:`S_\nu=B_\nu(T_\mathrm{ex})`.
 
 Note that ``RADEX`` always uses the formula for a slab geometry to calculate the specific intensity, regardless of the adopted geometry. This is incorrect for spherical geometries. See :doc:`difference_pythonradex_RADEX` for more details.
 
@@ -15,14 +15,14 @@ A homogeneous, static sphere. The escape probability is given in [Osterbrock74]_
 .. math::
     :name: eq:beta_static_sphere
 
-    \beta(\tau_\nu) = \frac{3}{2\tau_\nu}\left(1-\frac{2}{\tau_\nu^2}+\left(\frac{2}{\tau_\nu}+\frac{2}{\tau_\nu^2}\right) e^{-\tau_\nu}\right)
+    \beta(\tau) = \frac{3}{2\tau}\left(1-\frac{2}{\tau^2}+\left(\frac{2}{\tau}+\frac{2}{\tau^2}\right) e^{-\tau}\right)
 
-where :math:`\tau_\nu` is the optical depth of the diameter of the sphere. The observed specific intensity (in [W/m\ :sup:`2`/Hz/sr]) can also be calculated from [Osterbrock74]_ and is given by:
+where :math:`\tau` is the optical depth of the diameter of the sphere. The observed specific intensity (in [W/m\ :sup:`2`/Hz/sr]) can also be calculated from [Osterbrock74]_ and is given by:
 
 .. math::
     :name: eq:intensity_static_sphere
 
-    I_\nu = \frac{2S_\nu}{\tau_\nu^2}\left(\frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)e^{-\tau_\nu}\right)
+    I_\nu = \frac{2S_\nu}{\tau^2}\left(\frac{\tau^2}{2}-1+(\tau+1)e^{-\tau}\right)
 
 where :math:`S_\nu` is the source function. To get the flux density in [W/m\ :sup:`2`/Hz], one needs to multiply :math:`I_\nu` by the solid angle :math:`\Omega`, which is given by :math:`\Omega=R^2\pi/d^2` with :math:`R` the radius of the sphere and :math:`d` the distance of the source.
 
@@ -30,34 +30,34 @@ Note that if observations resolve the sphere, the specific intensity will not be
 
 Derivation of escape probability and flux density by Osterbrock (1974)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Since the book by [Osterbrock74]_ is not easily accessible online, we present here the derivation of the escape probability and flux density for a static sphere. Consider the following sketch showing a sphere with optical depth :math:`\tau_\nu` along its diameter:
+Since the book by [Osterbrock74]_ is not easily accessible online, we present here the derivation of the escape probability and flux density for a static sphere. Consider the following sketch showing a sphere with optical depth :math:`\tau` along its diameter:
 
 .. figure:: images/sketch_static_sphere.jpg
    :align: center
    :width: 70%
    :alt: Sketch of static sphere
 
-   Static sphere with optical depth :math:`\tau_\nu` along the diameter. We consider a ray that makes an angle :math:`\theta` with respect to the outward normal. The optical depth along that ray is :math:`\tau_{\nu,\theta}=\tau_\nu\cos(\theta)`.
+   Static sphere with optical depth :math:`\tau` along the diameter. We consider a ray that makes an angle :math:`\theta` with respect to the outward normal. The optical depth along that ray is :math:`\tau\cos\theta`.
 
-Consider a ray making an angle :math:`\theta` with respect to the outward normal. The optical depth along that ray is :math:`\tau_{\nu,\theta}=\tau_\nu\cos(\theta)`. Using the fact that the sphere is uniform (i.e. the emission coefficient :math:`j_\nu` is constant), the specific intensity in the direction of the ray, at the surface of the sphere, is given by (see [Rybicki04]_, equation 1.30)
-
-.. math::
-
-    I_\nu(\theta) = \frac{j_\nu}{\alpha_\nu}(1-e^{-\tau_{\nu,\theta}}) = \frac{j_\nu}{\alpha_\nu}(1-e^{-\tau_\nu\cos(\theta)})
-
-where :math:`\alpha_\nu` is the absorption coefficient. Next, we compute the outward flux density at the surface of the sphere (energy per unit area, time and frequency) by integrating over all outward directions. Here we use the solid angle element :math:`\mathrm{d}\Omega=\sin\theta\mathrm{d}\theta\mathrm{d}\phi`:
+Consider a ray making an angle :math:`\theta` with respect to the outward normal. The optical depth along that ray is :math:`\tau\cos\theta`. Using the fact that the sphere is uniform (i.e. the emission coefficient :math:`j_\nu` is constant), the specific intensity in the direction of the ray, at the surface of the sphere, is given by (see [Rybicki04]_, equation 1.30)
 
 .. math::
 
-    F_\nu^s = \int_0^{2\pi}\int_0^{\pi/2}I_\nu(\theta)\cos\theta\sin\theta\mathrm{d}\theta\mathrm{d}\phi  = \frac{2\pi j_\nu}{\alpha_\nu\tau_\nu^2}\left( \frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)e^{-\tau_\nu} \right)
+    I_\nu(\theta) = \frac{j_\nu}{\alpha}(1-e^{-\tau\cos\theta})
+
+where :math:`\alpha` is the absorption coefficient. Next, we compute the outward flux density at the surface of the sphere (energy per unit area, time and frequency) by integrating over all outward directions. Here we use the solid angle element :math:`\mathrm{d}\Omega=\sin\theta\mathrm{d}\theta\mathrm{d}\phi`:
+
+.. math::
+
+    F_\nu^s = \int_0^{2\pi}\int_0^{\pi/2}I_\nu(\theta)\cos\theta\sin\theta\mathrm{d}\theta\mathrm{d}\phi  = \frac{2\pi j_\nu}{\alpha\tau^2}\left( \frac{\tau^2}{2}-1+(\tau+1)e^{-\tau} \right)
 
 In this expression, the cosine is necessary to take into account the projection of the surface of the sphere with respect to the outward direction. To calculate the flux density observed at the telescope, we multiply :math:`F_\nu^s` with the surface of the sphere (:math:`4\pi R^2`) and divide by :math:`4\pi d^2` where :math:`d` is the distance to the source:
 
 .. math::
 
-    F_\nu =  \frac{2\pi j_\nu}{\alpha_\nu\tau_\nu^2}\left( \frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)e^{-\tau_\nu} \right)\frac{4\pi R^2}{4\pi d^2}
+    F_\nu =  \frac{2\pi j_\nu}{\alpha\tau^2}\left( \frac{\tau^2}{2}-1+(\tau+1)e^{-\tau} \right)\frac{4\pi R^2}{4\pi d^2}
 
-Finally, :math:`F_\nu` is divided by the solid angle of the sphere :math:`\Omega=\frac{R^2\pi}{d^2}` to derive the observed specific intensity. Identifying the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`, we recover :ref:`Eq. 2 <eq:intensity_static_sphere>`. To calculate the escape probability, we consider the flux density at the surface of the sphere in the optically thin limit where all photons escape. It is simply given by the total emission within the spherical volume, divided by the surface of the sphere:
+Finally, :math:`F_\nu` is divided by the solid angle of the sphere :math:`\Omega=\frac{R^2\pi}{d^2}` to derive the observed specific intensity. Identifying the source function :math:`S_\nu=\frac{j_\nu}{\alpha}`, we recover :ref:`Eq. 2 <eq:intensity_static_sphere>`. To calculate the escape probability, we consider the flux density at the surface of the sphere in the optically thin limit where all photons escape. It is simply given by the total emission within the spherical volume, divided by the surface of the sphere:
 
 .. math::
 
@@ -67,9 +67,9 @@ where :math:`4\pi j_\nu` is the emission coefficient integrated over all directi
 
 .. math::
 
-    \beta(\tau_\nu) = \frac{F_\nu^s}{F_\nu^{s,\mathrm{thin}}} =  \frac{3}{2R\alpha_\nu\tau_\nu^2}\left( \frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)e^{-\tau_\nu} \right) = \frac{3}{\tau_\nu^3}\left( \frac{\tau_\nu^2}{2}-1+(\tau_\nu+1)e^{-\tau_\nu} \right)
+    \beta(\tau) = \frac{F_\nu^s}{F_\nu^{s,\mathrm{thin}}} =  \frac{3}{2R\alpha\tau^2}\left( \frac{\tau^2}{2}-1+(\tau+1)e^{-\tau} \right) = \frac{3}{\tau^3}\left( \frac{\tau^2}{2}-1+(\tau+1)e^{-\tau} \right)
 
-Here we used the definition of the optical depth (:math:`\tau_\nu=2R\alpha_\nu`). One easily verifies that the above expression is the same as :ref:`Eq. 1 <eq:beta_static_sphere>`.
+Here we used the definition of the optical depth (:math:`\tau=2R\alpha`). One easily verifies that the above expression is the same as :ref:`Eq. 1 <eq:beta_static_sphere>`.
 
 Static slab
 ----------------------
@@ -77,14 +77,14 @@ A homogeneous, static slab. The escape probability is given by (e.g. [Elitzur92]
 
 .. math::
 
-    \beta(\tau_\nu) = \frac{\int_0^1 (1-e^{-\tau_\nu/\mu})\mu\mathrm{d}\mu}{\tau_\nu}
+    \beta(\tau) = \frac{\int_0^1 (1-e^{-\tau/\mu})\mu\mathrm{d}\mu}{\tau}
 
 The specific intensity (in [W/m\ :sup:`2`/Hz/sr]) is given by:
 
 .. math::
     :name: eq:intensity_static_slab
 
-    I_\nu = S_\nu(1-e^{-\tau_\nu})
+    I_\nu = S_\nu(1-e^{-\tau})
 
 To get the flux density in [W/m\ :sup:`2`/Hz], :math:`I_\nu` needs to be multiplied by the solid angle of the emitting region.
 
@@ -197,13 +197,13 @@ The paper describing ``RADEX`` ([vanderTak07]_) says that ``RADEX`` uses the for
 
 .. math::
 
-    \beta(\tau) = \frac{1}{\tau_\nu\sqrt{\ln(\tau_\nu/(2\sqrt{\pi}))}} \qquad \text{if } \tau_\nu\geq 7
+    \beta(\tau) = \frac{1}{\tau\sqrt{\ln(\tau/(2\sqrt{\pi}))}} \qquad \text{if } \tau\geq 7
 
 and
 
 .. math::
 
-    \beta(\tau) = \frac{4-4e^{-2.34\tau_\nu/2}}{4.68\tau_\nu} \qquad \text{if } \tau_\nu< 7
+    \beta(\tau) = \frac{4-4e^{-2.34\tau/2}}{4.68\tau} \qquad \text{if } \tau< 7
 
 Thus, the geometry "LVG sphere RADEX" uses this formula. For the flux density, it uses the same formula (:ref:`Eq. 3 <eq:intensity_static_slab>`) as for the static slab (despite the spherical geometry).
 
