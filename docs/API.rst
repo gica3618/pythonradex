@@ -8,7 +8,7 @@ The ``Source`` class
 The core of ``pyhonradex`` is the ``Source`` class which is used to solve the radiative transfer.
 
 .. autoclass:: pythonradex.radiative_transfer.Source
-    :members: __init__, update_parameters, solve_radiative_transfer, frequency_integrated_emission, tau_nu, spectrum, emission_at_line_center, print_results 
+    :members: __init__, update_parameters, solve_radiative_transfer, frequency_integrated_emission, tau, spectrum, emission_at_line_center, print_results 
 
 .. _read_LAMDA_API:
 
@@ -31,7 +31,7 @@ Representation of molecular levels and transitions
     :members: Tex
 
 .. autoclass:: pythonradex.atomic_transition.EmissionLine
-    :members: Tex,tau_nu0,tau_nu
+    :members: Tex,tau_nu0,tau
 
 .. autoclass:: pythonradex.atomic_transition.CollisionalTransition
     :members: Tex,coeffs

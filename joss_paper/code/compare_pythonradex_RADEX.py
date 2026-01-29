@@ -295,9 +295,8 @@ for column, (quantity, values) in enumerate(
             ax.set_xticklabels([])
         if column > 0:
             ax.set_yticklabels([])
-        if column == 0 and row == nrows - 1:
-            ax.set_xlabel("log H$_2$ density [log cm$^{-3}$]")
-            ax.set_ylabel("log CO column density [log cm$^{-2}$]")
+    fig.supxlabel("log H$_2$ density [log cm$^{-3}$]")
+    fig.supylabel("log CO column density [log cm$^{-2}$]")
     cbar = fig.colorbar(
         im, ax=axes[:, column], orientation="horizontal", location="top"
     )

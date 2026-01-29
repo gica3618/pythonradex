@@ -154,7 +154,7 @@ beta_LVG_sphere = generate_Taylor_beta(
 
 ######### functions for static slab  ##################
 # see Elitzur92 (https://ui.adsabs.harvard.edu/abs/1992ASSL..170.....E/abstract,
-# Problem 2.12) for confirmation of the formulas used here
+# Problem 2.12, page 38) for confirmation of the formulas used here
 
 
 @nb.jit(nopython=True, cache=True)

@@ -89,6 +89,40 @@ The specific intensity (in [W/m\ :sup:`2`/Hz/sr]) is given by:
 To get the flux density in [W/m\ :sup:`2`/Hz], :math:`I_\nu` needs to be multiplied by the solid angle of the emitting region.
 
 
+Derivation of escape probability for a homogeneous static slab
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The escape probability for a static slab can be derived following a method similar to the static sphere. Consider a slab in the :math:`x`-:math:`y` plane with a thickness in the :math:`z`-direction of :math:`L`. It is assumed that the slab's extension in the :math:`x` and :math:`y` directions is much larger compared to its thickness. Consider a ray making an angle :math:`\theta` with the surface normal of the slab. The specific intensity is given by
+
+.. math::
+
+    I_\nu(\theta) = \frac{j_\nu}{\alpha}(1-e^{-\tau/\cos\theta})
+
+where :math:`\tau` is the optical depth of the slab along the surface normal. As in the case of the static sphere, we derive the flux density at the surface of the slab:
+
+.. math::
+
+    F_\nu^s = 2\pi\int_0^{\pi/2}I_\nu(\theta)\cos\theta\sin\theta\mathrm{d}\theta = 2\pi\frac{j_\nu}{\alpha}\int_0^{\pi/2}(1-e^{-\tau/\cos\theta})\cos\theta\sin\theta\mathrm{d}\theta
+
+Setting :math:`\mu=\cos\theta`, this transforms to
+
+.. math::
+
+    F_\nu^s = 2\pi\frac{j_\nu}{\alpha} \int_0^1(1-e^{-\tau/\mu})\mu\mathrm{d}\mu
+
+Now consider the flux density in absence of absorption. Like for the sphere, it is given by the total emission within the volume of the slab, divided by its surface. Assume that one side of the slab (front or back side) has a surface area :math:`A` (thus the volume is :math:`A L`). Then
+
+.. math::
+
+    F_\nu^{s,\mathrm{thin}} = \frac{A L 4\pi j_\nu}{2A} = 2\pi j_\nu L
+
+where :math:`2A` is the total surface area of the slab (front and back). Like for the static sphere, the escape probability is equal to the ratio :math:`F_\nu^s/F_\nu^{s,\mathrm{thin}}`:
+
+.. math::
+
+    \beta(\tau) = \frac{F_\nu^s}{F_\nu^{s,\mathrm{thin}}} = \frac{\int_0^1(1-e^{-\tau/\mu})\mu\mathrm{d}\mu}{\alpha L} = \frac{\int_0^1(1-e^{-\tau/\mu})\mu\mathrm{d}\mu}{\tau}
+
+where the definition of optical depth was used for the last step.
+
 LVG sphere
 -------------------
 The Large Velocity Gradient (LVG) approximation is applicable if the characteristic flow velocity along the line of sight is much larger than the local random (e.g. thermal) velocities (e.g. [Scoville74]_, [Elitzur92]_). In other words, all photons escape due to Doppler shifting, unless absorbed locally, that is, close to the emission location. The local region where an emitted photon can be absorbed is sometimes referred to as the *radiatively connected region*.
