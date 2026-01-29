@@ -144,10 +144,13 @@ class IntensityCalculator:
             raise ValueError(
                 f"line profile {self.emitting_molecule.line_profile_type} " + "unknown"
             )
-        return np.squeeze(fast_intensity)
+        return fast_intensity
 
     def set_nu(self, nu):
-        # TODO check that the dimension of nu is <=1?
+        if nu.ndim != 1:
+            #actually I am not 100% sure that this is really necessary... maybe
+            #higher dimensions are ok?
+            raise ValueError("nu needs to be 1-dimensional")
         self.nu = nu
         self.nu_selected_lines, self.nu_selected_line_indices = self.identify_lines()
         self.tau_dust_nu = self.tau_dust(self.nu)

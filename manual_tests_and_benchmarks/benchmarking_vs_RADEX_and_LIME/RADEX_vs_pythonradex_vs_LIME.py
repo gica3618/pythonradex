@@ -182,9 +182,7 @@ for N_case, LTE_case in itertools.product(N_cases, coll_partner_density_cases):
         obs_flux[key] = source.frequency_integrated_emission(
             output_type="flux",
             solid_angle=Omega,
-            transitions=[
-                trans_number,
-            ],
+            transitions=trans_number,
         )
         nu0 = source.emitting_molecule.rad_transitions[trans_number].nu0
         width_nu = width_v / constants.c * nu0

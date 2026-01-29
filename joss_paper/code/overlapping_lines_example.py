@@ -11,7 +11,7 @@ from scipy import constants
 import matplotlib.pyplot as plt
 import numpy as np
 
-save_figure = False
+save_figure = True
 
 datafilepath = "../../tests/LAMDA_files/hcn@hfs.dat"
 geometry = "static slab"
@@ -158,7 +158,7 @@ for i, nu0 in enumerate(nu0s):
     ax.plot(
         v / constants.kilo, norm_spec, color="black", linestyle="dotted", label=label
     )
-ax.set_xlabel("v [km/s]")
+ax.set_xlabel("velocity [km/s]")
 ax.set_ylabel(r"flux [$10^{-26}$W/m$^2$/Hz]")
 ax.legend(loc="best")
 

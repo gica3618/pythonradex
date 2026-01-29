@@ -59,7 +59,7 @@ test_cases = [
 
 def relative_diff(x):
     assert len(x) == 2
-    return float(np.abs(np.diff(x)[0] / x[0]))
+    return np.abs(np.diff(x)[0] / x[0])
 
 
 ext_background = helpers.generate_CMB_background(z=0)
@@ -100,9 +100,7 @@ for test_case in test_cases:
                 source.frequency_integrated_emission(
                     output_type="flux",
                     solid_angle=1,
-                    transitions=[
-                        trans_index,
-                    ],
+                    transitions=trans_index,
                 )
             )
             taus.append(source.tau_nu0_individual_transitions[trans_index])

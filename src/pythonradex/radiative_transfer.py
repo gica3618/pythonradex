@@ -455,12 +455,15 @@ class Source:
 
     def transform_transition_indices(self, indices):
         if indices is None:
-            out = self.all_transition_indices()
+            transformed_indices = self.all_transition_indices()
+            original_shape = transformed_indices.shape
         else:
-            out = np.atleast_1d(indices)
-            if out.ndim > 1:
+            indices = np.array(indices)
+            if indices.ndim > 1:
                 raise ValueError("transitions indices must be 0- or 1-dimensional")
-        return out
+            original_shape = indices.shape
+            transformed_indices = np.atleast_1d(indices)
+        return original_shape,transformed_indices
 
     def frequency_integrated_emission(
         self, output_type, transitions=None, solid_angle=None
@@ -494,42 +497,57 @@ class Source:
                 Needed for output_type "flux". Defaults to None.
 
         Returns:
-            list: The list of intensities or fluxes corresponding to the
+            np.ndarray: An array of intensities or fluxes corresponding to the
             input list of requested transitions. If no specific transitions
             where requested (transitions=None), then the list of fluxes corresponds
-            to the transitions as listed in the LAMDA file.
+            to the transitions as listed in the LAMDA file. The shape of the returned
+            array is the same as the input transitions.
         """
         if output_type != "flux" and solid_angle is not None:
             warning_text = self.get_solid_angle_warning_text(output_type=output_type)
             warnings.warn(warning_text)
-        transitions = self.transform_transition_indices(indices=transitions)
+        transitions_shape,transitions = self.transform_transition_indices(indices=transitions)
         I = self.intensity_calculator.intensities_of_individual_transitions(
             transitions=transitions
         )
         if output_type == "intensity":
-            return I
+            out = I
         elif output_type == "flux":
             if solid_angle is None:
                 raise ValueError(
                     "solid_angle needs to be specified for" + " output_type 'flux'"
                 )
-            return I * solid_angle
+            out = I * solid_angle
         else:
             raise ValueError(f"output_type '{output_type}' not understood")
+        return out.reshape(transitions_shape)
+
+    @staticmethod
+    def transform_nu(nu):
+        nu = np.array(nu)
+        original_shape = nu.shape
+        nu = np.atleast_1d(nu)
+        if nu.ndim != 1:
+            raise ValueError("nu needs to be 1-dimensional")
+        return original_shape,nu
 
     def tau(self, nu):
         r"""Calculate the total optical depth (all lines plus dust) at each
         input frequencies
 
         Args:
-            nu (numpy.ndarray): The frequencies in [Hz] for which the optical depth
-                should be calculated
+            nu (0- or 1-dimensional array_like): The frequencies in [Hz]
+            for which the optical depth should be calculated. An single number
+            or a 1D array are allowed.
 
         Returns:
-            np.ndarray: The total optical depth at the input frequencies.
+            np.ndarray: The total optical depth at the input frequencies. The shape
+            of the array is the same as nu.
         """
+        original_shape,nu = self.transform_nu(nu=nu)
         self.intensity_calculator.set_nu(nu=nu)
-        return self.intensity_calculator.tau_tot
+        out = self.intensity_calculator.tau_tot
+        return out.reshape(original_shape)
 
     @staticmethod
     def transform_specific_intensity(specific_intensity, nu, solid_angle, output_type):
@@ -557,8 +575,9 @@ class Source:
         r"""Calculate the emission (lines + dust) as a function of frequency.
 
         Args:
-            nu (numpy.ndarray): The frequencies in [Hz] for which the spectrum
-                should be calculated.
+            nu (0- or 1-dimensional array_like): The frequencies in [Hz]
+                for which the spectrum should be calculated. An single number
+                or a 1D array are allowed.
             output_type (str): Specifies the type of the output spectrum.
                 Possible choices are "specific intensity" (in [W/m2/Hz/sr]),
                 "flux density" (in [W/m2/Hz]; solid_angle needs to be specified),
@@ -569,22 +588,25 @@ class Source:
                 Needed for output_type "flux density". Defaults to None.
 
         Returns:
-            np.ndarray: The emission for each input frequency.
+            np.ndarray: The emission for each input frequency. The shape of the
+            array is the same as nu.
         """
         self.warn_if_solid_angle_not_needed(
             output_type=output_type, solid_angle=solid_angle
         )
+        original_shape,nu = self.transform_nu(nu=nu)
         self.intensity_calculator.set_nu(nu=nu)
         specific_intensity = self.intensity_calculator.specific_intensity_spectrum()
         if output_type == "specific intensity":
-            return specific_intensity
+            out = specific_intensity
         else:
-            return self.transform_specific_intensity(
+            out = self.transform_specific_intensity(
                 specific_intensity=specific_intensity,
                 nu=nu,
                 solid_angle=solid_angle,
                 output_type=output_type,
             )
+        return out.reshape(original_shape)
 
     def emission_at_line_center(self, output_type, transitions=None, solid_angle=None):
         r"""Calculate the emission at the line center (rest frequency) for the
@@ -609,15 +631,16 @@ class Source:
                     Needed for output_type "flux density". Defaults to None.
 
         Returns:
-            list: The list of emission values corresponding to the
+            np.ndarray: The list of emission values corresponding to the
             input list of requested transitions. If no specific transitions
             where requested (transitions=None), then the list corresponds
-            to all transitions as listed in the LAMDA file.
+            to all transitions as listed in the LAMDA file. The shape of the
+            returned array is the same as transitions.
         """
         self.warn_if_solid_angle_not_needed(
             output_type=output_type, solid_angle=solid_angle
         )
-        transitions = self.transform_transition_indices(indices=transitions)
+        transitions_shape,transitions = self.transform_transition_indices(indices=transitions)
         nu0s = self.emitting_molecule.nu0[transitions]
         if self.emitting_molecule.any_line_has_overlap(line_indices=transitions):
             # do it the slow way
@@ -640,7 +663,7 @@ class Source:
                 solid_angle=solid_angle,
                 output_type=output_type,
             )
-        return np.squeeze(out)
+        return out.reshape(transitions_shape)
 
     # def efficient_parameter_iterator(self,ext_backgrounds,N_values,Tkin_values,
     #                                  collider_densities_values,T_dust=0,

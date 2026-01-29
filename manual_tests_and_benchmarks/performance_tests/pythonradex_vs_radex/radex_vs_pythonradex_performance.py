@@ -26,7 +26,8 @@ import mini_radex_wrapper
 ext_background = helpers.generate_CMB_background(z=0)
 
 # n_elements = [5,7,10,15,20] #for Tkin, collider and N
-n_elements = [5, 7, 10]
+#n_elements = [5, 7, 10]
+n_elements = [3,4]
 
 # most optimistic case is if only N is varied because then rate equations don't
 # need to be re-calculated every time

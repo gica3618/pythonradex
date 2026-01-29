@@ -519,6 +519,18 @@ class TestVarious:
                 multi_spec = intensitycalculator.specific_intensity_spectrum()
                 assert single_spec[0] == multi_spec[1]
 
+    def test_1d_nu_enforcement(self):
+        for geo_name in ("static sphere", "LVG sphere"):
+            for f in self.generate_intensity_calculator(
+                geo_name=geo_name, tau_dust=zero, S_dust=zero
+            ):
+                invalid_nu = [np.array((100*constants.giga)),
+                              np.ones((3,3))*100*constants.giga]
+                for inv_nu in invalid_nu:
+                    print(inv_nu.ndim)
+                    with pytest.raises(ValueError):
+                        f["intensitycalculator"].set_nu(nu=inv_nu)
+
 
 class TestSpecificIntensityNu0NoOverlap:
 
