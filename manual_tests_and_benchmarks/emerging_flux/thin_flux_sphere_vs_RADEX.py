@@ -29,9 +29,10 @@ r = 1 * constants.au
 d = 1 * constants.parsec
 n = 20 / constants.centi**3
 width_v = 1 * constants.kilo
-# actually RADEX does calculation using rectangular, but then applies correction
-# factor for Gaussian... but fortunately, for optically thin case, it doesn't matter
-line_profile_type = "rectangular"
+# RADEX converts optical depth (thus affecting escape probability) and flux
+#to Gaussian with a correction factor, so we use Gaussian here
+#since we consider optically thin case here, it doesn't really matter though
+line_profile_type = "Gaussian"
 Tex = 30
 trans_index = 1
 # make it LTE for the RADEX wrapper so that Tkin=Tex
