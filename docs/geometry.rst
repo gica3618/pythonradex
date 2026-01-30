@@ -91,7 +91,16 @@ To get the flux density in [W/m\ :sup:`2`/Hz], :math:`I_\nu` needs to be multipl
 
 Derivation of escape probability for a homogeneous static slab
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The escape probability for a static slab can be derived following a method similar to the static sphere. Consider a slab in the :math:`x`-:math:`y` plane with a thickness in the :math:`z`-direction of :math:`L`. It is assumed that the slab's extension in the :math:`x` and :math:`y` directions is much larger compared to its thickness. Consider a ray making an angle :math:`\theta` with the surface normal of the slab. The specific intensity is given by
+The escape probability for a static slab can be derived following a method similar to the static sphere. Consider a slab in the :math:`x`-:math:`y` plane with a thickness in the :math:`z`-direction of :math:`L`. It is assumed that the slab's extension in the :math:`x` and :math:`y` directions is much larger compared to its thickness. Consider a ray making an angle :math:`\theta` with the surface normal of the slab.
+
+.. figure:: images/sketch_static_slab.jpg
+   :align: center
+   :width: 70%
+   :alt: Sketch of static slab
+
+   Static slab with depth :math:`L` and optical depth :math:`\tau`. We consider a ray that makes an angle :math:`\theta` with respect to the surface normal. The optical depth along that ray is :math:`\tau/\cos\theta`.
+
+The specific intensity is given by
 
 .. math::
 

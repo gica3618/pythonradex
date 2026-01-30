@@ -31,7 +31,7 @@ For a sphere, the specific intensity depends on the position on the sphere: if o
    :width: 80%
    :alt: Flux comparison RADEX vs pythonradex for spherical geometries
 
-   Flux ratio between `RADEX` and `pythonradex` for spherical geometries as a function of optical depth.
+   Flux ratios computed using the formulas employed by `RADEX` and `pythonradex` for spherical geometries, as a function of optical depth.
 
 To verify that ``pythonradex`` calculates the flux correctly, one may consider the optically thin limit where the flux can be calculated directly. In this limit, all photons escape the source. The total flux (in [W/m\ :sup:`2`]) is then simply given by
 
@@ -39,6 +39,10 @@ To verify that ``pythonradex`` calculates the flux correctly, one may consider t
     F_\mathrm{thin} = V_\mathrm{sphere}nx_2A_{21}\Delta E \frac{1}{4\pi d^2}
 
 where :math:`V_\mathrm{sphere}=\frac{4}{3}R^3\pi` is the volume of the sphere, :math:`n` the constant number density, :math:`x_2` the fractional level population of the upper level, :math:`A_{21}` the Einstein coefficient, :math:`\Delta E` the energy difference between the upper and lower level, and :math:`d` the distance of the source. ``pythonradex`` correctly reproduces this limiting case, but ``RADEX`` overestimates the optically thin flux by a factor 1.5.
+
+Flux calculation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``RADEX`` computes the flux by assuming that the flux density has a Gaussian profile (see Appendix A.2, point 5, in [vanderTak07]_). However, for optically thick lines, the flux density profile is not Gaussian, even if the intrinsic line profile (and thus optical depth profile) is. On the other hand, ``pythonradex`` calculates the flux by integrating over the flux density profile, thus taking its shape into account. Note though, as commented by [vanderTak07]_, that proper modelling of optically thick lines cannot really be achieved anyway by 1D codes like ``RADEX`` or ``pythonradex``.
 
 Different escape probability for LVG sphere
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
