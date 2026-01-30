@@ -76,7 +76,7 @@ The python programming language is now very widely used in astronomy. Still, no 
 [^3]: **In units of W/m$^2$, $F_\mathrm{thin} = V_\mathrm{sphere}n_2A_{21}\Delta E \frac{1}{4\pi d^2}$ with $V_\mathrm{sphere}=\frac{4}{3}R^3\pi$ the volume of the sphere, $n$ the number density, $x_2$ the fractional level population of the upper level, $A_{21}$ the Einstein coefficient, $\Delta E$ the energy of the transition and $d$ the distance.**
 
 <!-- This figure comes from  manual_test_and_benchmarks/emerging_flux/compare_emerging_flux_formula.py -->
-![For the two spherical geometries, we computed the flux using the slab formula (as done by `RADEX`) and a formula appropriate for a sphere (as done by `pythonradex`). The figure shows the ratio of the fluxes as function of optical depth.\label{fig:flux_comparison_sphere}](flux_comparison_spherical_geometries.pdf)
+![For the two spherical geometries, we computed the flux using the slab formula (as done by `RADEX`) and formulae appropriate for a sphere (as done by `pythonradex`). The figure shows the ratio of the fluxes as function of optical depth.\label{fig:flux_comparison_sphere}](flux_comparison_spherical_geometries.pdf)
 
 
 # Dependencies

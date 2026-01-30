@@ -32,7 +32,7 @@ For a sphere, the specific intensity depends on the position on the sphere: if o
    :width: 80%
    :alt: Flux comparison slab formula (RADEX) vs pythonradex formulas
 
-   For the two spherical geometries, we computed the flux using the slab formula (as done by ``RADEX``) and a formula appropriate for a sphere (as done by ``pythonradex``). The figure shows the ratio of the fluxes as function of optical depth.
+   For the two spherical geometries, we computed the flux using the slab formula (as done by ``RADEX``) and formulae appropriate for a sphere (as done by ``pythonradex``). The figure shows the ratio of the fluxes as function of optical depth.
 
 To verify that ``pythonradex`` calculates the flux correctly, one may consider the optically thin limit where the flux can be calculated directly. In this limit, all photons escape the source. The total flux (in [W/m\ :sup:`2`]) is then simply given by
 
