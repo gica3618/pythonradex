@@ -60,7 +60,7 @@ Bibliography
 
 .. [Rybicki04] Rybicki, G. B., & Lightman, A.P. 2004, *Radiative Processes in Astrophysics*, ISBN 0-471-82759-2, Wiley-VCH
 
-.. [Scoville74]  Scoville, N. Z., & Solomon, P. M. 1991, Astrophysical Journal, 187, L67
+.. [Scoville74]  Scoville, N. Z., & Solomon, P. M. 1974, Astrophysical Journal, 187, L67
 
 .. [vanderTak07]  van der Tak, F. F. S., Black, J. H., Schöier, F. L., Jansen, D. J., & van Dishoeck, E. F. 2007, Astronomy and Astrophysics, 468, 627
 

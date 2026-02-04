@@ -23,7 +23,8 @@ class Source:
             containing all the information about the emitting atom or molecule
         tau_nu0_individual_transitions (numpy.ndarray): optical depth of each individual
             transition at the central frequency (contributions of dust or overlapping lines
-            to the optical depth are not included)
+            to the optical depth are not included). For spherical geometries,
+            the optical depth is along the diameter of the sphere.
         level_pop (numpy.ndarray): fractional population of each level
         Tex (numpy.ndarray): excitation temperature of each transition
         lower_level_population (numpy.ndarray): for each transition, the fractional
@@ -215,7 +216,9 @@ class Source:
                 a constant value for all frequencies. Defaults to None
                 (i.e. do not update).
             N (:obj:`float` or None): The column density in [m\ :sup:`-2`].
-                Defaults to None (i.e. do not update).
+                Defaults to None (i.e. do not update). For spherical geometries,
+                this corresponds to the column density along the diameter of the
+                sphere.
             Tkin (:obj:`float` or None): The kinetic temperature of the gas in [K].
                 Defaults to None (i.e. do not update).
             collider_densities (dict or None): A dictionary of the number densities of
@@ -233,8 +236,9 @@ class Source:
                 frequency. A single number is interpreted as a constant optical
                 depth for all frequencies. Can only be used with static geometries
                 (i.e. not with LVG geometries). Defaults to None (i.e. do not update).
-                For a model without dust, put this parameter to 0.
-
+                For a model without dust, put this parameter to 0. For a static
+                sphere, this corresponds to the optical depth along the diameter
+                of the sphere.
         """
         # why do I put this into a seperate method rather than __init__? The reason
         # is that the stuff in __init__ is expensive (in particular reading the
@@ -535,7 +539,8 @@ class Source:
 
     def tau(self, nu):
         r"""Calculate the total optical depth (all lines plus dust) at each
-        input frequencies
+        input frequencies. For spherical geometries, the returned optical depth
+        corresponds to the diameter of the sphere.
 
         Args:
             nu (0- or 1-dimensional array_like): The frequencies in [Hz]
@@ -668,76 +673,6 @@ class Source:
                 output_type=output_type,
             )
         return out.reshape(transitions_shape)
-
-    # def efficient_parameter_iterator(self,ext_backgrounds,N_values,Tkin_values,
-    #                                  collider_densities_values,T_dust=0,
-    #                                  tau_dust=0):
-    #     r'''Iterator to update parameters in an efficient way.
-    #         For all possible combinations of the input parameters
-    #         ext_backgrounds, N_values, Tkin_values and collider_densities_values,
-    #         the parameters are updated in each iteration.
-
-    #     Args:
-    #         ext_backgrounds (:obj:`dict`): A dictionary, one entry for
-    #             each background that should be used. Each entry can be a function
-    #             of frequency, or a single number (interpreted as a radiation field
-    #             independent of frequency). The units are W/m\ :sup:2/Hz/sr. The keys
-    #             of the dictionary are used in the output to identify which
-    #             background was used.
-    #         N_values (:obj:`list` or numpy.ndarray): The list of column densities to
-    #             compute models for, in [m\ :sup:`-2`].
-    #         Tkin_values (:obj:`list` or numpy.ndarray): The list of kinetic temperatures
-    #             to compute models for, in [K].
-    #         collider_densities_values (:obj:`dict`): A dictionary with one entry for each
-    #             collider. Each entry is a list of densities for which models should be
-    #             computed for, using a "zip" logic (i.e. calculate a model for the first
-    #             entries of each list, for the second entries of each list, etc).
-    #             Units are [m\ :sup:`-3`]. Example:
-    #             collider_densities_values={'para-H2':[4e9,6e9],'ortho-H2':[7e8,1e10]}
-    #         T_dust (func or number): The dust temperature in [K] as a function of frequency.
-    #              It is assumed that the source function of the dust is a black body
-    #              at temperature T_dust. A single number is interpreted as a constant value
-    #              for all frequencies. Defaults to 0 (i.e. no internal dust
-    #              radiation field).
-    #         tau_dust (func or number): optical depth of the dust as a function of frequency.
-    #             A single number is interpreted as a constant value
-    #             for all frequencies. Defaults to 0 (i.e. no internal dust
-    #             radiation field).
-
-    #     Yields:
-    #         dict: A dictionary with fields 'ext_background', 'N', 'Tkin' and
-    #             'collider_densities' to identify the values of the parameters
-    #             that were updated.
-    #     '''
-    #     #it is expensive to update Tkin and collider densities, so those should be in
-    #     #the outermost loops
-    #     n_coll_values = np.array([len(coll_values) for coll_values in
-    #                               collider_densities_values.values()])
-    #     assert np.all(n_coll_values==n_coll_values[0]),\
-    #            'please provide the same number of collider densities for each collider'
-    #     n_coll_values = n_coll_values[0]
-    #     #set T_dust and tau_dust, other values are not important because they are
-    #     #going to change in the loop
-    #     initial_ext_bg = list(ext_backgrounds.values())[0]
-    #     initial_coll_dens = {coll_name:coll_values[0] for coll_name,coll_values
-    #                          in collider_densities_values.items()}
-    #     self.update_parameters(
-    #            ext_background=initial_ext_bg,N=N_values[0],Tkin=Tkin_values[0],
-    #            collider_densities=initial_coll_dens,T_dust=T_dust,
-    #            tau_dust=tau_dust)
-    #     for Tkin in Tkin_values:
-    #         for i in range(n_coll_values):
-    #             collider_densities = {collider:values[i] for collider,values
-    #                                   in collider_densities_values.items()}
-    #             #note: updating Tkin and coll dens together to avoid
-    #             #unnecessary overhead
-    #             self.update_parameters(Tkin=Tkin,collider_densities=collider_densities)
-    #             for ext_background_name,ext_background in ext_backgrounds.items():
-    #                 self.update_parameters(ext_background=ext_background)
-    #                 for N in N_values:
-    #                     self.update_parameters(N=N)
-    #                     yield {'ext_background':ext_background_name,'N':N,
-    #                            'Tkin':Tkin,'collider_densities':collider_densities}
 
     def print_results(self):
         """Prints the results from the radiative transfer computation."""

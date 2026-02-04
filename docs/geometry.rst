@@ -183,7 +183,7 @@ As in the case of the static sphere, also for the LVG sphere ``RADEX`` incorrect
 
 LVG slab
 -------------------
-Here we consider a homogeneous slab with a constant velocity gradient :math:`\mathrm{d}v/\mathrm{d}z`, where :math:`z` is the coordinate perpendicular to the slab surface, along the line of sight. The escape probability is given by (see Section II of [Scoville74]_)
+Here we consider a homogeneous slab with a constant velocity gradient :math:`\mathrm{d}v/\mathrm{d}z`, where :math:`z` is the coordinate perpendicular to the slab surface, along the line of sight. The escape probability is given by (see Section II of [Scoville74]_ or Section III of [deJong75]_)
 
 .. math::
 
