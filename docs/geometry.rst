@@ -17,16 +17,14 @@ A homogeneous, static sphere. The escape probability is given in [Osterbrock74]_
 
     \beta(\tau) = \frac{3}{2\tau}\left(1-\frac{2}{\tau^2}+\left(\frac{2}{\tau}+\frac{2}{\tau^2}\right) e^{-\tau}\right)
 
-where :math:`\tau` is the optical depth of the diameter of the sphere. The observed specific intensity (in [W/m\ :sup:`2`/Hz/sr]) can also be calculated from [Osterbrock74]_ and is given by:
+where :math:`\tau` is the optical depth of the diameter of the sphere. A mean specific intensity (in [W/m\ :sup:`2`/Hz/sr]) can also be calculated from [Osterbrock74]_ and expressed as:
 
 .. math::
     :name: eq:intensity_static_sphere
 
     I_\nu = \frac{2S_\nu}{\tau^2}\left(\frac{\tau^2}{2}-1+(\tau+1)e^{-\tau}\right)
 
-where :math:`S_\nu` is the source function. To get the flux density in [W/m\ :sup:`2`/Hz], one needs to multiply :math:`I_\nu` by the solid angle :math:`\Omega`, which is given by :math:`\Omega=R^2\pi/d^2` with :math:`R` the radius of the sphere and :math:`d` the distance of the source.
-
-Note that if observations resolve the sphere, the specific intensity will not be constant across the source, unless it is completely optically thick. The specific intensity given above corresponds to the observed specific intensity for unresolved observations (or it can be interpreted as a kind of mean intensity).
+where :math:`S_\nu` is the source function. Due to the spherical geometry, the specific intensity is actually not constant across the source, unless it is completely optically thick (in general, the specific intensity towards the center is higher compared to the regions close to the sphere edge). The specific intensity given above corresponds to a mean, in the sense that if multiplied by the solid angle of the sphere (given by :math:`\Omega=R^2\pi/d^2` with :math:`R` the radius of the sphere and :math:`d` the distance of the source), it gives the correct flux density (in [W/m\ :sup:`2`/Hz]). This mean intensity (or the corresponding brightness temperature) is what ``pythonradex`` returns to the user.
 
 Derivation of escape probability and flux density by Osterbrock (1974)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -172,13 +170,13 @@ Using :math:`p=\frac{v_p R}{V}` and the solid angle of the sphere :math:`\Omega=
 
     F_\nu = S_\nu(1-e^{-\tau})\Omega\left(1-\frac{v^2}{V^2}\right)
 
-where we dropped the index :math:`p` from the velocity :math:`v`. The latter can be converted to frequency as :math:`v=c(1-\nu/\nu_0)` with :math:`c` the speed of light and :math:`\nu_0` the rest frequency. Note that the above equation applies for :math:`|v|\leq V`. For :math:`|v|>V`, the flux vanishes. Finally, the observed specific intensity is simply
+where we dropped the index :math:`p` from the velocity :math:`v`. The latter can be converted to frequency as :math:`v=c(1-\nu/\nu_0)` with :math:`c` the speed of light and :math:`\nu_0` the rest frequency. Note that the above equation applies for :math:`|v|\leq V`. For :math:`|v|>V`, the flux vanishes. Finally, the specific intensity is simply expressed as
 
 .. math::
 
     I_\nu = F_\nu/\Omega = S_\nu(1-e^{-\tau})\left(1-\frac{v^2}{V^2}\right)
 
-As in the case of the static sphere, also for the LVG sphere ``RADEX`` incorrectly uses the formula for a slab geometry to calculate the specific intensity (see :doc:`difference_pythonradex_RADEX` for more details).
+As in the case of the static sphere, also for the LVG sphere ``RADEX`` incorrectly uses the formula for a slab geometry to calculate the specific intensity (see :doc:`difference_pythonradex_RADEX` for more details), although note that at :math:`v=0` (line center), the two formulas agree. So in terms of emission at the line center, the two codes agree.
 
 
 LVG slab
