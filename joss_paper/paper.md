@@ -89,6 +89,6 @@ To calculate line fluxes, `pythonradex` uses different formulae depending on the
 
 # Acknowledgements
 
-I thank @andresmegias and @GijsVermarien for their thorough review which led to important improvements of the code and documentation. I would also like to thank Simon Bruderer for his helpful clarifications about the ALI method, Andrés Asensio Ramos for helpful discussions about the LVG approximation and the `MOLPOP-CEP` code, and @pscicluna for comments on the code and paper draft. Performance testing was in part carried out on the Multi-wavelength Data Analysis System operated by the Astronomy Data Center (ADC), National Astronomical Observatory of Japan.
+I thank \@andresmegias and \@GijsVermarien for their thorough review which led to important improvements of the code and documentation. I would also like to thank Simon Bruderer for his helpful clarifications about the ALI method, Andrés Asensio Ramos for helpful discussions about the LVG approximation and the `MOLPOP-CEP` code, and \@pscicluna for comments on the code and paper draft. Performance testing was in part carried out on the Multi-wavelength Data Analysis System operated by the Astronomy Data Center (ADC), National Astronomical Observatory of Japan.
 
 # References
