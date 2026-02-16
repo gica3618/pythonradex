@@ -106,7 +106,7 @@ class TestFastIntensities:
                         transitions=self.test_transitions
                     )
                 else:
-                    raise ValueError
+                    raise RuntimeError
                 assert np.allclose(
                     expected_intensity, calculated_intensity, atol=0, rtol=5e-3
                 )
