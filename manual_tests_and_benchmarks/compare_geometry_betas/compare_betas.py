@@ -10,21 +10,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pythonradex import escape_probability_functions as epf
 
-tau_grid = np.logspace(-3,3,100)
+tau_grid = np.logspace(-3, 3, 100)
 
-beta_funcs = {'uniform sphere':epf.beta_uniform_sphere, #same as 'uniform sphere RADEX'
-              'LVG sphere':epf.beta_LVG_sphere,
-              'LVG sphere RADEX':epf.beta_LVG_sphere_RADEX,
-              'LVG slab':epf.beta_LVG_slab,
-              'uniform slab':epf.beta_uniform_slab
-              }
+beta_funcs = {
+    "static sphere": epf.beta_static_sphere,  # same as 'static sphere RADEX'
+    "LVG sphere": epf.beta_LVG_sphere,
+    "LVG sphere RADEX": epf.beta_LVG_sphere_RADEX,
+    "LVG slab": epf.beta_LVG_slab,
+    "static slab": epf.beta_static_slab,
+}
 
-fig,ax = plt.subplots()
-for ID,func in beta_funcs.items():
+fig, ax = plt.subplots()
+for ID, func in beta_funcs.items():
     beta = func(tau_grid)
-    ax.plot(tau_grid,beta,label=ID)
+    ax.plot(tau_grid, beta, label=ID)
 
-ax.set_xscale('log')
-ax.set_xlabel('tau')
-ax.set_ylabel('beta')
-ax.legend(loc='best')
+ax.set_xscale("log")
+ax.set_xlabel("tau")
+ax.set_ylabel("beta")
+ax.legend(loc="best")

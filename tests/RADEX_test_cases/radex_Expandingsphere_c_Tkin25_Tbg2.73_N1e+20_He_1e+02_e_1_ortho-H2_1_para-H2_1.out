@@ -1,0 +1,18 @@
+* Radex version        : 30nov2011
+* Geometry             : Expanding sphere
+* Molecular data file  : /home/gianni/science/projects/code/pythonradex_joss/pythonradex/tests/LAMDA_file
+* T(kin)            [K]:   25.000
+* Density of H2  [cm-3]:  2.000E+00
+* Density of pH2 [cm-3]:  1.000E+00
+* Density of oH2 [cm-3]:  1.000E+00
+* Density of e-  [cm-3]:  1.000E+00
+* Density of He  [cm-3]:  1.000E+02
+* T(background)     [K]:    2.730
+* Column density [cm-2]:  1.000E+20
+* Line width     [km/s]:    1.000
+Calculation finished in   33 iterations
+      LINE         E_UP       FREQ        WAVEL     T_EX      TAU        T_R       POP        POP       FLUX        FLUX
+                   (K)        (GHz)       (um)      (K)                  (K)        UP        LOW      (K*km/s) (erg/cm2/s)
+1      -- 0         23.6    492.1607    609.1354   24.779  4.808E+02  1.481E+01  4.531E-01  3.918E-01  1.577E+01  2.421E-05
+2      -- 1         62.5    809.3420    370.4151   24.544  3.020E+02  1.004E+01  1.551E-01  4.531E-01  1.069E+01  7.299E-05
+2      -- 0         62.5   1301.5026    230.3433   24.632  1.491E-05  8.012E-05  1.551E-01  3.918E-01  8.529E-05  2.422E-09

@@ -1,0 +1,18 @@
+* Radex version        : 30nov2011
+* Geometry             : Plane parallel slab
+* Molecular data file  : /home/gianni/science/projects/code/pythonradex_joss/pythonradex/tests/LAMDA_file
+* T(kin)            [K]:   25.000
+* Density of H2  [cm-3]:  2.000E+00
+* Density of pH2 [cm-3]:  1.000E+00
+* Density of oH2 [cm-3]:  1.000E+00
+* Density of e-  [cm-3]:  1.000E+02
+* Density of He  [cm-3]:  1.000E+04
+* T(background)     [K]:   10.000
+* Column density [cm-2]:  1.000E+12
+* Line width     [km/s]:    1.000
+Calculation finished in   10 iterations
+      LINE         E_UP       FREQ        WAVEL     T_EX      TAU        T_R       POP        POP       FLUX        FLUX
+                   (K)        (GHz)       (um)      (K)                  (K)        UP        LOW      (K*km/s) (erg/cm2/s)
+1      -- 0         23.6    492.1607    609.1354   21.892  5.642E-06  5.478E-05  4.365E-01  4.280E-01  5.831E-05  8.952E-11
+2      -- 1         62.5    809.3420    370.4151   23.104  2.981E-06  2.405E-05  1.354E-01  4.365E-01  2.560E-05  1.748E-10
+2      -- 0         62.5   1301.5026    230.3433   22.630  1.658E-13  6.794E-13  1.354E-01  4.280E-01  7.232E-13  2.053E-17

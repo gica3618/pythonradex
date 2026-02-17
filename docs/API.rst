@@ -3,18 +3,18 @@ API
 
 .. _rad_trans_API:
 
-The ``Cloud`` class
+The ``Source`` class
 ------------------------------------
-The core of ``pyhonradex`` is the ``Cloud`` class which is used to solve the radiative transfer.
+The core of ``pyhonradex`` is the ``Source`` class which is used to solve the radiative transfer.
 
-.. autoclass:: pythonradex.radiative_transfer.Cloud
-    :members: __init__, update_parameters, solve_radiative_transfer, fluxes_of_individual_transitions, tau_nu, spectrum, model_grid, print_results 
+.. autoclass:: pythonradex.radiative_transfer.Source
+    :members: __init__, update_parameters, solve_radiative_transfer, frequency_integrated_emission, tau, spectrum, emission_at_line_center, print_results 
 
 .. _read_LAMDA_API:
 
 Reading LAMDA files
 -------------------------
-``pyhonradex`` provides a convenient function in the ``LAMDA_file`` module to read files from the LAMDA database:
+``pyhonradex`` provides a convenient function in the ``LAMDA_file`` module to read files that follow the `LAMDA format <https://home.strw.leidenuniv.nl/~moldata/molformat.html>`_, for example from the `EMAA <https://emaa.osug.fr/>`_ or `LAMDA <https://home.strw.leidenuniv.nl/~moldata/>`_ databases:
 
 .. autofunction:: pythonradex.LAMDA_file.read
 
@@ -31,7 +31,7 @@ Representation of molecular levels and transitions
     :members: Tex
 
 .. autoclass:: pythonradex.atomic_transition.EmissionLine
-    :members: Tex,tau_nu0,tau_nu
+    :members: Tex,tau_nu0,tau
 
 .. autoclass:: pythonradex.atomic_transition.CollisionalTransition
     :members: Tex,coeffs
@@ -39,7 +39,7 @@ Representation of molecular levels and transitions
 .. _Molecule_API:
 
 .. autoclass:: pythonradex.molecule.Molecule
-    :members: __init__, LTE_level_pop
+    :members: __init__, Boltzmann_level_population
 
 .. autoclass:: pythonradex.molecule.EmittingMolecule
     :members: __init__, get_tau_nu0_lines, get_tau_nu0_lines_LTE, get_Tex
@@ -63,4 +63,4 @@ Convenience functions
 The ``helpers`` module provides a number of convenience functions.
 
 .. automodule:: pythonradex.helpers
-    :members: B_nu,generate_CMB_background,FWHM2sigma
+    :members: B_nu,generate_CMB_background,FWHM2sigma,RJ_brightness_temperature,Planck_brightness_temperature

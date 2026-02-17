@@ -1,0 +1,5 @@
+1. download molpop-cep-master from github and compile the code to produce the molpop executable.
+2. cp the file molpop.inp into molpop-cep-master. this file lists the models that should be calculated.
+3.1 cp the file hcn@hfs_H2_lamda.kij to molpop-cep-master/DataBase/Coll
+3.2 cp the file hcn@hfs_lamda.molecule to molpop-cep-master/DataBase
+4. run molpop. it reads the file molpop.inp and calculates the models. output files (.out) will be placed in the same folder as the input files, i.e. molpopcep_models

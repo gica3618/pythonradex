@@ -9,37 +9,37 @@ We briefly discuss basic theory of radiative transfer that is relevant for ``pyh
 The radiation field in every point of space can be described by the specific intensity :math:`I_{\nu}`, defined as the energy radiated per unit of time, surface, frequency and solid angle, i.e., :math:`I_{\nu}` has units of W/m\ :sup:`2`\ /sr/Hz. The differential equation describing the change of the specific intensity along a spatial coordinate :math:`s` is given by
 
 .. math::
-    \frac{\mathrm{d}I_\nu}{\mathrm{d}s} = -\alpha_\nu I_\nu + j_\nu
+    \frac{\mathrm{d}I_\nu}{\mathrm{d}s} = -\alpha I_\nu + j_\nu
 
-Here, :math:`\alpha_\nu` is the absorption coefficient in m\ :sup:`-1`. It describes how much is removed from the beam per unit length. On the other hand, the emission coefficient :math:`j_\nu` is the energy emitted per unit time, solid angle, volume and frequency. Defining the optical depth as :math:`\mathrm{d}\tau_\nu=\alpha_\nu\mathrm{d}s`, we can rewrite the equation as
+Here, :math:`\alpha` is the absorption coefficient in m\ :sup:`-1`. It describes how much is removed from the beam per unit length. On the other hand, the emission coefficient :math:`j_\nu` is the energy emitted per unit time, solid angle, volume and frequency. Defining the optical depth as :math:`\mathrm{d}\tau=\alpha\mathrm{d}s`, we can rewrite the equation as
 
 .. math::
-    \frac{\mathrm{d}I_\nu}{\mathrm{d}\tau_\nu} = -I_\nu + S_\nu
+    \frac{\mathrm{d}I_\nu}{\mathrm{d}\tau} = -I_\nu + S_\nu
 
-with the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Our basic goal is to solve this equation. For example, for a uniform medium (the emission and absorption coefficients do not depend on position) the solution reads :math:`I_\nu=I_\nu(0)e^{-\tau_\nu}+S_\nu(1-e^{-\tau_\nu})`. In summary, we need to know the emission coefficient and the absorption coefficient to solve the radiative transfer.
+with the source function :math:`S_\nu=\frac{j_\nu}{\alpha}`. Our basic goal is to solve this equation. For example, for a uniform medium (the emission and absorption coefficients do not depend on position) the solution reads :math:`I_\nu=I_\nu(0)e^{-\tau}+S_\nu(1-e^{-\tau})`. In summary, we need to know the emission coefficient and the absorption coefficient to solve the radiative transfer.
 
 Now considering a gas, the absorption coefficient for a transition between energy levels :math:`l` and :math:`l'` (where :math:`E_l>E_{l'}`, hereafter indicated by :math:`l\succ l'`) of a molecule is given by [Rybicki04]_
 
 .. math::
-    \alpha_{ll'} = \frac{h\nu}{4\pi}(n_{l'}B_{l'l}-n_lB_{ll'})\phi_{ll'}(\nu)
+    \alpha_{ll'} = \frac{h\nu}{4\pi}(n_{l'}B_{l'l}-n_lB_{ll'})\phi_\nu^{ll'}
 
-Here :math:`h` is the Planck constant, :math:`n_l` the number density of molecules in energy level :math:`l`, :math:`B_{l'l}` and :math:`B_{ll'}` are the Einstein coefficients for absorption and stimulated emission respectively,  and :math:`\phi` is the normalised line profile (i.e. :math:`\int\phi(\nu)\mathrm{d}\nu=1` and :math:`\phi` describes how the energy is distributed over frequency).
+Here :math:`h` is the Planck constant, :math:`n_l` the number density of molecules in energy level :math:`l`, :math:`B_{l'l}` and :math:`B_{ll'}` are the Einstein coefficients for absorption and stimulated emission respectively,  and :math:`\phi_\nu` is the normalised line profile (i.e. :math:`\int\phi_\nu\mathrm{d}\nu=1` and :math:`\phi_\nu` describes how the energy is distributed over frequency).
 
 The emission coefficient is given by (where again :math:`l\succ l'`)
 
 .. math::
-    j_{ll'} = \frac{h\nu}{4\pi}n_lA_{ll'}\phi_{ll'}(\nu)
+    j_{ll'} = \frac{h\nu}{4\pi}n_lA_{ll'}\phi_\nu^{ll'}
 
 with :math:`A_{ll'}` the Einstein coefficient for spontaneous emission.
 
 The total absorption and emission coefficients are simply given by the sum over all transitions, plus contributions from the dust continuum (:math:`\alpha_c` and :math:`j_c`):
 
 .. math::
-    \alpha_\nu = \sum_{l\succ l'}\alpha_{ll'}(\nu) + \alpha_c(\nu)
+    \alpha = \sum_{l\succ l'}\alpha_{ll'}(\nu) + \alpha_c(\nu)
 
     j_\nu = \sum_{l\succ l'}j_{ll'}(\nu) + j_c(\nu)
 
-We see that we need to know the fractional level population :math:`n_l` to calculate :math:`\alpha_\nu` and :math:`j_\nu`, which are needed to solve the radiative transfer. How can we do that? There are two kinds processes that can excite or de-excite an molecular level: radiative processes (emission or absorption of photons) or collisions. If the density of colliders (e.g. H\ :sub:`2`\  or electrons) is high enough (or if the emission is highly optically thick), the energy levels become thermalised and we are in local thermodynamic equilibrium (LTE). In this case, the level population is simply given by the Boltzmann distribution:
+We see that we need to know the fractional level population :math:`n_l` to calculate :math:`\alpha` and :math:`j_\nu`, which are needed to solve the radiative transfer. How can we do that? There are two kinds processes that can excite or de-excite a molecular level: radiative processes (emission or absorption of photons) or collisions. If the density of colliders (e.g. H\ :sub:`2`\  or electrons) is high enough, the energy levels become thermalised and we are in local thermodynamic equilibrium (LTE). In this case, the level population is simply given by the Boltzmann distribution:
 
 .. math::
     n_l = n\frac{e^{-E_l/(kT_\mathrm{kin})}}{Q}
@@ -68,21 +68,21 @@ while if :math:`l\prec l'`
 .. math::
     R_{ll'} = B_{ll'}\bar{J}
 
-Here, :math:`\bar{J}` is the radiation field averaged over frequency and solid angle: :math:`\bar{J}=\frac{1}{4\pi}\int I_\nu\phi_{ll'}(\nu)\mathrm{d}\Omega\mathrm{d}\nu`. Thus, in order to solve the SE equations, we need to know the radiation field, which is what we were after in the first place... In order to solve this chicken and egg problem, we need to adopt an iterative technique.
+Here, :math:`\bar{J}` is the radiation field averaged over frequency and solid angle: :math:`\bar{J}=\frac{1}{4\pi}\int I_\nu\phi_\nu^{ll'}\mathrm{d}\Omega\mathrm{d}\nu`. Thus, in order to solve the SE equations, we need to know the radiation field, which is what we were after in the first place... In order to solve this chicken and egg problem, we need to adopt an iterative technique.
 
 Accelerated Lambda Iteration (ALI)
 ----------------------------------------------
 For the following discussion, we introduce the Lamda Operator, which essentially is a way of writing down the formal solution of the radiative transfer:
 
 .. math::
-    I_\nu = \Lambda_\nu[S_\nu]
+    I_\nu = \Lambda[S_\nu]
 
-So, the Lambda operator computes the radiation field :math:`I_\nu` for a given source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`, the latter being completely determined by the level population (and the known contribution from the dust continuum). The simplest iteration scheme (the so-called Lambda Iteration scheme) is very straightforward: one starts with an initial guess for the level population and solves the radiative transfer (as formalised by the above equation). The solution :math:`I_\nu` is then inserted into the statistical equilibrium equations, resulting in an updated level population. This procedure is repeated until convergence is established.
+So, the Lambda operator computes the radiation field :math:`I_\nu` for a given source function :math:`S_\nu=\frac{j_\nu}{\alpha}`, the latter being completely determined by the level population (and the known contribution from the dust continuum). The simplest iteration scheme (the so-called Lambda Iteration scheme) is very straightforward: one starts with an initial guess for the level population and solves the radiative transfer (as formalised by the above equation). The solution :math:`I_\nu` is then inserted into the statistical equilibrium equations, resulting in an updated level population. This procedure is repeated until convergence is established.
 
 However, the Lambda iteration scheme can suffer from extremely slow convergence in optically thick systems (see e.g. the lecture notes by Dullemond_ or [Rybicki91]_). An alternative scheme, known as Accelerated Lambda Iterations (ALI), provides much better convergence. The idea is to introduce an approximate Lambda operator :math:`\Lambda^*` and to write
 
 .. math::
-    I_\nu = \Lambda^*_\nu[S_\nu] + (\Lambda_\nu-\Lambda^*_\nu)[S_\nu^\dagger]
+    I_\nu = \Lambda^*[S_\nu] + (\Lambda-\Lambda^*)[S_\nu^\dagger]
 
 where the :math:`\dagger` indicates quantities from the previous iteration. This is inserted into the equations of statistical equilibrium, which can then be solved for an updated level population (and thus updated :math:`S_\nu`). See for example [Rybicki91]_ or [Hubeny03]_ for more details about ALI.
 
@@ -95,23 +95,23 @@ The ALI method by Rybicki & Hummer (1992)
 .. math::
     I_\nu = \Psi[j_\nu]
 
-The approximate iteration scheme is then based on :math:`I_\nu=\Psi^*_\nu[j_\nu] + (\Psi_\nu-\Psi^*_\nu)[j_\nu^\dagger]`, which is inserted into the equations of statistical equilibrium.
+The approximate iteration scheme is then based on :math:`I_\nu=\Psi^*[j_\nu] + (\Psi-\Psi^*)[j_\nu^\dagger]`, which is inserted into the equations of statistical equilibrium.
 
 Escape probability
 -----------------------------
-We still need to specify the formal solution of the radiative transfer we adopt via the operator :math:`\Psi_\nu`. Same as ``RADEX``, we use an escape probability method. We consider the probability :math:`\beta` of a newly created photon to escape the cloud. This probability depends on the geometry of the cloud and the absorption coefficient (or, equivalently, optical depth). If the cloud is completely optically thick (:math:`\beta\approx 0`), we expect the radiation field to equal the source function :math:`S_\nu=\frac{j_\nu}{\alpha_\nu}`. Thus, we write 
+We still need to specify the formal solution of the radiative transfer we adopt via the operator :math:`\Psi`. Same as ``RADEX``, we use an escape probability method. We consider the probability :math:`\beta` of a newly created photon to escape the source. This probability depends on the geometry of the source and the absorption coefficient (or, equivalently, optical depth). If the source is completely optically thick (:math:`\beta\approx 0`), we expect the radiation field to equal the source function :math:`S_\nu=\frac{j_\nu}{\alpha}`. Thus, we write 
 
 .. math::
-    I_\nu = \Psi[j_\nu] = \beta(\alpha_\nu^\dagger) I_\mathrm{ext} + (1-\beta(\alpha_\nu^\dagger))\frac{j_\nu}{\alpha_\nu^\dagger}
+    I_\nu = \Psi[j_\nu] = \beta(\alpha^\dagger) I_\mathrm{ext} + (1-\beta(\alpha^\dagger))\frac{j_\nu}{\alpha^\dagger}
 
-Here :math:`I_\mathrm{ext}` is an external radiation field that irradiates the cloud from the outside (for example the CMB). If the cloud is completely optically thick, external radiation cannot penetrate the cloud and the corresponding term vanishes. 
+Here :math:`I_\mathrm{ext}` is an external radiation field that irradiates the source from the outside (for example the CMB). If the source is completely optically thick, external radiation cannot penetrate the source and the corresponding term vanishes. 
 
 For the approximate Psi operator, we choose
 
 .. math::
-    \Psi^*_\nu[j_\nu] = (1-\beta(\alpha_\nu^\dagger))\frac{j_\nu}{\alpha_\nu^\dagger}
+    \Psi^*[j_\nu] = (1-\beta(\alpha^\dagger))\frac{j_\nu}{\alpha^\dagger}
 
-Please see the :ref:`section about cloud geometries<geometries>` for a list of all geometries available in ``pythonradex`` with the corresponding formulas for the escape probability.
+Please see the :ref:`section about source geometries<geometries>` for a list of all geometries available in ``pythonradex`` with the corresponding formulas for the escape probability.
 
 Ng-acceleration
 ------------------------
