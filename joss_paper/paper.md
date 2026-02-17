@@ -3,8 +3,11 @@ title: 'pythonradex: a fast Python re-implementation of RADEX with extended func
 tags:
   - python
   - astronomy
+  - astrophysics
   - radiative transfer
   - non-LTE
+  - escape probability
+  - line emission
 authors:
   - name: Gianni Cataldi
     corresponding: true
