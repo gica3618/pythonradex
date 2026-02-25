@@ -2,8 +2,7 @@ pythonradex solves the 1D non-LTE radiative transfer for a homogeneous medium. I
 
 For more details, please refer to the documentation: http://pythonradex.readthedocs.io/
 
-If you use this software in your research, please cite the following article:
-[![DOI](https://joss.theoj.org/papers/10.21105/joss.09233/status.svg)](https://doi.org/10.21105/joss.09233)
+If you use this software in your research, please cite the following JOSS article: [![DOI](https://joss.theoj.org/papers/10.21105/joss.09233/status.svg)](https://doi.org/10.21105/joss.09233)
 
 For questions, bug reports, or feature suggestions, please open an issue on github.
 
