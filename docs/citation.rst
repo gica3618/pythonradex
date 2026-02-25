@@ -1,13 +1,6 @@
 Citation
 ===================
-If you use ``pythonradex`` in your research, please cite the following JOSS article: |joss_badge|
-
-.. |joss_badge| image:: https://joss.theoj.org/papers/10.21105/joss.09233/status.svg
-   :target: https://doi.org/10.21105/joss.09233
-   :height: 20px
-   :align: middle
-
-Bibtex entry of the article:
+If you use ``pythonradex`` in your research, please cite the following `JOSS article <https://doi.org/10.21105/joss.09233>`__:
 
 .. code-block:: tex
 
