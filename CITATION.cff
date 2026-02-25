@@ -1,15 +1,17 @@
 cff-version: 1.2.0
 title: "pythonradex"
-version: 2.0.0
 license: "MIT"
 type: software
 repository-code: "https://github.com/gica3618/pythonradex"
 abstract: "pythonradex solves the 1D non-LTE radiative transfer for a homogeneous medium. It is a tool to quickly estimate the radiation from an astrophysical gas. It also provides a convenient function to read data files in the LAMDA format. pythonradex is a python re-implementation of the RADEX code, with additional functionality not included in RADEX (treatment of overlapping lines, treatment of dust continuum, output of spectra, and more)."
-message: "Please cite this software using the metadata from 'preferred-citation'."
+message: "If you use this software, please cite our article in the Journal of Open Source Software."
 authors:
   - given-names: Gianni
     family-names: Cataldi
-    affiliation: National Astronomical Observatory of Japan
+    orcid: "https://orcid.org/0000-0002-2700-9676"
+contact:
+  - family-names: Cataldi
+    given-names: Gianni
     orcid: "https://orcid.org/0000-0002-2700-9676"
 keywords:
   - python
@@ -19,3 +21,21 @@ keywords:
   - non-LTE
   - escape probability
   - line emission
+preferred-citation:
+  authors:
+  - family-names: Cataldi
+    given-names: Gianni
+    orcid: "https://orcid.org/0000-0002-2700-9676"
+  date-published: 2026-02-24
+  doi: 10.21105/joss.09233
+  issn: 2475-9066
+  issue: 118
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 9233
+  title: "pythonradex: a fast Python re-implementation of RADEX with
+    extended functionality"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.09233"
+  volume: 11
