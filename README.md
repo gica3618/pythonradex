@@ -16,7 +16,7 @@ If you use pythonradex in your research, please cite the following [JOSS article
     author = {Cataldi, Gianni},
     title = {pythonradex: a fast Python re-implementation of RADEX with extended functionality},
     journal = {Journal of Open Source Software}
-} 
+}
 ```
 
 For questions, bug reports, or feature suggestions, please open an issue on github.
