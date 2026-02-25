@@ -15,4 +15,4 @@ If you use ``pythonradex`` in your research, please cite the following `JOSS art
         author = {Cataldi, Gianni},
         title = {pythonradex: a fast Python re-implementation of RADEX with extended functionality},
         journal = {Journal of Open Source Software}
-    }
+    } 
