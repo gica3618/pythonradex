@@ -159,11 +159,8 @@ propagates via emission and absorption (``radiative transfer''). In
 radio and infrared astronomy, the Fortran code \texttt{RADEX}
 (\citeproc{ref-vanderTak2007}{van der Tak et al., 2007}) is a popular
 tool to solve the non-LTE radiative transfer of a uniform medium in a
-simplified geometry. I present \texttt{pythonradex}, a Python re-implementation of
-\texttt{RADEX}. Written in Python, it provides an
-easy and intuitive user interface, improved performance as well as
-additional functionality (continuum
-effects and overlapping lines) not included in \texttt{RADEX}.
+simplified geometry. This paper presents \texttt{pythonradex}, a Python re-implementation of
+\texttt{RADEX}. Written in Python, it provides an easy and intuitive user interface, improved performance as well as additional functionality not included in \texttt{RADEX}, such as continuum effects and overlapping lines. In addition, pythonradex provides a self-consistent computation of the total flux for all geometries, including spherical geometries. 
 
 \section{Statement of need}\label{statement-of-need}
 
@@ -233,7 +230,7 @@ critical parts of the code are just-in-time compiled using Numba
 (\citeproc{ref-Lam2015}{Lam et al., 2015}).
 
 \texttt{pythonradex} supports four geometries: two static geometries
-(slab and sphere), and two large-velocity-gradient (LVG) geometries
+(slab and sphere; note that \texttt{RADEX} does not support a static slab), and two large-velocity-gradient (LVG) geometries
 (again slab and sphere). In the LVG approximation, it is assumed that
 all regions of the source are Doppler shifted with respect to each other
 due to a velocity gradient. This means that all photons escape the
@@ -325,7 +322,7 @@ observations.
 \subsection{Flux for spherical
 geometry}\label{flux-for-spherical-geometry}
 
-To calculate line fluxes, \texttt{pythonradex} uses different formulae
+To calculate line fluxes (energy per time per area, e.g.\ W/m$^2$), \texttt{pythonradex} uses different formulae
 depending on the geometry (see the
 \href{https://pythonradex.readthedocs.io/en/latest/index.html}{\texttt{pythonradex}
 documentation} for more details). On the other hand, \texttt{RADEX}
