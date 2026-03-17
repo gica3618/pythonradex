@@ -16,14 +16,8 @@ sphinx:
   configuration: docs/conf.py
   fail_on_warning: true
 
+# We recommend specifying your dependencies to enable reproducible builds:
+# https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
 python:
-  install:
-    # Install the package
-    - method: pip
-      path: .
-
-    # We recommend specifying your dependencies to enable reproducible builds:
-    # https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
-    # Install doc requirements
-    - method: pip
-      requirements: docs/requirements.txt
+   install:
+   - requirements: docs/requirements.txt
