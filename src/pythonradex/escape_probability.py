@@ -59,7 +59,8 @@ class StaticSphere(EscapeProbabilityStaticSphere):
             * (tau / 3 - tau**2 / 8 + tau**3 / 30 - tau**4 / 144)
         )  # from Wolfram Alpha
         flux_nu = np.where(stable_region, flux_nu, flux_nu_Taylor)
-        assert np.all(np.isfinite(flux_nu))
+        if not np.all(np.isfinite(flux_nu)):
+            raise RuntimeError
         return flux_nu / np.pi
 
 

@@ -282,18 +282,18 @@ class TestTransition:
         assert self.general_transition.Tex(x1=np.zeros(1), x2=np.array((0.5,)))[0] == 0
 
     def test_radiative_transition_negative_DeltaE(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(RuntimeError):
             atomic_transition.RadiativeTransition(
                 up=self.low, low=self.up, A21=self.A21
             )
 
     def test_radiative_transition_wrong_nu0(self):
         wrong_nu0 = (self.up.E - self.low.E) / constants.h * 1.01
-        with pytest.raises(AssertionError):
+        with pytest.raises(RuntimeError):
             atomic_transition.RadiativeTransition(
                 up=self.up, low=self.low, A21=self.A21, nu0=wrong_nu0
             )
-        with pytest.raises(AssertionError):
+        with pytest.raises(RuntimeError):
             atomic_transition.EmissionLine(
                 up=self.up,
                 low=self.low,
@@ -329,7 +329,7 @@ class TestTransition:
             up=self.up, low=self.low, A21=self.A21
         )
         wrong_nu0_rad_trans.nu0 = wrong_nu0_rad_trans.nu0 * 1.01
-        with pytest.raises(AssertionError):
+        with pytest.raises(RuntimeError):
             atomic_transition.EmissionLine.from_radiative_transition(
                 radiative_transition=wrong_nu0_rad_trans,
                 line_profile_type=self.line_profile_type,
@@ -338,7 +338,7 @@ class TestTransition:
 
     def test_coll_transition_constructor(self):
         negative_21 = np.array((1, 2, -2))
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             atomic_transition.CollisionalTransition(
                 up=self.up, low=self.low, K21_data=negative_21, Tkin_data=self.Tkin_data
             )
@@ -393,5 +393,5 @@ class TestTransition:
         )
         invalid_Tkin = [0.5, 300, self.Tkin_data + 2]
         for Tkin in invalid_Tkin:
-            with pytest.raises(AssertionError):
+            with pytest.raises(ValueError):
                 coll_trans.coeffs(Tkin)

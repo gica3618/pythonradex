@@ -65,9 +65,8 @@ class RateEquations:
 
     def assign_func_nu(self, func_name, argument):
         if isinstance(argument, numbers.Number):
-            assert (
-                argument >= 0
-            ), "ext_background, T_dust or tau_dust cannot be negative"
+            if argument < 0:
+                raise ValueError("ext_background, T_dust or tau_dust cannot be negative")
             setattr(self, func_name, self.generate_constant_func(const_value=argument))
         else:
             setattr(self, func_name, argument)
@@ -390,8 +389,7 @@ class RateEquations:
         Gamma = self.GammaR(level_population=level_population) + self.GammaC
         Gamma[0, :] = np.ones(self.molecule.n_levels)
         fractional_population = np.linalg.solve(Gamma, b=self.b)
-        assert np.all(fractional_population >= 0), (
-            "negative level population, potentially due to high column"
-            + "density and/or low collider density"
-        )
+        if np.any(fractional_population < 0):
+            raise RuntimeError("negative level population, potentially due to high column"
+            + "density and/or low collider density")
         return fractional_population

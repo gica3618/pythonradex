@@ -116,9 +116,8 @@ class Source:
                 by general user. Defaults to False.
 
         """
-        assert (
-            width_v < 10000 * constants.kilo
-        ), "assumption of small nu0/Delta_nu for flux calculation not satisfied"
+        if width_v >= 10000 * constants.kilo:
+            raise ValueError("assumption of small nu0/Delta_nu for flux calculation not satisfied")
         self.emitting_molecule = EmittingMolecule(
             datafilepath=datafilepath,
             line_profile_type=line_profile_type,
@@ -264,9 +263,8 @@ class Source:
                 "tau_dust": tau_dust,
             }
             for p_name, p in params.items():
-                assert (
-                    p is not None
-                ), f"for initial setup, all params need to be defined; {p_name} missing"
+                if p is None:
+                    raise ValueError(f"for initial setup, all params need to be defined; {p_name} missing")
             self.rate_equations = rate_equations.RateEquations(
                 molecule=self.emitting_molecule,
                 treat_line_overlap=self.treat_line_overlap,

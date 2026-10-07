@@ -253,7 +253,8 @@ class RadiativeTransition(Transition):
 
     def __init__(self, up, low, A21, nu0=None):
         Transition.__init__(self, up=up, low=low)
-        assert self.Delta_E > 0, "non-positive Delta_E for radiative transition"
+        if self.Delta_E <= 0:
+            raise RuntimeError("non-positive Delta_E for radiative transition")
         self.A21 = A21
         nu0_from_Delta_E = self.Delta_E / constants.h
         if nu0 is None:
@@ -261,7 +262,8 @@ class RadiativeTransition(Transition):
         else:
             # when reading LAMDA files, it is useful to specify nu0 directly, since
             # it is sometimes given with more significant digits
-            assert np.isclose(nu0_from_Delta_E, nu0, atol=0, rtol=1e-3)
+            if not np.isclose(nu0_from_Delta_E, nu0, atol=0, rtol=1e-3):
+                raise RuntimeError("inconsistency between energies and frequencies")
             self.nu0 = nu0
         self.B21 = helpers.B21(A21=self.A21, nu=self.nu0)
         self.B12 = helpers.B12(A21=self.A21, nu=self.nu0, g1=self.low.g, g2=self.up.g)
@@ -369,7 +371,8 @@ class CollisionalTransition(Transition):
 
     def __init__(self, up, low, K21_data, Tkin_data):
         Transition.__init__(self, up=up, low=low)
-        assert np.all(K21_data >= 0)
+        if np.any(K21_data < 0):
+            raise ValueError("negative K21 values")
         self.K21_data = K21_data
         self.Tkin_data = Tkin_data
         self.Tkin_data_limits = np.min(self.Tkin_data), np.max(self.Tkin_data)
@@ -386,15 +389,13 @@ class CollisionalTransition(Transition):
             at the requested temperature(s)
 
         Raises:
-            AssertionError: If Tkin is outside the available temperature range.
+            ValueError: If Tkin is outside the available temperature range.
         """
         Tmin, Tmax = self.Tkin_data_limits
-        assert np.all(
-            Tmin <= Tkin
-        ), "requested temperature below minimum collider temperature"
-        assert np.all(
-            Tkin <= Tmax
-        ), "requested temperature above maximum collider temperature"
+        if np.any(Tkin < Tmin):
+            raise ValueError("requested temperature below minimum collider temperature")
+        if np.any(Tkin > Tmax):
+            raise ValueError("requested temperature above maximum collider temperature")
         K21 = np.interp(Tkin, self.Tkin_data, self.K21_data)
         K12 = compute_K12(
             K21=K21, g_up=self.up.g, g_low=self.low.g, Delta_E=self.Delta_E, Tkin=Tkin

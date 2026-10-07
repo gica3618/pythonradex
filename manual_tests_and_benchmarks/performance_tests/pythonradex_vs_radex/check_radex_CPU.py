@@ -15,7 +15,8 @@ import time
 in_file = "check_radex_CPU.inp"
 with open(in_file, "r") as f:
     out_file = f.readlines()[1].strip()
-assert out_file == "check_radex_CPU.out", out_file
+if out_file != "check_radex_CPU.out":
+    raise RuntimeError(out_file)
 
 # command = '../../../tests/Radex/bin/radex_static_sphere < radex_test_preformance.inp > /dev/null'
 # safer without dev/null, to see any error messages; performance seems not strongly affected
@@ -27,4 +28,5 @@ for i in range(1000):
     # end = time.time()
     # print(f"took {end-start}")
     # make sure RADEX ran successfully:
-    assert os.path.exists(out_file)
+    if not os.path.exists(out_file):
+        raise RuntimeError

@@ -76,9 +76,8 @@ def read(datafilepath, read_frequencies, read_quantum_numbers=False):
         if 3 + comment_offset <= i < 3 + comment_offset + n_levels:
             line_entries = line.split()
             leveldata = [float(string) for string in line_entries[:3]]
-            assert (
-                int(leveldata[0]) == i - 2 - comment_offset
-            ), "level numeration not consistent"
+            if int(leveldata[0]) != i - 2 - comment_offset:
+                raise RuntimeError("level numeration not consistent")
             # transforming energy from cm-1 to J; level indices starting from 0:
             lev = atomic_transition.Level(
                 g=leveldata[2],
@@ -104,9 +103,8 @@ def read(datafilepath, read_frequencies, read_quantum_numbers=False):
             if read_frequencies:
                 nu0 = radtransdata[4] * constants.giga
                 Delta_E = up.E - low.E
-                assert np.isclose(
-                    nu0, Delta_E / constants.h, atol=0, rtol=1e-3
-                ), "read frequency is inconsistent with level energies"
+                if not np.isclose(nu0, Delta_E / constants.h, atol=0, rtol=1e-3):
+                    raise RuntimeError("frequency is inconsistent with level energies")
                 rad_trans_kwargs["nu0"] = nu0
             rad_trans = atomic_transition.RadiativeTransition(**rad_trans_kwargs)
             rad_transitions.append(rad_trans)

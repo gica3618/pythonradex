@@ -81,7 +81,8 @@ def compute_K_cube(mol):
                 K_cube[collider][i_low, i_up, i] += K21
                 # destruction of upper level by transition to lower level:
                 K_cube[collider][i_up, i_up, i] += -K21
-        assert np.all(np.isfinite(K_cube[collider]))
+        if not np.all(np.isfinite(K_cube[collider])):
+            raise RuntimeError
     return K_cube
 
 
@@ -90,7 +91,8 @@ def get_GammaC_with_interpolation(mol, Tkin, collider_densities):
     K_cube = compute_K_cube(mol=mol)
     for collider, coll_dens in collider_densities.items():
         Tlimits = mol.Tkin_data_limits[collider]
-        assert Tlimits[0] <= Tkin <= Tlimits[1]
+        if not Tlimits[0] <= Tkin <= Tlimits[1]:
+            raise RuntimeError
         Tkin_data = mol.Tkin_data[collider]
         j = np.searchsorted(Tkin_data, Tkin, side="left")
         if j == 0:

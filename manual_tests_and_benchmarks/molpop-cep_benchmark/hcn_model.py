@@ -82,7 +82,8 @@ for overlap, tau_nu0s in molpop_cep_tau_nu0.items():
 molpop_cep_spectrum = {}
 for overlap, tau in molpop_cep_tau.items():
     molpop_cep_Stot[overlap] /= tau
-    assert geometry == "static slab"
+    if geometry != "static slab":
+        raise ValueError
     specific_intensity = escape_probability.StaticSlab.specific_intensity(
         tau=tau, source_function=molpop_cep_Stot[overlap]
     )
@@ -104,11 +105,8 @@ for treat_line_overlap in (True, False):
         warn_negative_tau=False,
     )
     for i in ref_transitions:
-        assert source.emitting_molecule.any_line_has_overlap(
-            line_indices=[
-                i,
-            ]
-        )
+        if not source.emitting_molecule.any_line_has_overlap(line_indices=[i,]):
+            raise RuntimeError
     N = column_densities[key]
     source.update_parameters(
         N=N,

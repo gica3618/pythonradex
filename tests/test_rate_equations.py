@@ -139,7 +139,7 @@ class TestGeneral:
                 assert np.all(getattr(rate_eq, func)(test_nu0) == const_value)
         invalid_const_values = [-1.2, -1]
         for const_value in invalid_const_values:
-            with pytest.raises(AssertionError):
+            with pytest.raises(ValueError):
                 rate_eq = rate_equations.RateEquations(
                     **kwargs,
                     ext_background=const_value,

@@ -96,7 +96,8 @@ for i, n in enumerate(n_values):
         * phi_nu
     )  # W/m2/Hz
     if i == 0:
-        assert np.max(tau) < 0.01
+        if np.max(tau) >= 0.01:
+            raise RuntimeError
         thin_flux = np.trapezoid(flux_no_beta, nu)
     for ID, beta_func in beta_funcs.items():
         beta_nu = beta_func(tau=tau)

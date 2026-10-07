@@ -74,7 +74,8 @@ def relative_difference(a, b):
     a=0 and b!=0: return 1"""
     abs_diff = np.abs(a - b)
     rel_diff = np.where((a == 0) & (b == 0), 0, np.where(a == 0, 1, abs_diff / a))
-    assert not np.any(np.isnan(rel_diff))
+    if np.any(np.isnan(rel_diff)):
+        raise RuntimeError("relative difference calculation returned nan values")
     return np.abs(rel_diff)
 
 

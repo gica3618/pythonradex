@@ -83,7 +83,8 @@ end = time.time()
 lazy_time = end - start
 print(f"lazy method: {lazy_time:.3g}")
 
-assert np.allclose(T_RJ_fast, T_RJ_lazy, rtol=1e-4, atol=0)
+if not np.allclose(T_RJ_fast, T_RJ_lazy, rtol=1e-4, atol=0):
+    raise RuntimeError
 
 print(f"lazy/fast time ratio: {lazy_time/fast_time:.3g}")
 print(f"lazy/implemented time ratio: {lazy_time/imp_time}")

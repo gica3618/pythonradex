@@ -148,7 +148,8 @@ class Molecule:
             for i, line in enumerate(self.rad_transitions)
             if line.name == transition_name
         ]
-        assert len(candidate_numbers) == 1
+        if len(candidate_numbers) != 1:
+            raise RuntimeError("unable to get unique transition number")
         return candidate_numbers[0]
 
 
@@ -218,9 +219,11 @@ class EmittingMolecule(Molecule):
         self.Tkin_data_limits = {}
         for collider, coll_transitions in self.coll_transitions.items():
             self.Tkin_data[collider] = coll_transitions[0].Tkin_data
-            assert np.all(self.Tkin_data[collider][:-1] < self.Tkin_data[collider][1:])
+            if np.any(self.Tkin_data[collider][:-1] >= self.Tkin_data[collider][1:]):
+                raise RuntimeError
             for coll_trans in coll_transitions:
-                assert np.all(coll_trans.Tkin_data == self.Tkin_data[collider])
+                if np.any(coll_trans.Tkin_data != self.Tkin_data[collider]):
+                    raise RuntimeError
             self.Tkin_data_limits[collider] = np.min(self.Tkin_data[collider]), np.max(
                 self.Tkin_data[collider]
             )
@@ -364,7 +367,8 @@ class EmittingMolecule(Molecule):
 
     def interpolate_K(self, Tkin, collider):
         Tlimits = self.Tkin_data_limits[collider]
-        assert Tlimits[0] <= Tkin <= Tlimits[1]
+        if not (Tlimits[0] <= Tkin <= Tlimits[1]):
+            raise ValueError("Tkin outside bounds")
         output = {}
         Tkin_data = self.Tkin_data[collider]
         j = np.searchsorted(Tkin_data, Tkin, side="left")

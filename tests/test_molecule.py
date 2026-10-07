@@ -295,7 +295,7 @@ def test_K_interpolation_invalid_Tkin():
             Tkin_data = mol.Tkin_data[collider]
             test_Tkin = [Tkin_data[0] - 1, Tkin_data[-1] + 1]
             for Tkin in test_Tkin:
-                with pytest.raises(AssertionError):
+                with pytest.raises(ValueError):
                     mol.interpolate_K(Tkin=Tkin, collider=collider)
 
 

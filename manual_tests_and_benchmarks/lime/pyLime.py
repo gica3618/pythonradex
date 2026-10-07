@@ -54,9 +54,8 @@ class GridFile:
     def check_array_shape(self, array):
         shape = array.shape
         for i, axname in enumerate(("x", "y", "z")):
-            assert (
-                shape[i] == self.axes[axname].size
-            ), "array is not consistent with {:s} axis".format(axname)
+            if shape[i] != self.axes[axname].size:
+                raise ValueError(f"array is not consistent with {axname} axis")
 
     def write_grid_values(self, name, array, floor):
         self.add_array_values(array=array, name="grid_{:s}".format(name))
@@ -139,7 +138,8 @@ class LimeImage:
 
     def get_param_value(self, paramname):
         candidate_params = [p for p in self.params if p.name == paramname]
-        assert len(candidate_params) == 1
+        if len(candidate_params) != 1:
+            raise RuntimeError
         return candidate_params[0].value
 
 
@@ -153,9 +153,8 @@ class RadiatingSpecie:
 class Collider:
 
     def __init__(self, name, density):
-        assert name in Lime.coll_partner_IDs.keys(), "unknown collider {:s}".format(
-            name
-        )
+        if name not in Lime.coll_partner_IDs.keys():
+            raise ValueError(f"unknown collider {name}")
         self.name = name
         self.density = density
 
@@ -204,11 +203,8 @@ class Lime:
         self.radiating_species = radiating_species
         self.velocity = velocity
         ax_extends = [np.max(np.abs(ax)) for ax in self.axes.values()]
-        assert radius > np.max(
-            ax_extends
-        ), "param radius ({:g} au) too small (should be at least {:g} au)".format(
-            radius / constants.au, np.max(ax_extends) / constants.au
-        )
+        if radius <= np.max(ax_extends):
+            raise ValueError(f"param radius ({radius / constants.au:g} au) too small (should be at least {np.max(ax_extends) / constants.au:g} au)")
         self.radius = radius
         self.broadening_param = broadening_param
         self.images = images
@@ -223,11 +219,8 @@ class Lime:
         valid_molIs = tuple(range(len(self.radiating_species)))
         for img in self.images:
             molI = img.get_param_value("molI")
-            assert (
-                molI in valid_molIs
-            ), "molI = {:d} is not valid. Valid molI values: {:s}".format(
-                molI, str(valid_molIs)
-            )
+            if molI not in valid_molIs:
+                raise RuntimeError(f"molI '{molI}' is not valid. Valid molI values: {valid_molIs}")
 
     @staticmethod
     def grid_interpolation_string(name):
@@ -241,7 +234,8 @@ class Lime:
 
     @staticmethod
     def nmol_grid_str(moldatfile):
-        assert moldatfile[-4:] == ".dat"
+        if not moldatfile[-4:].endswith(".dat"):
+            raise ValueError
         gasname = os.path.basename(moldatfile)[:-4]
         gasname = gasname.replace("+", "plus")
         return "nmol{:s}".format(gasname)
@@ -364,8 +358,10 @@ class LimeFitsOutput:
 
     def check_units(self):
         for i in range(1, 3):
-            assert self.header["cunit{:d}".format(i)] == "DEG"
-        assert self.header["cunit3"] == "M/S"
+            if self.header["cunit{:d}".format(i)] != "DEG":
+                raise RuntimeError
+        if self.header["cunit3"] != "M/S":
+            raise RuntimeError
 
     def determine_axes(self):
         pix_axes = []
@@ -431,7 +427,8 @@ class LimeFitsOutputFluxSI(LimeFitsOutputFlux):
 
     def check_units(self):
         LimeFitsOutputFlux.check_units(self)
-        assert self.bunit == "WM2HZSR"
+        if self.bunit != "WM2HZSR":
+            raise RuntimeError
 
     def total_flux(self):
         return np.trapz(
@@ -446,14 +443,16 @@ class LimeFitsOutputfluxJy(LimeFitsOutputFlux):
 
     def check_units(self):
         LimeFitsOutputFlux.check_units(self)
-        assert self.bunit == "JY/PIXEL"
+        if self.bunit != "JY/PIXEL":
+            raise RuntimeError
 
 
 class LimeFitsOutputTau(LimeFitsOutput):
 
     def check_units(self):
         LimeFitsOutput.check_units(self)
-        assert self.bunit == ""
+        if self.bunit != "":
+            raise RuntimeError
 
     def compute_max_map(self):
         self.max_map = np.max(self.data, axis=-1)

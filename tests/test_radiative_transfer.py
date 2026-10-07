@@ -93,7 +93,7 @@ class TestInitialisation:
         width_vs = np.array((1e4, 1.2e4, 1e5)) * constants.kilo
         for width_v in width_vs:
             for geo, lp, use_ng, treat_overlap in iterate_allowed_source_params():
-                with pytest.raises(AssertionError):
+                with pytest.raises(ValueError):
                     radiative_transfer.Source(
                         datafilepath=datafilepath["CO"],
                         geometry=geo,
@@ -263,7 +263,7 @@ class TestUpdateParameters:
             invalid_initial_params = self.standard_params.copy()
             invalid_initial_params[p_name] = None
             source = get_general_test_source(specie="CO", width_v=1 * constants.kilo)
-            with pytest.raises(AssertionError):
+            with pytest.raises(ValueError):
                 source.update_parameters(**invalid_initial_params)
 
     def test_update_N(self):

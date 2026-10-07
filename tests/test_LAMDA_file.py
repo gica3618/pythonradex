@@ -200,5 +200,5 @@ def test_freq_reading_sanity_check():
     datafilepath = os.path.join(data_folder, "c_wrong_frequencies.dat")
     # the following should work:
     LAMDA_file.read(datafilepath=datafilepath, read_frequencies=False)
-    with pytest.raises(AssertionError):
+    with pytest.raises(RuntimeError):
         LAMDA_file.read(datafilepath=datafilepath, read_frequencies=True)

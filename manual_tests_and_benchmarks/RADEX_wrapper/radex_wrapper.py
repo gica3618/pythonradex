@@ -13,9 +13,8 @@ import copy
 class Interval:
 
     def __init__(self, min, max):
-        assert min <= max, "invalid inveral boundaries: min={:g}, max={:g}".format(
-            min, max
-        )
+        if min > max:
+            raise ValueError(f"invalid interval boundaries: min={min:g}, max={max:g}")
         self.min = min
         self.max = max
 
@@ -48,16 +47,14 @@ class RadexInput:
         allowed_columdensity = Interval(
             min=1e5 / constants.centi**2, max=1e25 / constants.centi**2
         )
-        assert allowed_columdensity.contains(
-            self.column_density
-        ), "column density out of allowed range"
+        if not allowed_columdensity.contains(self.column_density):
+            raise ValueError("column density out of allowed range")
         allowed_coll_partner_density = Interval(
             min=1e-3 / constants.centi**3, max=1e13 / constants.centi**3
         )
         for coll_partner, density in self.coll_partner_densities.items():
-            assert allowed_coll_partner_density.contains(
-                density
-            ), "coll partner {:s} density out of allowed range".format(coll_partner)
+            if not allowed_coll_partner_density.contains(density):
+                raise ValueError(f"coll partner {coll_partner} density out of allowed range")
 
     def write_input_file(self):
         input_file = open(self.input_filepath, "w")
@@ -145,9 +142,8 @@ class RadexWrapper:
             os.remove(radex_input.output_filepath)
         os.system(f"{self.exec_path} < {radex_input.input_filepath} > /dev/null")
         # os.system(f'{self.exec_path} < {radex_input.input_filepath}')
-        assert os.path.exists(
-            radex_input.output_filepath
-        ), "no output file produced, RADEX failed?"
+        if not os.path.exists(radex_input.output_filepath):
+            raise RuntimeError("no output file produced, RADEX failed?")
         output = RadexOutput(radex_input.output_filepath).read()
         radex_input.remove_input_file()
         # os.remove(radex_input.output_filepath)

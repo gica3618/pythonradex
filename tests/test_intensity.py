@@ -694,7 +694,7 @@ class TestSpecificIntensityNu0NoOverlap:
         transitions = [
             1,
         ]
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             intensitycalculator.specific_intensity_nu0_no_overlap(
                 transitions=transitions
             )

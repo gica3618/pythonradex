@@ -62,11 +62,8 @@ for overlap, N in molpop_column_densities.items():
         warn_negative_tau=False,
     )
     for i in ref_transitions:
-        assert source.emitting_molecule.any_line_has_overlap(
-            line_indices=[
-                i,
-            ]
-        )
+        if not source.emitting_molecule.any_line_has_overlap(line_indices=[i,]):
+            raise RuntimeError
     source.update_parameters(
         N=N,
         Tkin=Tkin,

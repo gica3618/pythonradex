@@ -41,7 +41,8 @@ def identify_tau_regions(tau):
         + negative_tau_region.sum()
         + unreliable_negative_region.sum()
     )
-    assert total_region_points == len(tau), "selection needs to cover all points of tau"
+    if total_region_points != len(tau):
+        raise RuntimeError("selection needs to cover all points of tau")
     return (
         normal_tau_region,
         small_tau_region,
@@ -130,7 +131,8 @@ def generate_Taylor_beta(beta_ana, beta_Taylor):
         prob[negative] = beta_ana(tau[negative])
         # here I just use abs(tau) to stabilize the code
         prob[unreliable] = beta_ana(np.abs(tau[unreliable]))
-        assert np.all(np.isfinite(prob))
+        if not np.all(np.isfinite(prob)):
+            raise RuntimeError("negative escape probability")
         return clip_prob(prob)
 
     return beta
@@ -185,7 +187,8 @@ def beta_static_slab(tau):
     # should be ignored for tau < -1
     int_term = interpolated_integral_term(tau=tau)
     prob = np.where(tau < min_grid_tau, 1, int_term / tau)
-    assert np.all(np.isfinite(prob))
+    if not np.all(np.isfinite(prob)):
+        raise RuntimeError("negative escape probability")
     return clip_prob(prob)
 
 
@@ -213,22 +216,23 @@ def beta_LVG_sphere_RADEX(tau):
     # I use the same formulae as RADEX, except that I take care of negative tau
     # handling negative tau turns out to be important, e.g. for CO, Tkin=200,
     # width_v=3 km/s, Ntot=1e20 cm-2, RADEX gives an invalid solution
-    assert -7 < min_reliable_tau < -0.01
+    if not (-7 < min_reliable_tau < -0.01):
+        raise RuntimeError("unexpected value for min_reliable_tau")
     gtr7 = 7 <= tau
     less7 = (0.001 <= tau) & (tau < 7)
     small = (-0.001 <= tau) & (tau < 0.001)
     negative = (min_reliable_tau <= tau) & (tau < -0.001)
     unreliable_less7 = (-7 <= tau) & (tau < min_reliable_tau)
     unreliable_gtr7 = tau < -7
-    assert (
+    if not (
         gtr7.sum()
         + less7.sum()
         + small.sum()
         + negative.sum()
         + unreliable_less7.sum()
         + unreliable_gtr7.sum()
-        == tau.size
-    )
+        == tau.size):
+        raise RuntimeError
     beta = np.empty_like(tau)
     beta[gtr7] = beta_LVG_sphere_RADEX_gtr7(tau[gtr7])
     beta[less7] = beta_LVG_sphere_RADEX_less7(tau[less7])
