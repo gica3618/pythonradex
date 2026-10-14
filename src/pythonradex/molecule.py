@@ -175,7 +175,6 @@ class EmittingMolecule(Molecule):
         datafilepath,
         line_profile_type,
         width_v,
-        read_frequencies=False,
         partition_function=None,
     ):
         """Constructs a new instance of the EmittingMolecule class using a LAMDA datafile
@@ -186,12 +185,6 @@ class EmittingMolecule(Molecule):
                 'rectangular' or 'Gaussian'
             width_v (:obj:`float`): The width of the line profile in [m/s]. For a Gaussian
                 line profile, this corresponds to the FWHM.
-            read_frequencies (:obj:`bool`): Whether to read the frequencies of the
-                radiative transitions from the file or not. If False, calculates the
-                frequencies from the level energies given in the file. Setting this to
-                True can be useful since frequencies are sometimes given with more
-                significant digits than level energies. However, the LAMDA format does not
-                force a file to contain the frequencies, so they might not be present.
             partition_function (func): A user-supplied partition function of one argument
                 (temperature). Defaults to None. If equal to None, the partition function
                 will be calculated by using the data from the provided LAMDA file.
