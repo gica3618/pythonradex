@@ -430,13 +430,11 @@ class Source:
                     self.emitting_molecule.rad_transitions[i]
                     for i in negative_tau_transition_indices
                 ]
-                warnings.warn("negative optical depth!")
-                for i, trans in zip(
-                    negative_tau_transition_indices, negative_tau_transitions
-                ):
-                    print(
-                        f"{trans.name}: tau_nu0 = {self.tau_nu0_individual_transitions[i]:.3g}"
-                    )
+                warn_message = "negative optical depth!"
+                for i, trans in zip(negative_tau_transition_indices, negative_tau_transitions):
+                    warn_message += f" {trans.name}: tau_nu0 = {self.tau_nu0_individual_transitions[i]:.3g};"
+                warn_message = warn_message[:-1]
+                warnings.warn(warn_message)
         self.level_pop = level_pop
         self.Tex = self.emitting_molecule.get_Tex(level_pop)
         self.intensity_calculator = intensity.IntensityCalculator(
