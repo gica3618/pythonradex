@@ -323,8 +323,14 @@ class TestGeneral:
                 level_population=self.Boltzmann_level_population
             )
             for i, line in enumerate(rate_eq.molecule.rad_transitions):
-                width_nu = rate_eq.molecule.width_v / constants.c * line.line_profile.nu0
-                nu = np.linspace(line.line_profile.nu0 - width_nu, line.line_profile.nu0 + width_nu, 100)
+                width_nu = (
+                    rate_eq.molecule.width_v / constants.c * line.line_profile.nu0
+                )
+                nu = np.linspace(
+                    line.line_profile.nu0 - width_nu,
+                    line.line_profile.nu0 + width_nu,
+                    100,
+                )
                 expected_tau_line = self.test_molecule.get_tau_line(
                     line_index=i, level_population=self.Boltzmann_level_population, N=N
                 )(nu)
@@ -337,7 +343,9 @@ class TestGeneral:
         )
         for i, line in enumerate(zero_tau_rate_eq.molecule.rad_transitions):
             width_nu = rate_eq.molecule.width_v / constants.c * line.line_profile.nu0
-            nu = np.linspace(line.line_profile.nu0 - width_nu, line.line_profile.nu0 + width_nu, 100)
+            nu = np.linspace(
+                line.line_profile.nu0 - width_nu, line.line_profile.nu0 + width_nu, 100
+            )
             assert np.all(tau_line_funcs[i](nu) == 0)
 
     @pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
@@ -408,8 +416,14 @@ class TestOverlapStuff:
                 level_population=self.Boltzmann_level_population
             )
             for i, line in enumerate(rate_eq.molecule.rad_transitions):
-                width_nu = rate_eq.molecule.width_v / constants.c * line.line_profile.nu0
-                nu = np.linspace(line.line_profile.nu0 - width_nu, line.line_profile.nu0 + width_nu, 100)
+                width_nu = (
+                    rate_eq.molecule.width_v / constants.c * line.line_profile.nu0
+                )
+                nu = np.linspace(
+                    line.line_profile.nu0 - width_nu,
+                    line.line_profile.nu0 + width_nu,
+                    100,
+                )
                 expected_tau_tot = self.test_molecule.get_tau_tot_nu(
                     line_index=i,
                     level_population=self.Boltzmann_level_population,
@@ -425,7 +439,9 @@ class TestOverlapStuff:
         )
         for i, line in enumerate(zero_tau_rate_eq.molecule.rad_transitions):
             width_nu = rate_eq.molecule.width_v / constants.c * line.line_profile.nu0
-            nu = np.linspace(line.line_profile.nu0 - width_nu, line.line_profile.nu0 + width_nu, 100)
+            nu = np.linspace(
+                line.line_profile.nu0 - width_nu, line.line_profile.nu0 + width_nu, 100
+            )
             assert np.all(tau_tot_funcs[i](nu) == 0)
 
     def get_mixed_term_transition_pairs(self, l, lprime):

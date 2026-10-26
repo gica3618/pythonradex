@@ -24,7 +24,6 @@ from scipy import constants
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 datafilepath = general.datafilepath("co.dat")
 line_profile_type = "rectangular"  # this has to be rectangular for the LVG sphere!
 width_v = 1 * constants.kilo
@@ -41,7 +40,9 @@ mol = molecule.EmittingMolecule(
 level_pop = mol.Boltzmann_level_population(T=T)
 trans = mol.rad_transitions[trans_index]
 width_nu = width_v / constants.c * trans.line_profile.nu0
-nu = np.linspace(trans.line_profile.nu0 - 2 * width_nu, trans.line_profile.nu0 + 2 * width_nu, 500)
+nu = np.linspace(
+    trans.line_profile.nu0 - 2 * width_nu, trans.line_profile.nu0 + 2 * width_nu, 500
+)
 phi_nu = trans.line_profile.phi_nu(nu)
 volume = 4 / 3 * r**3 * np.pi
 solid_angle = r**2 * np.pi / d**2

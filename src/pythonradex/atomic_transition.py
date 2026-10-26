@@ -5,16 +5,15 @@ Created on Sun Nov 12 17:03:55 2017
 @author: gianni
 """
 
-#note about frequencies:
-#in LAMDA files, the listed frequencies are only for "informational pruposes"
-#indeed, RADEX does not use them for any calculation, but just for the final
-#output to help the user to identify the transition
-#on the other hand, the frequencies have sometimes better accuracy than DeltaE/h
-#(e.g. for CO)
-#here, I adopt a similar approach as RADEX: I use DeltaE/h for cases where the position
-#of the line is not important, but I use the specific nu0 for cases where
-#the spectral position of the line matters (e.g. spectra etc.)
-
+# note about frequencies:
+# in LAMDA files, the listed frequencies are only for "informational pruposes"
+# indeed, RADEX does not use them for any calculation, but just for the final
+# output to help the user to identify the transition
+# on the other hand, the frequencies have sometimes better accuracy than DeltaE/h
+# (e.g. for CO)
+# here, I adopt a similar approach as RADEX: I use DeltaE/h for cases where the position
+# of the line is not important, but I use the specific nu0 for cases where
+# the spectral position of the line matters (e.g. spectra etc.)
 
 
 from pythonradex import helpers
@@ -269,9 +268,9 @@ class RadiativeTransition(Transition):
         if self.Delta_E <= 0:
             raise RuntimeError("non-positive Delta_E for radiative transition")
         self.A21 = A21
-        #rest frequency, but I do want to distinguish it from the frequency listed
-        #in the LAMDA file, because sometimes those are not consistent with DeltaE/h
-        self.Delta_E_over_h = self.Delta_E/constants.h
+        # rest frequency, but I do want to distinguish it from the frequency listed
+        # in the LAMDA file, because sometimes those are not consistent with DeltaE/h
+        self.Delta_E_over_h = self.Delta_E / constants.h
         # nu0_from_Delta_E = self.Delta_E / constants.h
         # if nu0 is None:
         #     self.nu0 = nu0_from_Delta_E
@@ -284,8 +283,9 @@ class RadiativeTransition(Transition):
         #                       +f"low.index={low.index}, A21={A21} s-1, nu0={nu0/constants.giga} GHz)")
         #     self.nu0 = nu0
         self.B21 = helpers.B21(A21=self.A21, nu=self.Delta_E_over_h)
-        self.B12 = helpers.B12(A21=self.A21, nu=self.Delta_E_over_h,
-                               g1=self.low.g, g2=self.up.g)
+        self.B12 = helpers.B12(
+            A21=self.A21, nu=self.Delta_E_over_h, g1=self.low.g, g2=self.up.g
+        )
 
     def source_function(self, x1, x2):
         S = np.where(
@@ -320,9 +320,7 @@ class EmissionLine(RadiativeTransition):
             nu0 = self.Delta_E_over_h
         else:
             self.check_DeltaE_nu0_consistency(nu0)
-        self.line_profile = line_profiles[line_profile_type](
-            nu0=nu0, width_v=width_v
-        )
+        self.line_profile = line_profiles[line_profile_type](nu0=nu0, width_v=width_v)
         self.tau_kwargs = {"A21": self.A21, "g_up": self.up.g, "g_low": self.low.g}
 
     @classmethod
@@ -341,16 +339,18 @@ class EmissionLine(RadiativeTransition):
             nu0=nu0,
         )
 
-    def check_DeltaE_nu0_consistency(self,nu0):
-        #TODO needs a test
+    def check_DeltaE_nu0_consistency(self, nu0):
+        # TODO needs a test
         if not np.isclose(self.Delta_E_over_h, nu0, atol=0, rtol=1e-2):
-            mean = (self.Delta_E_over_h+nu0)/2
-            relative_diff = abs(self.Delta_E_over_h-nu0)/mean
-            warnings.warn("inconsistency between DeltaE/h and the frequency listed in LAMDA file"
-                          +f" for transition {self.name}. "
-                          +f" DeltaE/h={self.Delta_E_over_h/constants.giga} GHz, "
-                          +f"listed frequency = {nu0/constants.giga}, relative difference ="
-                          +f"{relative_diff*100:.2g}%")
+            mean = (self.Delta_E_over_h + nu0) / 2
+            relative_diff = abs(self.Delta_E_over_h - nu0) / mean
+            warnings.warn(
+                "inconsistency between DeltaE/h and the frequency listed in LAMDA file"
+                + f" for transition {self.name}. "
+                + f" DeltaE/h={self.Delta_E_over_h/constants.giga} GHz, "
+                + f"listed frequency = {nu0/constants.giga}, relative difference ="
+                + f"{relative_diff*100:.2g}%"
+            )
 
     def tau(self, N1, N2, nu):
         r"""Computes the optical depth

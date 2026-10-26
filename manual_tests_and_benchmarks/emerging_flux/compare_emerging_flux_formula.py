@@ -94,7 +94,7 @@ for ID, pythonradex_flux in pythonradex_fluxes.items():
         ax.set_xscale("log")
         ax.set_xlabel("tau")
 
-#for JOSS paper and documentation:
+# for JOSS paper and documentation:
 fig, ax = plt.subplots(figsize=[6.4, 3])
 fig.suptitle("Impact of using slab formula to calculate sphere flux")
 for geo_name, pythonradex_flux in pythonradex_fluxes.items():
@@ -104,9 +104,15 @@ ax.set_ylabel("flux (slab formula) / flux (sphere formula)")
 ax.set_xscale("log")
 ax.set_xlabel("optical depth")
 fig.tight_layout()
-#for the paper:
-plt.savefig("../../joss_paper/flux_comparison_spherical_geometries.pdf",
-            format="pdf", bbox_inches="tight")
-#for the docs:
-plt.savefig("../../docs/images/flux_comparison_spherical_geometries.png", format="png",
-            bbox_inches="tight")
+# for the paper:
+plt.savefig(
+    "../../joss_paper/flux_comparison_spherical_geometries.pdf",
+    format="pdf",
+    bbox_inches="tight",
+)
+# for the docs:
+plt.savefig(
+    "../../docs/images/flux_comparison_spherical_geometries.png",
+    format="png",
+    bbox_inches="tight",
+)

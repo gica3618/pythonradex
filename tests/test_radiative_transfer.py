@@ -4,6 +4,7 @@ Created on Wed Nov 15 10:30:44 2017
 
 @author: gianni
 """
+
 import os
 from pythonradex import radiative_transfer, helpers, escape_probability
 from scipy import constants
@@ -12,7 +13,6 @@ import itertools
 import pytest
 import numbers
 import copy
-
 
 here = os.path.dirname(os.path.abspath(__file__))
 datafolder = os.path.join(here, "LAMDA_files")
@@ -1529,7 +1529,9 @@ class TestFrequencyIntegratedEmission:
         for i, line in enumerate(source.emitting_molecule.rad_transitions):
             if not thick[i]:
                 continue
-            expected_specific_intensity = helpers.B_nu(nu=line.line_profile.nu0, T=source.Tex[i])
+            expected_specific_intensity = helpers.B_nu(
+                nu=line.line_profile.nu0, T=source.Tex[i]
+            )
             expected_intensity = (
                 expected_specific_intensity * line.line_profile.width_nu
             )

@@ -30,8 +30,8 @@ d = 1 * constants.parsec
 n = 20 / constants.centi**3
 width_v = 1 * constants.kilo
 # RADEX converts optical depth (thus affecting escape probability) and flux
-#to Gaussian with a correction factor, so we use Gaussian here
-#since we consider optically thin case here, it doesn't really matter though
+# to Gaussian with a correction factor, so we use Gaussian here
+# since we consider optically thin case here, it doesn't really matter though
 line_profile_type = "Gaussian"
 Tex = 30
 trans_index = 1
@@ -51,7 +51,9 @@ trans = mol.rad_transitions[trans_index]
 N1 = n * level_pop[trans.low.index] * 2 * r
 N2 = n * level_pop[trans.up.index] * 2 * r
 width_nu = width_v / constants.c * trans.line_profile.nu0
-nu = np.linspace(trans.line_profile.nu0 - 2 * width_nu, trans.line_profile.nu0 + 2 * width_nu, 500)
+nu = np.linspace(
+    trans.line_profile.nu0 - 2 * width_nu, trans.line_profile.nu0 + 2 * width_nu, 500
+)
 phi_nu = trans.line_profile.phi_nu(nu)
 tau = atomic_transition.tau(
     A21=trans.A21,

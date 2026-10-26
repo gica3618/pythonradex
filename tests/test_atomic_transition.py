@@ -274,10 +274,14 @@ class TestTransition:
     test_emission_line_no_nu0 = atomic_transition.EmissionLine(
         up=up, low=low, A21=A21, line_profile_type=line_profile_type, width_v=width_v
     )
-    test_nu0 = test_emission_line_no_nu0.line_profile.nu0*1.0001
+    test_nu0 = test_emission_line_no_nu0.line_profile.nu0 * 1.0001
     test_emission_line_no_with_nu0 = atomic_transition.EmissionLine(
-        up=up, low=low, A21=A21, line_profile_type=line_profile_type, width_v=width_v,
-        nu0=test_nu0
+        up=up,
+        low=low,
+        A21=A21,
+        line_profile_type=line_profile_type,
+        width_v=width_v,
+        nu0=test_nu0,
     )
 
     @pytest.mark.filterwarnings("ignore:invalid value", "ignore:divide by zero")
@@ -293,13 +297,17 @@ class TestTransition:
             )
 
     def test_test_radiative_transition_DeltaE_over_h(self):
-        assert (self.radiative_transition.Delta_E_over_h
-                == (self.radiative_transition.up.E-self.radiative_transition.low.E)/constants.h)
+        assert (
+            self.radiative_transition.Delta_E_over_h
+            == (self.radiative_transition.up.E - self.radiative_transition.low.E)
+            / constants.h
+        )
 
     def test_source_func(self):
-        #just checking that it runs
-        self.radiative_transition.source_function(x1=np.array((0.3,0.2)), x2=np.array((0.1,0.05)))
-
+        # just checking that it runs
+        self.radiative_transition.source_function(
+            x1=np.array((0.3, 0.2)), x2=np.array((0.1, 0.05))
+        )
 
     # def test_radiative_transition_wrong_nu0(self):
     #     wrong_nu0 = (self.up.E - self.low.E) / constants.h * 1.01
@@ -318,31 +326,34 @@ class TestTransition:
     #         )
 
     def test_emission_line_constructor(self):
-        for el in (self.test_emission_line_no_nu0,self.test_emission_line_no_with_nu0):
+        for el in (self.test_emission_line_no_nu0, self.test_emission_line_no_with_nu0):
             assert el.tau_kwargs["A21"] == el.A21
             assert el.tau_kwargs["g_up"] == el.up.g
             assert el.tau_kwargs["g_low"] == el.low.g
-        assert (self.test_emission_line_no_nu0.line_profile.nu0
-                == self.test_emission_line_no_nu0.Delta_E_over_h)
-        assert (self.test_emission_line_no_with_nu0.line_profile.nu0
-                == self.test_nu0)
+        assert (
+            self.test_emission_line_no_nu0.line_profile.nu0
+            == self.test_emission_line_no_nu0.Delta_E_over_h
+        )
+        assert self.test_emission_line_no_with_nu0.line_profile.nu0 == self.test_nu0
 
     def test_DeltaE_nu0_consistency_check(self):
         with pytest.warns(UserWarning):
             atomic_transition.EmissionLine(
-                up=self.test_emission_line_no_nu0.up, low=self.test_emission_line_no_nu0.low,
+                up=self.test_emission_line_no_nu0.up,
+                low=self.test_emission_line_no_nu0.low,
                 A21=self.test_emission_line_no_nu0.A21,
                 line_profile_type=self.line_profile_type,
                 width_v=self.width_v,
-                nu0=self.test_emission_line_no_nu0.line_profile.nu0*1.1
+                nu0=self.test_emission_line_no_nu0.line_profile.nu0 * 1.1,
             )
 
     def test_constructor_from_radiative_transition(self):
-        for nu0 in (None,self.test_nu0):
+        for nu0 in (None, self.test_nu0):
             emission_line = atomic_transition.EmissionLine.from_radiative_transition(
                 radiative_transition=self.radiative_transition,
                 line_profile_type=self.line_profile_type,
-                width_v=self.width_v,nu0=nu0
+                width_v=self.width_v,
+                nu0=nu0,
             )
             assert emission_line.A21 == self.radiative_transition.A21
             assert emission_line.B12 == self.radiative_transition.B12
@@ -375,14 +386,14 @@ class TestTransition:
         nu = np.ones((2, 4, 7)) * 50
         N1 = 1
         N2 = 3
-        for el in (self.test_emission_line_no_nu0,self.test_emission_line_no_with_nu0):
+        for el in (self.test_emission_line_no_nu0, self.test_emission_line_no_with_nu0):
             tau = el.tau(N1=N1, N2=N2, nu=nu)
             assert tau.shape == nu.shape
 
     def test_tau_nu0(self):
         N1 = 1
         N2 = 3
-        for el in (self.test_emission_line_no_nu0,self.test_emission_line_no_with_nu0):
+        for el in (self.test_emission_line_no_nu0, self.test_emission_line_no_with_nu0):
             tau_nu0 = el.tau_nu0(N1=N1, N2=N2)
             assert tau_nu0 == el.tau(N1=N1, N2=N2, nu=el.line_profile.nu0)
 

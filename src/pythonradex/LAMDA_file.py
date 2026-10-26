@@ -4,6 +4,7 @@ Created on Sun Nov 12 17:05:01 2017
 
 @author: gianni
 """
+
 from pythonradex import atomic_transition
 from scipy import constants
 import numpy as np
@@ -94,7 +95,7 @@ def read(datafilepath):
             rad_trans = atomic_transition.RadiativeTransition(**rad_trans_kwargs)
             rad_transitions.append(rad_trans)
             if len(radtransdata) >= 5:
-                #frequencies are there, so let's read them
+                # frequencies are there, so let's read them
                 frequencies.append(radtransdata[4] * constants.giga)
                 # Delta_E = up.E - low.E
                 # if not helpers.DeltaE_nu0_consistent(Delta_E=Delta_E,nu0=nu0):
@@ -158,5 +159,5 @@ def read(datafilepath):
         "levels": levels,
         "radiative transitions": rad_transitions,
         "collisional transitions": coll_transitions,
-        "frequencies":frequencies
+        "frequencies": frequencies,
     }

@@ -4,6 +4,7 @@ Created on Sun Nov 12 16:48:00 2017
 
 @author: gianni
 """
+
 from scipy import constants
 import numpy as np
 from pythonradex import LAMDA_file, atomic_transition
@@ -51,7 +52,9 @@ class Molecule:
         self.A21 = np.array([line.A21 for line in self.rad_transitions])
         self.B21 = np.array([line.B21 for line in self.rad_transitions])
         self.B12 = np.array([line.B12 for line in self.rad_transitions])
-        self.Delta_E_over_h = np.array([line.Delta_E_over_h for line in self.rad_transitions])
+        self.Delta_E_over_h = np.array(
+            [line.Delta_E_over_h for line in self.rad_transitions]
+        )
         self.gup_rad_transitions = np.array(
             [line.up.g for line in self.rad_transitions]
         )
@@ -169,7 +172,7 @@ class EmittingMolecule(Molecule):
         line_profile_type,
         width_v,
         partition_function=None,
-        use_datafile_frequencies=True
+        use_datafile_frequencies=True,
     ):
         """Constructs a new instance of the EmittingMolecule class using a LAMDA datafile
 
@@ -192,15 +195,17 @@ class EmittingMolecule(Molecule):
         self.line_profile_type = line_profile_type
         # convert RadiativeTransition to EmissionLine (but keep the same attribute name)
         converted_transitions = []
-        for i,line in enumerate(self.rad_transitions):
+        for i, line in enumerate(self.rad_transitions):
             if use_datafile_frequencies:
                 nu0 = self.lamda_data["frequencies"][i]
             else:
                 nu0 = None
             converted = atomic_transition.EmissionLine.from_radiative_transition(
-                                 radiative_transition=line,
-                                 line_profile_type=line_profile_type,
-                                 width_v=width_v,nu0=nu0)
+                radiative_transition=line,
+                line_profile_type=line_profile_type,
+                width_v=width_v,
+                nu0=nu0,
+            )
             converted_transitions.append(converted)
         self.rad_transitions = converted_transitions
         self.nu0 = np.array([line.line_profile.nu0 for line in self.rad_transitions])
@@ -238,7 +243,7 @@ class EmittingMolecule(Molecule):
                 [c.Delta_E for c in coll_transitions]
             )
             self.coll_ilow[collider] = np.array([c.low.index for c in coll_transitions])
-            self.coll_iup[collider] = np.array([c.up.index for c in coll_transitions])        
+            self.coll_iup[collider] = np.array([c.up.index for c in coll_transitions])
 
     def get_tau_nu0_lines(self, N, level_population):
         r"""Compute the optical depth at the rest frequency of all lines (dust

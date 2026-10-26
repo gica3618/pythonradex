@@ -9,7 +9,6 @@ from pythonradex import escape_probability
 import numpy as np
 from scipy import constants
 
-
 flux1D = escape_probability.Flux1D()
 all_intensities = {
     "1D": flux1D.specific_intensity,

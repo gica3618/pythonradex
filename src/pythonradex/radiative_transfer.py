@@ -126,12 +126,14 @@ class Source:
 
         """
         if width_v >= 10000 * constants.kilo:
-            raise ValueError("assumption of small nu0/Delta_nu for flux calculation not satisfied")
+            raise ValueError(
+                "assumption of small nu0/Delta_nu for flux calculation not satisfied"
+            )
         self.emitting_molecule = EmittingMolecule(
             datafilepath=datafilepath,
             line_profile_type=line_profile_type,
             width_v=width_v,
-            use_datafile_frequencies=use_datafile_frequencies
+            use_datafile_frequencies=use_datafile_frequencies,
         )
         self.treat_line_overlap = treat_line_overlap
         self.geometry_name = geometry
@@ -274,7 +276,9 @@ class Source:
             }
             for p_name, p in params.items():
                 if p is None:
-                    raise ValueError(f"for initial setup, all params need to be defined; {p_name} missing")
+                    raise ValueError(
+                        f"for initial setup, all params need to be defined; {p_name} missing"
+                    )
             self.rate_equations = rate_equations.RateEquations(
                 molecule=self.emitting_molecule,
                 treat_line_overlap=self.treat_line_overlap,

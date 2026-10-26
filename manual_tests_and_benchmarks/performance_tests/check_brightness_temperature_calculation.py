@@ -15,7 +15,6 @@ sys.path.append("..")
 import general
 import numpy as np
 
-
 geometry = "static sphere"
 line_profile_type = "rectangular"
 width_v = 1 * constants.kilo

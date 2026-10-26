@@ -5,6 +5,7 @@ Created on Tue Jan 28 12:08:41 2025
 
 @author: gianni
 """
+
 # benchmark overlapping transitions by using OH
 # the idea is to modify the atomic and collisional data such that treating line
 # overlap becomes very important. I do this by considering the overlapping transistions
@@ -62,7 +63,11 @@ for overlap, N in molpop_column_densities.items():
         warn_negative_tau=False,
     )
     for i in ref_transitions:
-        if not source.emitting_molecule.any_line_has_overlap(line_indices=[i,]):
+        if not source.emitting_molecule.any_line_has_overlap(
+            line_indices=[
+                i,
+            ]
+        ):
             raise RuntimeError
     source.update_parameters(
         N=N,

@@ -4,6 +4,7 @@ Created on Wed Aug 17 10:22:03 2016
 
 @author: giannicataldi
 """
+
 from scipy import constants
 import os
 import sys
@@ -54,7 +55,9 @@ class RadexInput:
         )
         for coll_partner, density in self.coll_partner_densities.items():
             if not allowed_coll_partner_density.contains(density):
-                raise ValueError(f"coll partner {coll_partner} density out of allowed range")
+                raise ValueError(
+                    f"coll partner {coll_partner} density out of allowed range"
+                )
 
     def write_input_file(self):
         input_file = open(self.input_filepath, "w")

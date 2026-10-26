@@ -105,7 +105,11 @@ for treat_line_overlap in (True, False):
         warn_negative_tau=False,
     )
     for i in ref_transitions:
-        if not source.emitting_molecule.any_line_has_overlap(line_indices=[i,]):
+        if not source.emitting_molecule.any_line_has_overlap(
+            line_indices=[
+                i,
+            ]
+        ):
             raise RuntimeError
     N = column_densities[key]
     source.update_parameters(

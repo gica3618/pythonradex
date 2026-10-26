@@ -18,9 +18,7 @@ filepaths = [
     data_folder / "co_with_additional_comments.dat",
 ]
 
-lamda_data = [
-    LAMDA_file.read(filepath) for filepath in filepaths
-]
+lamda_data = [LAMDA_file.read(filepath) for filepath in filepaths]
 
 
 def test_levels():
@@ -54,12 +52,15 @@ def test_rad_transitions():
 
 
 def test_frequencies():
-    test_trans_indices = (0,1,10,20,-1)
-    nu0_in_file = np.array((115.2712018, 230.5380000, 1267.0144860, 2413.9171130, 4564.0056399)) * constants.giga
+    test_trans_indices = (0, 1, 10, 20, -1)
+    nu0_in_file = (
+        np.array((115.2712018, 230.5380000, 1267.0144860, 2413.9171130, 4564.0056399))
+        * constants.giga
+    )
     for data in lamda_data:
         freqs = data["frequencies"]
         assert len(freqs) == len(data["radiative transitions"])
-        for i,nu0 in zip(test_trans_indices,nu0_in_file):
+        for i, nu0 in zip(test_trans_indices, nu0_in_file):
             assert freqs[i] == nu0
 
 
@@ -138,9 +139,7 @@ def test_coll_transitions():
         _, pH2_K21 = test_coll_trans_pH2.coeffs(Tkin_data_pH2)
         assert np.allclose(coeffs_pH2, pH2_K21, atol=0)
         test_coll_trans_index_oH2 = 200
-        test_coll_trans_oH2 = coll_transitions["ortho-H2"][
-            test_coll_trans_index_oH2
-        ]
+        test_coll_trans_oH2 = coll_transitions["ortho-H2"][test_coll_trans_index_oH2]
         Tkin_data_oH2 = Tkin_data_pH2
         assert np.all(test_coll_trans_oH2.Tkin_data == Tkin_data_oH2)
         assert test_coll_trans_oH2.up.index == 20
@@ -191,8 +190,9 @@ def test_coll_transitions():
 # @pytest.mark.filterwarnings("ignore:Delta_E and nu0 are inconsistent",
 #                             "ignore:.*inconsistent with level energies.*")
 def test_reading_all_LAMDA_files():
-    lambda_files = [f for f in data_folder.iterdir() if f.is_file() and
-                    f.suffix==".dat"]
+    lambda_files = [
+        f for f in data_folder.iterdir() if f.is_file() and f.suffix == ".dat"
+    ]
     # print([f.name for f in lambda_files])
     assert len(lambda_files) > 0
     for f in lambda_files:

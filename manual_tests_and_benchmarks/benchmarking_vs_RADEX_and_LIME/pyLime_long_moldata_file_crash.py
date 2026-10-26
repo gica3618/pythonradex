@@ -14,7 +14,6 @@ import numpy as np
 from scipy import constants
 import os
 
-
 x = np.linspace(-100, 100, 30) * constants.au
 y = x
 z = np.linspace(-30, 30, 30) * constants.au

@@ -5,6 +5,7 @@ Created on Mon Jan 27 20:35:49 2025
 
 @author: gianni
 """
+
 import sys
 
 sys.path.append("..")

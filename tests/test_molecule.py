@@ -4,6 +4,7 @@ Created on Mon Nov 13 15:35:53 2017
 
 @author: gianni
 """
+
 import os
 from pythonradex import molecule, atomic_transition, LAMDA_file, helpers
 import numpy as np
@@ -18,7 +19,8 @@ lamda_filepaths = {
     "no_freq": os.path.join(lamda_folder, "co_no_frequencies.dat"),
 }
 test_data = {
-    label: LAMDA_file.read(datafilepath=fp) for label,fp in lamda_filepaths.items()}
+    label: LAMDA_file.read(datafilepath=fp) for label, fp in lamda_filepaths.items()
+}
 
 line_profile_type = "rectangular"
 width_v = 1 * constants.kilo
@@ -27,11 +29,13 @@ molecules = {
     ID: molecule.Molecule(datafilepath=df) for ID, df in lamda_filepaths.items()
 }
 
-use_datafile_frequencies = {"with_freq": True,"no_freq":False}
+use_datafile_frequencies = {"with_freq": True, "no_freq": False}
 emitting_molecules = {
     ID: molecule.EmittingMolecule(
-        datafilepath=df, line_profile_type=line_profile_type, width_v=width_v,
-        use_datafile_frequencies=use_datafile_frequencies[ID]
+        datafilepath=df,
+        line_profile_type=line_profile_type,
+        width_v=width_v,
+        use_datafile_frequencies=use_datafile_frequencies[ID],
     )
     for ID, df in lamda_filepaths.items()
 }
@@ -60,22 +64,31 @@ def test_Molecule_rad_transitions():
             for mol in test_molecules[ID]:
                 for attribute in ("Delta_E", "A21", "B12", "B21"):
                     assert getattr(rad_trans, attribute) == getattr(
-                        mol.rad_transitions[i], attribute)
+                        mol.rad_transitions[i], attribute
+                    )
+
 
 def test_emitting_molecule():
-    kwargs = {"line_profile_type":line_profile_type, "width_v":width_v}
+    kwargs = {"line_profile_type": line_profile_type, "width_v": width_v}
     test_mol = molecule.EmittingMolecule(
-                            datafilepath=lamda_filepaths["with_freq"], 
-                            use_datafile_frequencies=True,**kwargs)
-    for i,line in enumerate(test_mol.rad_transitions):
+        datafilepath=lamda_filepaths["with_freq"],
+        use_datafile_frequencies=True,
+        **kwargs,
+    )
+    for i, line in enumerate(test_mol.rad_transitions):
         assert line.line_profile.nu0 == test_data["with_freq"]["frequencies"][i]
-    test_mols = [molecule.EmittingMolecule(
-                                datafilepath=lamda_filepaths["with_freq"], 
-                                use_datafile_frequencies=False,**kwargs),
-                molecule.EmittingMolecule(
-                                        datafilepath=lamda_filepaths["no_freq"], 
-                                        use_datafile_frequencies=False,**kwargs)
-        ]
+    test_mols = [
+        molecule.EmittingMolecule(
+            datafilepath=lamda_filepaths["with_freq"],
+            use_datafile_frequencies=False,
+            **kwargs,
+        ),
+        molecule.EmittingMolecule(
+            datafilepath=lamda_filepaths["no_freq"],
+            use_datafile_frequencies=False,
+            **kwargs,
+        ),
+    ]
     for mol in test_mols:
         for line in mol.rad_transitions:
             assert line.line_profile.nu0 == line.Delta_E_over_h
@@ -202,7 +215,9 @@ def test_get_tau_line():
         ]
         for i, line in enumerate(mol.rad_transitions):
             width_nu = width_v / constants.c * line.line_profile.nu0
-            nu = np.linspace(line.line_profile.nu0 - width_nu, line.line_profile.nu0 + width_nu, 100)
+            nu = np.linspace(
+                line.line_profile.nu0 - width_nu, line.line_profile.nu0 + width_nu, 100
+            )
             expected_tau = line.tau(
                 N1=N * level_pop[line.low.index], N2=N * level_pop[line.up.index], nu=nu
             )
@@ -502,7 +517,11 @@ class TestTotalQuantities:
         line_index = 3
         line = self.CO_molecule.rad_transitions[line_index]
         width_nu = line.line_profile.width_nu
-        nu = np.linspace(line.line_profile.nu0 - 3 * width_nu, line.line_profile.nu0 + 3 * width_nu, 200)
+        nu = np.linspace(
+            line.line_profile.nu0 - 3 * width_nu,
+            line.line_profile.nu0 + 3 * width_nu,
+            200,
+        )
         level_population = self.CO_molecule.Boltzmann_level_population(T=23)
         x1 = level_population[line.low.index]
         x2 = level_population[line.up.index]

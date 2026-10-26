@@ -17,7 +17,6 @@ from scipy import constants
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 datafilepath = general.datafilepath("co.dat")
 geometry = "static sphere"
 line_profile_type = "rectangular"

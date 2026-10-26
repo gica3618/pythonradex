@@ -204,7 +204,9 @@ class Lime:
         self.velocity = velocity
         ax_extends = [np.max(np.abs(ax)) for ax in self.axes.values()]
         if radius <= np.max(ax_extends):
-            raise ValueError(f"param radius ({radius / constants.au:g} au) too small (should be at least {np.max(ax_extends) / constants.au:g} au)")
+            raise ValueError(
+                f"param radius ({radius / constants.au:g} au) too small (should be at least {np.max(ax_extends) / constants.au:g} au)"
+            )
         self.radius = radius
         self.broadening_param = broadening_param
         self.images = images
@@ -220,7 +222,9 @@ class Lime:
         for img in self.images:
             molI = img.get_param_value("molI")
             if molI not in valid_molIs:
-                raise RuntimeError(f"molI '{molI}' is not valid. Valid molI values: {valid_molIs}")
+                raise RuntimeError(
+                    f"molI '{molI}' is not valid. Valid molI values: {valid_molIs}"
+                )
 
     @staticmethod
     def grid_interpolation_string(name):

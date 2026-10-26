@@ -47,7 +47,9 @@ class IntensityCalculator:
             else self.n_nu_elements["regular"]
         )
         if n_nu_elements % 2 != 1:
-            raise RuntimeError("need odd number of elements to include nu0 in the array")
+            raise RuntimeError(
+                "need odd number of elements to include nu0 in the array"
+            )
         middle_index = n_nu_elements // 2
         nu0 = self.emitting_molecule.nu0[transitions]
         width_nu = self.emitting_molecule.width_v / constants.c * nu0

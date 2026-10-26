@@ -6,14 +6,12 @@ Created on Thu Aug  8 15:11:07 2024
 @author: gianni
 """
 
-
 from pythonradex import radiative_transfer
 from scipy import constants
 import os
 import numpy as np
 import itertools
 import pytest
-
 
 tau_dust_values = {"thick": 10, "thin": 1e-4}
 default_T_dust = 100

@@ -9,7 +9,6 @@ Created on Fri Jun  7 17:33:35 2024
 from pythonradex import escape_probability_functions as epf
 import numpy as np
 
-
 Taylor_geometries = [
     {
         "analytical": epf.beta_analytical_static_sphere,
