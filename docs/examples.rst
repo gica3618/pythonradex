@@ -18,3 +18,4 @@ The individual notebooks presented below can be downloaded from `here`_. To run 
    notebooks/continuum_effects
    notebooks/reading_LAMDA_files
    notebooks/datafile_frequencies
+   notebooks/custom_external_background
