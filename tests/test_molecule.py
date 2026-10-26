@@ -18,9 +18,7 @@ lamda_filepaths = {
     "no_freq": os.path.join(lamda_folder, "co_no_frequencies.dat"),
 }
 test_data = {
-    label: LAMDA_file.read(datafilepath=lamda_filepaths[label], read_frequencies=rf)
-    for label, rf in zip(("with_freq", "no_freq"), (True, False))
-}
+    label: LAMDA_file.read(datafilepath=fp) for label,fp in lamda_filepaths.items()}
 
 line_profile_type = "rectangular"
 width_v = 1 * constants.kilo
@@ -28,9 +26,12 @@ width_v = 1 * constants.kilo
 molecules = {
     ID: molecule.Molecule(datafilepath=df) for ID, df in lamda_filepaths.items()
 }
+
+use_datafile_frequencies = {"with_freq": True,"no_freq":False}
 emitting_molecules = {
     ID: molecule.EmittingMolecule(
-        datafilepath=df, line_profile_type=line_profile_type, width_v=width_v
+        datafilepath=df, line_profile_type=line_profile_type, width_v=width_v,
+        use_datafile_frequencies=use_datafile_frequencies[ID]
     )
     for ID, df in lamda_filepaths.items()
 }
@@ -57,10 +58,27 @@ def test_Molecule_rad_transitions():
     for ID, td in test_data.items():
         for i, rad_trans in enumerate(td["radiative transitions"]):
             for mol in test_molecules[ID]:
-                for attribute in ("Delta_E", "A21", "B12", "nu0", "B21"):
+                for attribute in ("Delta_E", "A21", "B12", "B21"):
                     assert getattr(rad_trans, attribute) == getattr(
-                        mol.rad_transitions[i], attribute
-                    )
+                        mol.rad_transitions[i], attribute)
+
+def test_emitting_molecule():
+    kwargs = {"line_profile_type":line_profile_type, "width_v":width_v}
+    test_mol = molecule.EmittingMolecule(
+                            datafilepath=lamda_filepaths["with_freq"], 
+                            use_datafile_frequencies=True,**kwargs)
+    for i,line in enumerate(test_mol.rad_transitions):
+        assert line.line_profile.nu0 == test_data["with_freq"]["frequencies"][i]
+    test_mols = [molecule.EmittingMolecule(
+                                datafilepath=lamda_filepaths["with_freq"], 
+                                use_datafile_frequencies=False,**kwargs),
+                molecule.EmittingMolecule(
+                                        datafilepath=lamda_filepaths["no_freq"], 
+                                        use_datafile_frequencies=False,**kwargs)
+        ]
+    for mol in test_mols:
+        for line in mol.rad_transitions:
+            assert line.line_profile.nu0 == line.Delta_E_over_h
 
 
 def test_Molecule_coll_transitions():
@@ -129,12 +147,12 @@ def test_tau():
                 N1 = N * level_population[i_low]
                 t = atomic_transition.tau(
                     A21=rad_trans.A21,
-                    phi_nu=rad_trans.line_profile.phi_nu(rad_trans.nu0),
+                    phi_nu=rad_trans.line_profile.phi_nu(rad_trans.line_profile.nu0),
                     g_low=rad_trans.low.g,
                     g_up=rad_trans.up.g,
                     N1=N1,
                     N2=N2,
-                    nu=rad_trans.nu0,
+                    nu=rad_trans.line_profile.nu0,
                 )
                 expected_tau_nu0.append(t)
             assert np.all(expected_tau_nu0 == tau_nu0)
@@ -155,12 +173,12 @@ def test_tau_LTE():
                 N1 = N * level_population[i_low]
                 t = atomic_transition.tau(
                     A21=rad_trans.A21,
-                    phi_nu=rad_trans.line_profile.phi_nu(rad_trans.nu0),
+                    phi_nu=rad_trans.line_profile.phi_nu(rad_trans.line_profile.nu0),
                     g_low=rad_trans.low.g,
                     g_up=rad_trans.up.g,
                     N1=N1,
                     N2=N2,
-                    nu=rad_trans.nu0,
+                    nu=rad_trans.line_profile.nu0,
                 )
                 expected_tau_nu0.append(t)
             assert np.all(expected_tau_nu0 == tau_nu0_LTE)
@@ -183,8 +201,8 @@ def test_get_tau_line():
             for i in range(mol.n_rad_transitions)
         ]
         for i, line in enumerate(mol.rad_transitions):
-            width_nu = width_v / constants.c * line.nu0
-            nu = np.linspace(line.nu0 - width_nu, line.nu0 + width_nu, 100)
+            width_nu = width_v / constants.c * line.line_profile.nu0
+            nu = np.linspace(line.line_profile.nu0 - width_nu, line.line_profile.nu0 + width_nu, 100)
             expected_tau = line.tau(
                 N1=N * level_pop[line.low.index], N2=N * level_pop[line.up.index], nu=nu
             )
@@ -484,7 +502,7 @@ class TestTotalQuantities:
         line_index = 3
         line = self.CO_molecule.rad_transitions[line_index]
         width_nu = line.line_profile.width_nu
-        nu = np.linspace(line.nu0 - 3 * width_nu, line.nu0 + 3 * width_nu, 200)
+        nu = np.linspace(line.line_profile.nu0 - 3 * width_nu, line.line_profile.nu0 + 3 * width_nu, 200)
         level_population = self.CO_molecule.Boltzmann_level_population(T=23)
         x1 = level_population[line.low.index]
         x2 = level_population[line.up.index]
@@ -506,8 +524,8 @@ class TestTotalQuantities:
         line = self.HCl_molecule.rad_transitions[line_index]
         assert self.HCl_molecule.overlapping_lines[line_index] == [0, 2]
         width_nu = line.line_profile.width_nu
-        nu_start = self.HCl_molecule.rad_transitions[0].nu0 - 3 * width_nu
-        nu_end = self.HCl_molecule.rad_transitions[2].nu0 + 3 * width_nu
+        nu_start = self.HCl_molecule.rad_transitions[0].line_profile.nu0 - 3 * width_nu
+        nu_end = self.HCl_molecule.rad_transitions[2].line_profile.nu0 + 3 * width_nu
         nu = np.linspace(nu_start, nu_end, 500)
         level_population = self.CO_molecule.Boltzmann_level_population(T=23)
 

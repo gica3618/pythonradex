@@ -40,8 +40,8 @@ mol = molecule.EmittingMolecule(
 )
 level_pop = mol.Boltzmann_level_population(T=T)
 trans = mol.rad_transitions[trans_index]
-width_nu = width_v / constants.c * trans.nu0
-nu = np.linspace(trans.nu0 - 2 * width_nu, trans.nu0 + 2 * width_nu, 500)
+width_nu = width_v / constants.c * trans.line_profile.nu0
+nu = np.linspace(trans.line_profile.nu0 - 2 * width_nu, trans.line_profile.nu0 + 2 * width_nu, 500)
 phi_nu = trans.line_profile.phi_nu(nu)
 volume = 4 / 3 * r**3 * np.pi
 solid_angle = r**2 * np.pi / d**2
@@ -85,7 +85,7 @@ for i, n in enumerate(n_values):
     )
     source_func = helpers.B_nu(nu=nu, T=T)
     intensity_kwargs = {"tau": tau, "source_function": source_func}
-    LVG_sphere_kwargs = {"nu": nu, "nu0": trans.nu0, "V": width_v / 2}
+    LVG_sphere_kwargs = {"nu": nu, "nu0": trans.line_profile.nu0, "V": width_v / 2}
     flux_no_beta = (
         volume
         * n

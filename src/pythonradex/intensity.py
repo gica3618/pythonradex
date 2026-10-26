@@ -167,7 +167,7 @@ class IntensityCalculator:
 
     def construct_tau_individual_line(self, line, nu, tau_nu0):
         # tau is prop to phi_nu/nu**2
-        normalisation = line.line_profile.phi_nu0 / line.nu0**2 / tau_nu0
+        normalisation = line.line_profile.phi_nu0 / line.line_profile.nu0**2 / tau_nu0
         return line.line_profile.phi_nu(nu) / nu**2 / normalisation
 
     def set_tau_lines(self):
@@ -231,7 +231,7 @@ class IntensityCalculator:
             ):
                 LVG_sphere_kwargs = {
                     "nu": self.nu,
-                    "nu0": line.nu0,
+                    "nu0": line.line_profile.nu0,
                     "V": self.V_LVG_sphere,
                 }
                 source_function = helpers.B_nu(T=self.Tex[line_index], nu=self.nu)

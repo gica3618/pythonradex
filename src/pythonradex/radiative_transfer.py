@@ -66,6 +66,7 @@ class Source:
         geometry,
         line_profile_type,
         width_v,
+        use_datafile_frequencies=True,
         use_Ng_acceleration=True,
         treat_line_overlap=False,
         warn_negative_tau=True,
@@ -99,6 +100,14 @@ class Source:
                 we can also say that width_v=dv/dr*2*R. For "LVG slab", width_v=dv/dz*Z
                 where Z is the depth of the slab and dv/dz the constant velocity
                 gradient of the slab.
+            use_datafile_frequencies (bool): whether to use the frequencies read from the LAMDA
+                file (if False, will use Delta_E/h). Defaults to True. In principle, the
+                frequencies in a LAMDA-formatted file are only for informational purposes.
+                However, they are sometimes more accurate than Delta_E/h, where Delta_E is
+                the energy difference between the two levels of the transition, as computed
+                from the level energies in the file. Using the frequencies can have
+                advantages especially if one models spectra. But the frequencies and level
+                energies in the files are not always fully consistent.
             use_Ng_acceleration (:obj:`bool`): Whether to use Ng acceleration. Defaults
                 to True.
             treat_line_overlap (:obj:`bool`): Whether to treat the overlap of emission
@@ -122,6 +131,7 @@ class Source:
             datafilepath=datafilepath,
             line_profile_type=line_profile_type,
             width_v=width_v,
+            use_datafile_frequencies=use_datafile_frequencies
         )
         self.treat_line_overlap = treat_line_overlap
         self.geometry_name = geometry
@@ -682,7 +692,7 @@ class Source:
         for i, line in enumerate(self.emitting_molecule.rad_transitions):
             output = (
                 f"{line.up.index:>4d} {line.low.index:>4d} "
-                + f"{line.nu0/constants.giga:>14.6f} {self.Tex[i]:>10.2f} "
+                + f"{line.line_profile.nu0/constants.giga:>14.6f} {self.Tex[i]:>10.2f} "
                 + f"{self.level_pop[line.low.index]:>14g} "
                 + f"{self.level_pop[line.up.index]:>14g} "
                 + f"{self.tau_nu0_individual_transitions[i]:>14g}"

@@ -38,19 +38,12 @@ class Molecule:
             datafilepath (:obj:`str`): The filepath to the LAMDA file.
             partition_function (func): A user-supplied partition function of one argument
                 (temperature). Defaults to None. If equal to None, the partition function
-                will be calculated by using the data from the provided LAMDA file.
+                will be calculated by using the data from the LAMDA file.
         """
-        try:
-            # reading frequencies can be useful since frequencies are sometimes
-            # given with more significant digits than level energies. However,
-            # the LAMDA format does not orce a file to contain the frequencies,
-            # so they might not be present.
-            data = LAMDA_file.read(datafilepath=datafilepath, read_frequencies=True)
-        except:
-            data = LAMDA_file.read(datafilepath=datafilepath, read_frequencies=False)
-        self.levels = data["levels"]
-        self.rad_transitions = data["radiative transitions"]
-        self.coll_transitions = data["collisional transitions"]
+        self.lamda_data = LAMDA_file.read(datafilepath=datafilepath)
+        self.levels = self.lamda_data["levels"]
+        self.rad_transitions = self.lamda_data["radiative transitions"]
+        self.coll_transitions = self.lamda_data["collisional transitions"]
         self.n_levels = len(self.levels)
         self.n_rad_transitions = len(self.rad_transitions)
         self.set_partition_function(partition_function=partition_function)
@@ -58,7 +51,7 @@ class Molecule:
         self.A21 = np.array([line.A21 for line in self.rad_transitions])
         self.B21 = np.array([line.B21 for line in self.rad_transitions])
         self.B12 = np.array([line.B12 for line in self.rad_transitions])
-        self.nu0 = np.array([line.nu0 for line in self.rad_transitions])
+        self.Delta_E_over_h = np.array([line.Delta_E_over_h for line in self.rad_transitions])
         self.gup_rad_transitions = np.array(
             [line.up.g for line in self.rad_transitions]
         )
@@ -176,6 +169,7 @@ class EmittingMolecule(Molecule):
         line_profile_type,
         width_v,
         partition_function=None,
+        use_datafile_frequencies=True
     ):
         """Constructs a new instance of the EmittingMolecule class using a LAMDA datafile
 
@@ -188,21 +182,28 @@ class EmittingMolecule(Molecule):
             partition_function (func): A user-supplied partition function of one argument
                 (temperature). Defaults to None. If equal to None, the partition function
                 will be calculated by using the data from the provided LAMDA file.
+            use_datafile_frequencies (bool): whether to use the frequencies read from the LAMDA
+                file (if False, will use DeltaE/h).
         """
-        Molecule.__init__(
-            self, datafilepath=datafilepath, partition_function=partition_function
+        super().__init__(
+            datafilepath=datafilepath, partition_function=partition_function
         )
         self.width_v = width_v
         self.line_profile_type = line_profile_type
-        # convert radiative transitions to emission lines (but keep the same attribute name)
-        self.rad_transitions = [
-            atomic_transition.EmissionLine.from_radiative_transition(
-                radiative_transition=rad_trans,
-                line_profile_type=line_profile_type,
-                width_v=width_v,
-            )
-            for rad_trans in self.rad_transitions
-        ]
+        # convert RadiativeTransition to EmissionLine (but keep the same attribute name)
+        converted_transitions = []
+        for i,line in enumerate(self.rad_transitions):
+            if use_datafile_frequencies:
+                nu0 = self.lamda_data["frequencies"][i]
+            else:
+                nu0 = None
+            converted = atomic_transition.EmissionLine.from_radiative_transition(
+                                 radiative_transition=line,
+                                 line_profile_type=line_profile_type,
+                                 width_v=width_v,nu0=nu0)
+            converted_transitions.append(converted)
+        self.rad_transitions = converted_transitions
+        self.nu0 = np.array([line.line_profile.nu0 for line in self.rad_transitions])
         self.identify_overlapping_lines()
         if self.any_line_has_overlap(line_indices=range(self.n_rad_transitions)):
             self.has_overlapping_lines = True
@@ -223,7 +224,7 @@ class EmittingMolecule(Molecule):
         self.set_K21_matrix()
         # collecting phi_nu0 and coll parameters, needed for numba-compiled functions:
         self.phi_nu0 = np.array(
-            [line.line_profile.phi_nu(line.nu0) for line in self.rad_transitions]
+            [line.line_profile.phi_nu0 for line in self.rad_transitions]
         )
         self.coll_gups = {}
         self.coll_glows = {}
@@ -237,7 +238,7 @@ class EmittingMolecule(Molecule):
                 [c.Delta_E for c in coll_transitions]
             )
             self.coll_ilow[collider] = np.array([c.low.index for c in coll_transitions])
-            self.coll_iup[collider] = np.array([c.up.index for c in coll_transitions])
+            self.coll_iup[collider] = np.array([c.up.index for c in coll_transitions])        
 
     def get_tau_nu0_lines(self, N, level_population):
         r"""Compute the optical depth at the rest frequency of all lines (dust

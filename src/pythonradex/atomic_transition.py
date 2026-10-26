@@ -5,10 +5,23 @@ Created on Sun Nov 12 17:03:55 2017
 @author: gianni
 """
 
+#note about frequencies:
+#in LAMDA files, the listed frequencies are only for "informational pruposes"
+#indeed, RADEX does not use them for any calculation, but just for the final
+#output to help the user to identify the transition
+#on the other hand, the frequencies have sometimes better accuracy than DeltaE/h
+#(e.g. for CO)
+#here, I adopt a similar approach as RADEX: I use DeltaE/h for cases where the position
+#of the line is not important, but I use the specific nu0 for cases where
+#the spectral position of the line matters (e.g. spectra etc.)
+
+
+
 from pythonradex import helpers
 import numpy as np
 from scipy import constants
 import numba as nb
+import warnings
 
 
 @nb.jit(nopython=True, cache=True)
@@ -71,7 +84,7 @@ class LineProfile:
             v (float or numpy.ndarray): velocity in [m/s]
 
         Returns:
-            float or numpy.ndarra: The line profile in [(m/s)\ :sup:`-1`]
+            float or numpy.ndarray: The line profile in [(m/s)\ :sup:`-1`]
         """
         nu = self.nu0 * (1 - v / constants.c)
         return self.phi_nu(nu) * self.nu0 / constants.c
@@ -245,28 +258,34 @@ class RadiativeTransition(Transition):
         low (pythonradex.atomic_transition.Level): the lower level of the transition
         Delta_E (:obj:`float`): the energy difference between the upper and lower level
         name (:obj:`str`): name of the transition
-        nu0 (:obj:`float`): rest frequency in [Hz]
+        Delta_E_over_h (:obj:`float`): Delta_E/h, corresponding to rest frequency in [Hz]
         A21 (:obj:`float`): Einstein A21 coefficient in [s\ :sup:`-1`]
         B21 (:obj:`float`): Einstein B21 coefficient in [sr m\ :sup:`2` Hz / Jy]
         B12 (:obj:`float`): Einstein B12 coefficient in [sr m\ :sup:`2` Hz / Jy]
     """
 
-    def __init__(self, up, low, A21, nu0=None):
-        Transition.__init__(self, up=up, low=low)
+    def __init__(self, up, low, A21):
+        super().__init__(up=up, low=low)
         if self.Delta_E <= 0:
             raise RuntimeError("non-positive Delta_E for radiative transition")
         self.A21 = A21
-        nu0_from_Delta_E = self.Delta_E / constants.h
-        if nu0 is None:
-            self.nu0 = nu0_from_Delta_E
-        else:
-            # when reading LAMDA files, it is useful to specify nu0 directly, since
-            # it is sometimes given with more significant digits
-            if not np.isclose(nu0_from_Delta_E, nu0, atol=0, rtol=1e-3):
-                raise RuntimeError("inconsistency between energies and frequencies")
-            self.nu0 = nu0
-        self.B21 = helpers.B21(A21=self.A21, nu=self.nu0)
-        self.B12 = helpers.B12(A21=self.A21, nu=self.nu0, g1=self.low.g, g2=self.up.g)
+        #rest frequency, but I do want to distinguish it from the frequency listed
+        #in the LAMDA file, because sometimes those are not consistent with DeltaE/h
+        self.Delta_E_over_h = self.Delta_E/constants.h
+        # nu0_from_Delta_E = self.Delta_E / constants.h
+        # if nu0 is None:
+        #     self.nu0 = nu0_from_Delta_E
+        # else:
+        #     # when reading LAMDA files, it is useful to read nu0 rather than calculate
+        #     #from level energies, since nu0 is sometimes given with more significant
+        #     #digits than the level energies
+        #     if not helpers.DeltaE_nu0_consistent(Delta_E=self.Delta_E,nu0=nu0):
+        #         warnings.warn(f"Delta_E and nu0 are inconsistent (up.index = {up.index}, "
+        #                       +f"low.index={low.index}, A21={A21} s-1, nu0={nu0/constants.giga} GHz)")
+        #     self.nu0 = nu0
+        self.B21 = helpers.B21(A21=self.A21, nu=self.Delta_E_over_h)
+        self.B12 = helpers.B12(A21=self.A21, nu=self.Delta_E_over_h,
+                               g1=self.low.g, g2=self.up.g)
 
     def source_function(self, x1, x2):
         S = np.where(
@@ -288,7 +307,6 @@ class EmissionLine(RadiativeTransition):
         Delta_E (:obj:`float`): the energy difference between the upper and lower level
             in [J]
         name (:obj:`str`): name of the transition
-        nu0 (:obj:`float`): rest frequency in [Hz]
         A21 (:obj:`float`): Einstein A21 coefficient in [s\ :sup:`-1`]
         B21 (:obj:`float`): Einstein B21 coefficient in [sr m\ :sup:`2` Hz / Jy]
         B12 (:obj:`float`): Einstein B12 coefficient in [sr m\ :sup:`2` Hz / Jy]
@@ -297,26 +315,42 @@ class EmissionLine(RadiativeTransition):
     """
 
     def __init__(self, up, low, A21, line_profile_type, width_v, nu0=None):
-        RadiativeTransition.__init__(self, up=up, low=low, A21=A21, nu0=nu0)
+        super().__init__(up=up, low=low, A21=A21)
+        if nu0 is None:
+            nu0 = self.Delta_E_over_h
+        else:
+            self.check_DeltaE_nu0_consistency(nu0)
         self.line_profile = line_profiles[line_profile_type](
-            nu0=self.nu0, width_v=width_v
+            nu0=nu0, width_v=width_v
         )
         self.tau_kwargs = {"A21": self.A21, "g_up": self.up.g, "g_low": self.low.g}
 
     @classmethod
     def from_radiative_transition(
-        cls, radiative_transition, line_profile_type, width_v
+        cls, radiative_transition, line_profile_type, width_v, nu0=None
     ):
         """Alternative constructor, taking an instance of RadiativeTransition,
-        a line profile class and the width of the line"""
+        a line profile class, the width of the line and optionally the rest
+        frequency"""
         return cls(
             up=radiative_transition.up,
             low=radiative_transition.low,
             A21=radiative_transition.A21,
             line_profile_type=line_profile_type,
             width_v=width_v,
-            nu0=radiative_transition.nu0,
+            nu0=nu0,
         )
+
+    def check_DeltaE_nu0_consistency(self,nu0):
+        #TODO needs a test
+        if not np.isclose(self.Delta_E_over_h, nu0, atol=0, rtol=1e-2):
+            mean = (self.Delta_E_over_h+nu0)/2
+            relative_diff = abs(self.Delta_E_over_h-nu0)/mean
+            warnings.warn("inconsistency between DeltaE/h and the frequency listed in LAMDA file"
+                          +f" for transition {self.name}. "
+                          +f" DeltaE/h={self.Delta_E_over_h/constants.giga} GHz, "
+                          +f"listed frequency = {nu0/constants.giga}, relative difference ="
+                          +f"{relative_diff*100:.2g}%")
 
     def tau(self, N1, N2, nu):
         r"""Computes the optical depth
@@ -353,7 +387,7 @@ class EmissionLine(RadiativeTransition):
             phi_nu=self.line_profile.phi_nu0,
             N1=N1,
             N2=N2,
-            nu=self.nu0,
+            nu=self.line_profile.nu0,
             **self.tau_kwargs,
         )
 
@@ -370,7 +404,7 @@ class CollisionalTransition(Transition):
     """
 
     def __init__(self, up, low, K21_data, Tkin_data):
-        Transition.__init__(self, up=up, low=low)
+        super().__init__(up=up, low=low)
         if np.any(K21_data < 0):
             raise ValueError("negative K21 values")
         self.K21_data = K21_data

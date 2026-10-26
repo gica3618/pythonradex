@@ -119,11 +119,11 @@ class TestFastIntensities:
         level_pop = mol.Boltzmann_level_population(33)
         N1 = N * level_pop[test_line.low.index]
         N2 = N * level_pop[test_line.up.index]
-        width_nu = mol.width_v / constants.c * test_line.nu0
+        width_nu = mol.width_v / constants.c * test_line.line_profile.nu0
         # make nu asymmetric on purpose...
-        nu = np.linspace(test_line.nu0 - 2 * width_nu, test_line.nu0 + width_nu, 400)
+        nu = np.linspace(test_line.line_profile.nu0 - 2 * width_nu, test_line.line_profile.nu0 + width_nu, 400)
         # add the edge points, otherwise the interpolation will mess things up...
-        nu = np.append(nu, (test_line.nu0 - width_nu / 2, test_line.nu0 + width_nu / 2))
+        nu = np.append(nu, (test_line.line_profile.nu0 - width_nu / 2, test_line.line_profile.nu0 + width_nu / 2))
         nu.sort()
         expected_tau = test_line.tau(N1=N1, N2=N2, nu=nu)
         geo_name = "static slab"
@@ -323,8 +323,8 @@ class TestVarious:
         ):
             for t in test_transitions:
                 line = f["mol"].rad_transitions[t]
-                width_nu = f["mol"].width_v / constants.c * line.nu0
-                nu = np.linspace(line.nu0 - 2 * width_nu, line.nu0 + 2 * width_nu, 200)
+                width_nu = f["mol"].width_v / constants.c * line.line_profile.nu0
+                nu = np.linspace(line.line_profile.nu0 - 2 * width_nu, line.line_profile.nu0 + 2 * width_nu, 200)
                 constructed_tau = f[
                     "intensitycalculator"
                 ].construct_tau_individual_line(
@@ -343,28 +343,28 @@ class TestVarious:
             intensitycalculator = f["intensitycalculator"]
             transitions = [f["mol"].rad_transitions[i] for i in trans_indices]
             freq_widths = [
-                helpers.Delta_nu(Delta_v=self.width_v, nu0=t.nu0) for t in transitions
+                helpers.Delta_nu(Delta_v=self.width_v, nu0=t.line_profile.nu0) for t in transitions
             ]
             for i, trans, width_nu in zip(trans_indices, transitions, freq_widths):
                 include = [
-                    np.array((trans.nu0,)),
-                    np.array((trans.nu0 - 0.1 * width_nu, trans.nu0 + 0.1 * width_nu)),
+                    np.array((trans.line_profile.nu0,)),
+                    np.array((trans.line_profile.nu0 - 0.1 * width_nu, trans.line_profile.nu0 + 0.1 * width_nu)),
                     # now ranges that do not enclose nu0:
-                    np.array((trans.nu0 + 0.1 * width_nu, trans.nu0 + 0.4 * width_nu)),
+                    np.array((trans.line_profile.nu0 + 0.1 * width_nu, trans.line_profile.nu0 + 0.4 * width_nu)),
                     # include nu outside of nu_min,nu_max:
                     np.array(
                         (
-                            trans.nu0 + 0.1 * width_nu,
-                            trans.nu0 + 0.4 * width_nu,
-                            trans.nu0 + 100 * width_nu,
+                            trans.line_profile.nu0 + 0.1 * width_nu,
+                            trans.line_profile.nu0 + 0.4 * width_nu,
+                            trans.line_profile.nu0 + 100 * width_nu,
                         )
                     ),
                     np.array(
                         (
                             trans.line_profile.nu_min - width_nu / 3,
-                            trans.nu0 + 0.1 * width_nu,
-                            trans.nu0 + 0.4 * width_nu,
-                            trans.nu0 + 100 * width_nu,
+                            trans.line_profile.nu0 + 0.1 * width_nu,
+                            trans.line_profile.nu0 + 0.4 * width_nu,
+                            trans.line_profile.nu0 + 100 * width_nu,
                         )
                     ),
                     np.array((trans.line_profile.nu_max - width_nu / 300,)),
@@ -394,21 +394,21 @@ class TestVarious:
             both = [
                 np.array(
                     (
-                        transitions[0].nu0,
-                        transitions[1].nu0,
+                        transitions[0].line_profile.nu0,
+                        transitions[1].line_profile.nu0,
                     )
                 ),
                 np.array(
                     (
                         transitions[0].line_profile.nu_min - 5 * width_nu,
-                        transitions[0].nu0,
-                        transitions[1].nu0,
+                        transitions[0].line_profile.nu0,
+                        transitions[1].line_profile.nu0,
                         transitions[1].line_profile.nu_max + 5 * width_nu,
                     )
                 ),
                 np.array(
                     (
-                        transitions[0].nu0,
+                        transitions[0].line_profile.nu0,
                         transitions[1].line_profile.nu_max - width_nu / 100,
                     )
                 ),
@@ -420,10 +420,10 @@ class TestVarious:
                     assert i in intensitycalculator.nu_selected_line_indices
             # nu that should include all transitions:
             all_inclusive_nu = [
-                np.array([t.nu0 for t in f["mol"].rad_transitions]),
+                np.array([t.line_profile.nu0 for t in f["mol"].rad_transitions]),
                 np.array(
                     [
-                        t.nu0 + t.line_profile.width_nu / 6
+                        t.line_profile.nu0 + t.line_profile.width_nu / 6
                         for t in f["mol"].rad_transitions
                     ]
                 ),
@@ -456,7 +456,7 @@ class TestVarious:
         ]
 
     def check_no_line_spectrum(self, intensitycalculator, trans, expected_spec):
-        width_nu = self.width_v / constants.c * trans.nu0
+        width_nu = self.width_v / constants.c * trans.line_profile.nu0
         no_line = self.get_no_line_nu(trans=trans, width_nu=width_nu)
         for nu in no_line:
             intensitycalculator.set_nu(nu=nu)
@@ -506,8 +506,8 @@ class TestVarious:
             ):
                 intensitycalculator = f["intensitycalculator"]
                 trans = f["mol"].rad_transitions[5]
-                width_nu = self.width_v / constants.c * trans.nu0
-                single_nu = np.array((trans.nu0 - width_nu / 6,))
+                width_nu = self.width_v / constants.c * trans.line_profile.nu0
+                single_nu = np.array((trans.line_profile.nu0 - width_nu / 6,))
                 multi_nu = np.array(
                     (trans.line_profile.nu_min, single_nu[0], trans.line_profile.nu_max)
                 )
@@ -527,7 +527,6 @@ class TestVarious:
                     np.ones((3, 3)) * 100 * constants.giga,
                 ]
                 for inv_nu in invalid_nu:
-                    print(inv_nu.ndim)
                     with pytest.raises(ValueError):
                         f["intensitycalculator"].set_nu(nu=inv_nu)
 
@@ -803,7 +802,7 @@ class TestIntensitiesWithPhysics:
                     )
                 else:
                     # for slabs, could not come up with elegant test
-                    I_nu0 = helpers.B_nu(nu=line.nu0, T=self.Tkin) * tau_nu0[i]
+                    I_nu0 = helpers.B_nu(nu=line.line_profile.nu0, T=self.Tkin) * tau_nu0[i]
                     if lp == "Gaussian":
                         I = np.sqrt(2 * np.pi) * line.line_profile.sigma_nu * I_nu0
                     elif lp == "rectangular":
@@ -836,7 +835,7 @@ class TestIntensitiesWithPhysics:
             ):
                 if not thick_lines[i]:
                     continue
-                bb_intensity_nu0 = helpers.B_nu(nu=line.nu0, T=self.Tkin)
+                bb_intensity_nu0 = helpers.B_nu(nu=line.line_profile.nu0, T=self.Tkin)
                 # can only test rectangular profiles; also, cannot test LVG sphere
                 # because it has a different spectral shape than a rectangle
                 if (
@@ -856,7 +855,7 @@ class TestIntensitiesWithPhysics:
                     )
 
     def get_line_covering_nu(self, lines, width_v):
-        nu0s = [line.nu0 for line in lines]
+        nu0s = [line.line_profile.nu0 for line in lines]
         width_nu = width_v / constants.c * np.mean(nu0s)
         min_nu0 = np.min(nu0s)
         max_nu0 = np.max(nu0s)
@@ -889,7 +888,7 @@ class TestIntensitiesWithPhysics:
                     assert np.all(spec >= 0)
                     source_func = helpers.B_nu(T=self.Tkin, nu=nu)
                     if intensitycalculator.geometry_name == "LVG sphere":
-                        LVG_kwargs = {"nu": nu, "nu0": line.nu0, "V": width_v / 2}
+                        LVG_kwargs = {"nu": nu, "nu0": line.line_profile.nu0, "V": width_v / 2}
                     else:
                         LVG_kwargs = {}
                     N1 = level_pop[line.low.index] * N
@@ -902,7 +901,7 @@ class TestIntensitiesWithPhysics:
                     )
                     assert np.allclose(spec, expected_spec, atol=0, rtol=1e-3)
                     if ID == "thick":
-                        bb_intensity_nu0 = helpers.B_nu(nu=line.nu0, T=self.Tkin)
+                        bb_intensity_nu0 = helpers.B_nu(nu=line.line_profile.nu0, T=self.Tkin)
                         peak = np.max(spec)
                         assert np.isclose(a=peak, b=bb_intensity_nu0, atol=0, rtol=3e-2)
                 if ID == "thin":
@@ -937,7 +936,7 @@ class TestIntensitiesWithPhysics:
                 expected_tau += tau_line
                 source_func = helpers.B_nu(T=self.Tkin, nu=nu)
                 if intensitycalculator.geometry_name == "LVG sphere":
-                    LVG_kwargs = {"nu": nu, "nu0": line.nu0, "V": width_v / 2}
+                    LVG_kwargs = {"nu": nu, "nu0": line.line_profile.nu0, "V": width_v / 2}
                 else:
                     LVG_kwargs = {}
                 expected_spec += intensitycalculator.specific_intensity(
@@ -998,22 +997,22 @@ class TestIntensitiesWithPhysics:
                         elif line_thickness == "thick" and dust_thickness == "thick":
                             # at nu0, expect mix of line and dust
                             for line in lines:
-                                S_line_nu0 = helpers.B_nu(nu=line.nu0, T=self.Tkin)
+                                S_line_nu0 = helpers.B_nu(nu=line.line_profile.nu0, T=self.Tkin)
                                 tau_nu0_alllines = 0
                                 for lineline in lines:
                                     tau_nu0_alllines += lineline.tau(
                                         N1=N * level_pop[lineline.low.index],
                                         N2=N * level_pop[lineline.up.index],
-                                        nu=line.nu0,
+                                        nu=line.line_profile.nu0,
                                     )
-                                S_dust_nu0 = helpers.B_nu(nu=line.nu0, T=self.T_dust)
-                                tau_dust_nu0 = tau_dust(line.nu0)
+                                S_dust_nu0 = helpers.B_nu(nu=line.line_profile.nu0, T=self.T_dust)
+                                tau_dust_nu0 = tau_dust(line.line_profile.nu0)
                                 S_tot_nu0 = (
                                     tau_nu0_alllines * S_line_nu0
                                     + tau_dust_nu0 * S_dust_nu0
                                 )
                                 S_tot_nu0 /= tau_nu0_alllines + tau_dust_nu0
-                                nu0_index = np.argmin(np.abs(nu - line.nu0))
+                                nu0_index = np.argmin(np.abs(nu - line.line_profile.nu0))
                                 expected_spec_nu0 = S_tot_nu0
                                 assert np.isclose(
                                     expected_spec_nu0,
@@ -1038,8 +1037,8 @@ class TestIntensitiesWithPhysics:
                         elif line_thickness == "thick" and dust_thickness == "thin":
                             # expect line dominating at nu0
                             for line in lines:
-                                S_nu0 = helpers.B_nu(nu=line.nu0, T=self.Tkin)
-                                nu0_index = np.argmin(np.abs(nu - line.nu0))
+                                S_nu0 = helpers.B_nu(nu=line.line_profile.nu0, T=self.Tkin)
+                                nu0_index = np.argmin(np.abs(nu - line.line_profile.nu0))
                                 assert np.isclose(
                                     spec[nu0_index], S_nu0, atol=0, rtol=1e-3
                                 )

@@ -271,8 +271,13 @@ class TestTransition:
     width_v = 1 * constants.kilo
     Tkin_data = np.array((1, 2, 3, 4, 5))
     log_Tkin_data = np.log(Tkin_data)
-    test_emission_line = atomic_transition.EmissionLine(
+    test_emission_line_no_nu0 = atomic_transition.EmissionLine(
         up=up, low=low, A21=A21, line_profile_type=line_profile_type, width_v=width_v
+    )
+    test_nu0 = test_emission_line_no_nu0.line_profile.nu0*1.0001
+    test_emission_line_no_with_nu0 = atomic_transition.EmissionLine(
+        up=up, low=low, A21=A21, line_profile_type=line_profile_type, width_v=width_v,
+        nu0=test_nu0
     )
 
     @pytest.mark.filterwarnings("ignore:invalid value", "ignore:divide by zero")
@@ -287,54 +292,77 @@ class TestTransition:
                 up=self.low, low=self.up, A21=self.A21
             )
 
-    def test_radiative_transition_wrong_nu0(self):
-        wrong_nu0 = (self.up.E - self.low.E) / constants.h * 1.01
-        with pytest.raises(RuntimeError):
-            atomic_transition.RadiativeTransition(
-                up=self.up, low=self.low, A21=self.A21, nu0=wrong_nu0
-            )
-        with pytest.raises(RuntimeError):
-            atomic_transition.EmissionLine(
-                up=self.up,
-                low=self.low,
-                A21=1,
-                line_profile_type=self.line_profile_type,
-                width_v=self.width_v,
-                nu0=wrong_nu0,
-            )
+    def test_test_radiative_transition_DeltaE_over_h(self):
+        assert (self.radiative_transition.Delta_E_over_h
+                == (self.radiative_transition.up.E-self.radiative_transition.low.E)/constants.h)
+
+    def test_source_func(self):
+        #just checking that it runs
+        self.radiative_transition.source_function(x1=np.array((0.3,0.2)), x2=np.array((0.1,0.05)))
+
+
+    # def test_radiative_transition_wrong_nu0(self):
+    #     wrong_nu0 = (self.up.E - self.low.E) / constants.h * 1.01
+    #     with pytest.warns(UserWarning):
+    #         atomic_transition.RadiativeTransition(
+    #             up=self.up, low=self.low, A21=self.A21, nu0=wrong_nu0
+    #         )
+    #     with pytest.warns(UserWarning):
+    #         atomic_transition.EmissionLine(
+    #             up=self.up,
+    #             low=self.low,
+    #             A21=1,
+    #             line_profile_type=self.line_profile_type,
+    #             width_v=self.width_v,
+    #             nu0=wrong_nu0,
+    #         )
 
     def test_emission_line_constructor(self):
-        assert self.test_emission_line.nu0 == self.test_emission_line.line_profile.nu0
-        assert self.test_emission_line.tau_kwargs["A21"] == self.test_emission_line.A21
-        assert (
-            self.test_emission_line.tau_kwargs["g_up"] == self.test_emission_line.up.g
-        )
-        assert (
-            self.test_emission_line.tau_kwargs["g_low"] == self.test_emission_line.low.g
-        )
+        for el in (self.test_emission_line_no_nu0,self.test_emission_line_no_with_nu0):
+            assert el.tau_kwargs["A21"] == el.A21
+            assert el.tau_kwargs["g_up"] == el.up.g
+            assert el.tau_kwargs["g_low"] == el.low.g
+        assert (self.test_emission_line_no_nu0.line_profile.nu0
+                == self.test_emission_line_no_nu0.Delta_E_over_h)
+        assert (self.test_emission_line_no_with_nu0.line_profile.nu0
+                == self.test_nu0)
 
-    def test_constructor_from_radiative_transition(self):
-        emission_line = atomic_transition.EmissionLine.from_radiative_transition(
-            radiative_transition=self.radiative_transition,
-            line_profile_type=self.line_profile_type,
-            width_v=self.width_v,
-        )
-        assert emission_line.nu0 == self.radiative_transition.nu0
-        assert emission_line.A21 == self.radiative_transition.A21
-        assert emission_line.B12 == self.radiative_transition.B12
-        assert emission_line.B21 == self.radiative_transition.B21
-        assert emission_line.up.E == self.radiative_transition.up.E
-        assert emission_line.low.E == self.radiative_transition.low.E
-        wrong_nu0_rad_trans = atomic_transition.RadiativeTransition(
-            up=self.up, low=self.low, A21=self.A21
-        )
-        wrong_nu0_rad_trans.nu0 = wrong_nu0_rad_trans.nu0 * 1.01
-        with pytest.raises(RuntimeError):
-            atomic_transition.EmissionLine.from_radiative_transition(
-                radiative_transition=wrong_nu0_rad_trans,
+    def test_DeltaE_nu0_consistency_check(self):
+        with pytest.warns(UserWarning):
+            atomic_transition.EmissionLine(
+                up=self.test_emission_line_no_nu0.up, low=self.test_emission_line_no_nu0.low,
+                A21=self.test_emission_line_no_nu0.A21,
                 line_profile_type=self.line_profile_type,
                 width_v=self.width_v,
+                nu0=self.test_emission_line_no_nu0.line_profile.nu0*1.1
             )
+
+    def test_constructor_from_radiative_transition(self):
+        for nu0 in (None,self.test_nu0):
+            emission_line = atomic_transition.EmissionLine.from_radiative_transition(
+                radiative_transition=self.radiative_transition,
+                line_profile_type=self.line_profile_type,
+                width_v=self.width_v,nu0=nu0
+            )
+            assert emission_line.A21 == self.radiative_transition.A21
+            assert emission_line.B12 == self.radiative_transition.B12
+            assert emission_line.B21 == self.radiative_transition.B21
+            assert emission_line.up.E == self.radiative_transition.up.E
+            assert emission_line.low.E == self.radiative_transition.low.E
+            if nu0 is None:
+                assert emission_line.line_profile.nu0 == emission_line.Delta_E_over_h
+            else:
+                assert emission_line.line_profile.nu0 == nu0
+            # wrong_nu0_rad_trans = atomic_transition.RadiativeTransition(
+            #     up=self.up, low=self.low, A21=self.A21
+            # )
+            # wrong_nu0_rad_trans.nu0 = wrong_nu0_rad_trans.nu0 * 1.01
+            # with pytest.warns(UserWarning):
+            #     atomic_transition.EmissionLine.from_radiative_transition(
+            #         radiative_transition=wrong_nu0_rad_trans,
+            #         line_profile_type=self.line_profile_type,
+            #         width_v=self.width_v,
+            #     )
 
     def test_coll_transition_constructor(self):
         negative_21 = np.array((1, 2, -2))
@@ -347,16 +375,16 @@ class TestTransition:
         nu = np.ones((2, 4, 7)) * 50
         N1 = 1
         N2 = 3
-        tau = self.test_emission_line.tau(N1=N1, N2=N2, nu=nu)
-        assert tau.shape == nu.shape
+        for el in (self.test_emission_line_no_nu0,self.test_emission_line_no_with_nu0):
+            tau = el.tau(N1=N1, N2=N2, nu=nu)
+            assert tau.shape == nu.shape
 
     def test_tau_nu0(self):
         N1 = 1
         N2 = 3
-        tau_nu0 = self.test_emission_line.tau_nu0(N1=N1, N2=N2)
-        assert tau_nu0 == self.test_emission_line.tau(
-            N1=N1, N2=N2, nu=self.test_emission_line.nu0
-        )
+        for el in (self.test_emission_line_no_nu0,self.test_emission_line_no_with_nu0):
+            tau_nu0 = el.tau_nu0(N1=N1, N2=N2)
+            assert tau_nu0 == el.tau(N1=N1, N2=N2, nu=el.line_profile.nu0)
 
     def test_coll_coeffs(self):
         K21_data_sets = [np.array((2, 1, 4, 6, 3)), np.array((2, 1, 0, 0, 3))]

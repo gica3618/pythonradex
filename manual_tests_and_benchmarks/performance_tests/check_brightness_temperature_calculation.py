@@ -50,7 +50,7 @@ source.solve_radiative_transfer()
 end = time.time()
 print(f"solve time: {end-start:.3g}")
 v = np.linspace(-3 * width_v, 3 * width_v, 50)
-nu = source.emitting_molecule.rad_transitions[1].nu0 * v / constants.c
+nu = source.emitting_molecule.rad_transitions[1].line_profile.nu0 * v / constants.c
 source.spectrum(output_type="specific intensity", nu=nu)
 
 # the fast method works only if there is no dust and no overlapping lines (i.e.

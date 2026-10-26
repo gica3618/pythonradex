@@ -91,8 +91,8 @@ for i in ref_transitions:
     for j in other_trans:
         if j not in mol.overlapping_lines[i]:
             raise RuntimeError
-ref_nu0 = mol.rad_transitions[ref_transitions[0]].nu0
-Delta_nu0 = ref_nu0 - mol.rad_transitions[ref_transitions[1]].nu0
+ref_nu0 = mol.rad_transitions[ref_transitions[0]].line_profile.nu0
+Delta_nu0 = ref_nu0 - mol.rad_transitions[ref_transitions[1]].line_profile.nu0
 Delta_v = Delta_nu0 / ref_nu0 * constants.c
 print(f"v distance between the two ref transitions: {Delta_v/constants.kilo} km/s")
 coll_dens_nonLTE = {

@@ -17,3 +17,4 @@ The individual notebooks presented below can be downloaded from `here`_. To run 
    notebooks/LVG_geometry
    notebooks/continuum_effects
    notebooks/reading_LAMDA_files
+   notebooks/datafile_frequencies

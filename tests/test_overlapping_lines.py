@@ -114,12 +114,12 @@ class Test_Overlapping:
     @staticmethod
     def generate_nu_for_spectrum(source):
         # cover transitions 8,9 and 10
-        nu0 = source.emitting_molecule.rad_transitions[9].nu0
+        nu0 = source.emitting_molecule.rad_transitions[9].line_profile.nu0
         width_nu = 1500 * constants.kilo / constants.c * nu0
         nu = np.linspace(nu0 - width_nu / 2, nu0 + width_nu / 2, 2000)
         min_nu, max_nu = np.min(nu), np.max(nu)
         for line in source.emitting_molecule.rad_transitions[8:11]:
-            assert min_nu < line.nu0 < max_nu
+            assert min_nu < line.line_profile.nu0 < max_nu
         return nu
 
     @pytest.mark.filterwarnings("ignore:some lines are overlapping")

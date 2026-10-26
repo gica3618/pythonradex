@@ -168,14 +168,10 @@ for N_case, LTE_case in itertools.product(N_cases, coll_partner_density_cases):
             tau_dust=0,
         )
         source.solve_radiative_transfer()
-        # differs slightly from the nu0 given in the LAMDA file, because I calculate it
-        # if I use the nu0 from LAMDA file, the line profile is 0 at nu0
-        pythonradex_nu0 = source.emitting_molecule.rad_transitions[
-            trans_number
-        ].line_profile.nu0
+        nu0 = source.emitting_molecule.rad_transitions[trans_number].line_profile.nu0
         lineprofile_nu0[line_profile_type] = source.emitting_molecule.rad_transitions[
             trans_number
-        ].line_profile.phi_nu(pythonradex_nu0)
+        ].line_profile.phi_nu(nu0)
         key = "{:s} {:s}".format(geo, line_profile_type)
         tau[key] = source.tau_nu0_individual_transitions[trans_number]
         Tex[key] = source.Tex[trans_number]
@@ -184,7 +180,6 @@ for N_case, LTE_case in itertools.product(N_cases, coll_partner_density_cases):
             solid_angle=Omega,
             transitions=trans_number,
         )
-        nu0 = source.emitting_molecule.rad_transitions[trans_number].nu0
         width_nu = width_v / constants.c * nu0
         nu = np.linspace(nu0 - width_nu, nu0 + width_nu, 100)
         spec = source.spectrum(output_type="flux density", solid_angle=Omega, nu=nu)

@@ -62,7 +62,7 @@ hcn = molecule.EmittingMolecule(
 )
 v = np.linspace(-6 * width_v, 6 * width_v, 50)
 # arbitrary choice of v=0:
-nu = hcn.rad_transitions[ref_transitions[2]].nu0 * (1 - v / constants.c)
+nu = hcn.rad_transitions[ref_transitions[2]].line_profile.nu0 * (1 - v / constants.c)
 molpop_cep_tau = {
     "treat overlap True": np.zeros_like(nu),
     "treat overlap False": np.zeros_like(nu),

@@ -636,7 +636,7 @@ def test_solid_angle_warnings():
             trans = source.emitting_molecule.rad_transitions[1]
             width_v = trans.line_profile.width_v
             v = np.linspace(-2 * width_v, 2 * width_v, 20)
-            nu = trans.nu0 * (1 - v / constants.c)
+            nu = trans.line_profile.nu0 * (1 - v / constants.c)
             source.spectrum(nu=nu, output_type=output_type, solid_angle=0.23)
         with pytest.warns(UserWarning):
             source.emission_at_line_center(
@@ -694,7 +694,7 @@ def test_emission_at_line_center():
             else:
                 nu0s = np.array(
                     [
-                        source.emitting_molecule.rad_transitions[i].nu0
+                        source.emitting_molecule.rad_transitions[i].line_profile.nu0
                         for i in np.atleast_1d(transitions)
                     ]
                 )
@@ -902,7 +902,7 @@ def test_spectrum():
     for source in CO_HCl_model_iterator():
         transition = source.emitting_molecule.rad_transitions[2]
         v = np.linspace(-40, 40, 50)
-        nu0 = transition.nu0
+        nu0 = transition.line_profile.nu0
         nu = nu0 * (1 - v / constants.c)
         specific_intensity = source.spectrum(nu=nu, output_type="specific intensity")
         for output_type in spec_output_types:
@@ -939,7 +939,7 @@ def test_spectrum_and_tau_with_0D_frequency():
         trans = source.emitting_molecule.rad_transitions[trans_index]
         width_v = trans.line_profile.width_v
         v = np.linspace(-width_v, width_v, n_channels)
-        nu = trans.nu0 * (1 - v / constants.c)
+        nu = trans.line_profile.nu0 * (1 - v / constants.c)
         for T_dust, tau_dust in zip((0, 50), (0, 2)):
             if T_dust != 0 and "LVG" in source.geometry_name:
                 continue
@@ -1529,7 +1529,7 @@ class TestFrequencyIntegratedEmission:
         for i, line in enumerate(source.emitting_molecule.rad_transitions):
             if not thick[i]:
                 continue
-            expected_specific_intensity = helpers.B_nu(nu=line.nu0, T=source.Tex[i])
+            expected_specific_intensity = helpers.B_nu(nu=line.line_profile.nu0, T=source.Tex[i])
             expected_intensity = (
                 expected_specific_intensity * line.line_profile.width_nu
             )

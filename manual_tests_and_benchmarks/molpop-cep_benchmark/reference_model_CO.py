@@ -68,17 +68,17 @@ for i, N_molpop in enumerate(molpop_cep_N):
         )
         v = np.linspace(-3 * width_v, 3 * width_v, 100)
         trans = source.emitting_molecule.rad_transitions[trans_index]
-        nu = trans.nu0 * (1 - v / constants.c)
+        nu = trans.line_profile.nu0 * (1 - v / constants.c)
         spec = source.spectrum(
             output_type="flux density", solid_angle=solid_angle, nu=nu
         )
         ax = axes[j]
         ax.set_title(f"trans {trans_index}")
         ax.plot(v / constants.kilo, spec, label="pythonradex")
-        width_nu = width_v / constants.c * trans.nu0
+        width_nu = width_v / constants.c * trans.line_profile.nu0
         sigma_nu = helpers.FWHM2sigma(width_nu)
         molpop_tau = molpop_cep_tau_nu0[j][i] * np.exp(
-            -((nu - trans.nu0) ** 2) / (2 * sigma_nu**2)
+            -((nu - trans.line_profile.nu0) ** 2) / (2 * sigma_nu**2)
         )
         molpop_cep_spec = helpers.B_nu(nu=nu, T=molpop_cep_Tex[j][i]) * (
             1 - np.exp(-molpop_tau)

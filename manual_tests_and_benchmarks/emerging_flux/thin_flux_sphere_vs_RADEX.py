@@ -50,8 +50,8 @@ level_pop = mol.Boltzmann_level_population(T=Tex)
 trans = mol.rad_transitions[trans_index]
 N1 = n * level_pop[trans.low.index] * 2 * r
 N2 = n * level_pop[trans.up.index] * 2 * r
-width_nu = width_v / constants.c * trans.nu0
-nu = np.linspace(trans.nu0 - 2 * width_nu, trans.nu0 + 2 * width_nu, 500)
+width_nu = width_v / constants.c * trans.line_profile.nu0
+nu = np.linspace(trans.line_profile.nu0 - 2 * width_nu, trans.line_profile.nu0 + 2 * width_nu, 500)
 phi_nu = trans.line_profile.phi_nu(nu)
 tau = atomic_transition.tau(
     A21=trans.A21,
@@ -89,7 +89,7 @@ intensity_kwargs = {
     geo_name: intensity_kwargs_template.copy() for geo_name in geometries.keys()
 }
 intensity_kwargs["lvg sphere"]["nu"] = nu
-intensity_kwargs["lvg sphere"]["nu0"] = trans.nu0
+intensity_kwargs["lvg sphere"]["nu0"] = trans.line_profile.nu0
 intensity_kwargs["lvg sphere"]["V"] = width_v / 2
 
 for geo_name, geo in geometries.items():

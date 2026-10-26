@@ -10,13 +10,13 @@ import numpy as np
 
 
 def is_comment(line):
-    if line.replace(" ", "")[0] == "!":
+    if line.lstrip().startswith("!"):
         return True
     else:
         return False
 
 
-def read(datafilepath, read_frequencies, read_quantum_numbers=False):
+def read(datafilepath):
     """
     Read a data file that follows the LAMDA format (https://home.strw.leidenuniv.nl/~moldata/molformat.html).
     Such files can for example be downloaded from the EMAA (https://emaa.osug.fr/)
@@ -24,15 +24,6 @@ def read(datafilepath, read_frequencies, read_quantum_numbers=False):
 
     Args:
         datafilepath (:obj:`str`): The filepath to the LAMDA file.
-        read_frequencies (:obj:`bool`): Whether to read the frequencies of the
-            radiative transitions from the file or not. If False, calculates the
-            frequencies from the level energies given in the file. Setting this to
-            True can be useful since frequencies are sometimes given with more
-            significant digits than level energies. However, the LAMDA format does not
-            force a file to contain the frequencies, so they might not be present.
-        read_quantum_numbers (:obj:`bool`): Whether to read the quantum numbers
-            from the file. Defaults to False. The LAMDA format does not force a
-            file to list quantum numbers, so they might not be present.
 
     Returns:
         dict: A dictionary containing the data read from the file.
@@ -43,8 +34,9 @@ def read(datafilepath, read_frequencies, read_quantum_numbers=False):
             pythonradex.atomic_transitions.RadiativeTransition objects);
             'collisional transitions' (a list of
             pythonradex.atomic_transition.CollisionalTransition objects);
-            'quantum numbers' (list of str, empty if read_quantum_numbers
-            was set to False)
+            'frequencies' (list of float containing the frequencies of the
+            radiative transitions form the file; empty
+            if file does not contain frequencies)
     """
     # identifiers used in the LAMDA database files:
     LAMDA_coll_ID = {
@@ -59,11 +51,12 @@ def read(datafilepath, read_frequencies, read_quantum_numbers=False):
     datafile = open(datafilepath, "r")
     levels = []
     rad_transitions = []
+    frequencies = []
     coll_transitions = {}
-    quantum_numbers = []
     comment_offset = 0
     for i, line in enumerate(datafile):
-        if is_comment(line) or line == "" or line == "\n":
+        line = line.lstrip()
+        if is_comment(line) or line == "":
             comment_offset += 1
             continue
         if i == 0 + comment_offset:
@@ -85,8 +78,6 @@ def read(datafilepath, read_frequencies, read_quantum_numbers=False):
                 index=int(leveldata[0]) - 1,
             )
             levels.append(lev)
-            if read_quantum_numbers:
-                quantum_numbers.append(line_entries[3])
             continue
         if i == 3 + comment_offset + n_levels:
             n_rad_transitions = int(line)
@@ -100,14 +91,23 @@ def read(datafilepath, read_frequencies, read_quantum_numbers=False):
             up = next(level for level in levels if level.index == radtransdata[1] - 1)
             low = next(level for level in levels if level.index == radtransdata[2] - 1)
             rad_trans_kwargs = {"up": up, "low": low, "A21": radtransdata[3]}
-            if read_frequencies:
-                nu0 = radtransdata[4] * constants.giga
-                Delta_E = up.E - low.E
-                if not np.isclose(nu0, Delta_E / constants.h, atol=0, rtol=1e-3):
-                    raise RuntimeError("frequency is inconsistent with level energies")
-                rad_trans_kwargs["nu0"] = nu0
             rad_trans = atomic_transition.RadiativeTransition(**rad_trans_kwargs)
             rad_transitions.append(rad_trans)
+            if len(radtransdata) >= 5:
+                #frequencies are there, so let's read them
+                frequencies.append(radtransdata[4] * constants.giga)
+                # Delta_E = up.E - low.E
+                # if not helpers.DeltaE_nu0_consistent(Delta_E=Delta_E,nu0=nu0):
+                #     filename = Path(datafilepath).name
+                #     nu0_from_Delta_E = Delta_E/constants.h
+                #     mean_nu0 = (nu0+nu0_from_Delta_E)/2
+                #     relative_diff = abs(nu0-nu0_from_Delta_E)/mean_nu0
+                #     warnings.warn(f"{filename}: transition from level {up.index+1} to {low.index+1}: "
+                #                   f"frequency ({nu0/constants.giga} GHz) inconsistent "
+                #                   +"with level energies (DeltaE corresponds "
+                #                   +f"to {nu0_from_Delta_E/constants.giga} GHz). "
+                #                   +f"relative difference: {relative_diff*100:.2g}%")
+                # rad_trans_kwargs["nu0"] = nu0
             continue
         if i == 4 + comment_offset + n_levels + n_rad_transitions:
             coll_partner_offset = 0
@@ -158,5 +158,5 @@ def read(datafilepath, read_frequencies, read_quantum_numbers=False):
         "levels": levels,
         "radiative transitions": rad_transitions,
         "collisional transitions": coll_transitions,
-        "quantum numbers": quantum_numbers,
+        "frequencies":frequencies
     }
