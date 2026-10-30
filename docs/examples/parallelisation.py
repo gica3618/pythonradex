@@ -36,9 +36,9 @@ source.update_parameters(**initial_parameters)
 #does not artificially inflate the execution time of the grid search
 source.solve_radiative_transfer()
 
-nH2_grid = np.logspace(3, 7, 10) * constants.centi**-3
-Tkin_grid = np.logspace(1, np.log10(300), 10)
-N_grid = np.logspace(13, 17, 10) * constants.centi**-2
+nH2_grid = np.logspace(3, 7, 20) * constants.centi**-3
+Tkin_grid = np.logspace(1, np.log10(300), 20)
+N_grid = np.logspace(13, 17, 20) * constants.centi**-2
 
 grid = [{"Tkin": Tkin, "collider_densities":{"ortho-H2":nH2/2,"para-H2":nH2/2},
          "N":N}
@@ -48,6 +48,7 @@ grid = [{"Tkin": Tkin, "collider_densities":{"ortho-H2":nH2/2,"para-H2":nH2/2},
 
 #standard, non-parallel approach:
 start = time.time()
+print("running grid non-parallel")
 intensities_serial = []
 for params in grid:
     source.update_parameters(**params)
@@ -57,8 +58,8 @@ for params in grid:
                      output_type="intensity", transitions=0)
     intensities_serial.append(intensity)
 end = time.time()
-duration = end - start
-print(f"serial: {duration:.2g} s")
+duration_serial = end - start
+print(f"serial: {duration_serial:.2g} s")
 
 
 #parallelisation:
@@ -75,54 +76,20 @@ def run_single(new_parameters):
                  output_type="intensity", transitions=0)
 
 start = time.time()
+print("running grid in parallel")
 #on MacOS and Windows, it might be necessary to do if __name__ == '__main__'
 if __name__ == '__main__':
     with ProcessPoolExecutor(initializer=init_worker) as executor:
         intensities_parallel = list(executor.map(run_single, grid))
 end = time.time()
-duration = end - start
-print(f"ProcessPoolExecutor with global: {duration:.2g} s")
+duration_parallel = end - start
+print("ProcessPoolExecutor with separate Source for each worker: "
+      +f"{duration_parallel:.2g} s")
+
+print(f"serial/parallel ratio: {duration_serial/duration_parallel:.2g}")
 
 
 #verify that both methods give the same results:
 intensities_serial = np.array(intensities_serial)
 if np.any(intensities_serial != intensities_parallel):
     raise RuntimeError
-
-# def run_single(new_parameters):
-#     source = radiative_transfer.Source(**source_kwargs)
-#     source.update_parameters(**arbitrary_source_parameters)
-#     source.update_parameters(**new_parameters)
-#     source.solve_radiative_transfer()
-#     return source.frequency_integrated_emission(
-#                  output_type="intensity", transitions=None)
-
-# start = time.time()
-# if __name__ == "__main__":
-#     with ProcessPoolExecutor() as executor:
-#         results = list(executor.map(run_single, grid))
-# end = time.time()
-# duration = end - start
-# print(f"ProcessPoolExecutor: {duration:.2g} s")
-
-
-# _thread_data = local()
-
-# def init_worker():
-#     _thread_data.source = radiative_transfer.Source(**source_kwargs)
-#     #arbitrary initial parameters, will be updated when making the grid search:
-#     _thread_data.source.update_parameters(**arbitrary_source_parameters)
-
-# def run_single(new_parameters):
-#     source = _thread_data.source
-#     source.update_parameters(**new_parameters)
-#     source.solve_radiative_transfer()
-#     return source.frequency_integrated_emission(output_type="intensity", transitions=None)
-
-# start = time.time()
-# if __name__ == '__main__':
-#     with ThreadPoolExecutor(initializer=init_worker) as executor:
-#         results = list(executor.map(run_single, grid))
-# end = time.time()
-# duration = end - start
-# print(f"ThreadPoolExecutor: {duration:.2g} s")
