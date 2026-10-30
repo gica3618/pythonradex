@@ -118,11 +118,11 @@ manual_tests_and_benchmarks/performance_tests/radex_test_performance.out
 manual_tests_and_benchmarks/performance_tests/pythonradex_vs_radex/*.out
 manual_tests_and_benchmarks/performance_tests/pythonradex_vs_radex/radex_test_preformance.inp
 manual_tests_and_benchmarks/performance_tests/pythonradex_vs_radex/test_radex_mini_wrapper.inp
-docs/notebooks/test.inp
-docs/notebooks/test.out
-docs/notebooks/radex_log.txt
-docs/notebooks/grid.inp
-docs/notebooks/grid.out
+docs/examples/test.inp
+docs/examples/test.out
+docs/examples/radex_log.txt
+docs/examples/grid.inp
+docs/examples/grid.out
 **/radex.out
 .pytest_cache
 joss_paper/code/co.inp
