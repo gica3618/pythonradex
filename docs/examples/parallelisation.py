@@ -46,23 +46,24 @@ grid = [{"Tkin": Tkin, "collider_densities":{"ortho-H2":nH2/2,"para-H2":nH2/2},
         ]
 
 
-#standard, non-parallel approach:
+#standard, non-parallel approach: a single Source object is used to walk through
+#the grid
 start = time.time()
 print("running grid non-parallel")
-intensities_serial = []
+intensities_nonparallel = []
 for params in grid:
     source.update_parameters(**params)
     source.solve_radiative_transfer()
     #record the intensity of CO 1-0:
     intensity = source.frequency_integrated_emission(
                      output_type="intensity", transitions=0)
-    intensities_serial.append(intensity)
+    intensities_nonparallel.append(intensity)
 end = time.time()
-duration_serial = end - start
-print(f"serial: {duration_serial:.2g} s")
+duration_nonparallel = end - start
+print(f"non-parallel: {duration_nonparallel:.2g} s")
 
 
-#parallelisation:
+#parallelisation: each worker has its own Source object
 def init_worker():
     global worker_source
     worker_source = radiative_transfer.Source(**source_kwargs)
@@ -83,13 +84,13 @@ if __name__ == '__main__':
         intensities_parallel = list(executor.map(run_single, grid))
 end = time.time()
 duration_parallel = end - start
-print("ProcessPoolExecutor with separate Source for each worker: "
+print("parallel (separate Source for each worker): "
       +f"{duration_parallel:.2g} s")
 
-print(f"serial/parallel ratio: {duration_serial/duration_parallel:.2g}")
+print(f"non-parallel/parallel ratio: {duration_nonparallel/duration_parallel:.2g}")
 
 
 #verify that both methods give the same results:
-intensities_serial = np.array(intensities_serial)
+intensities_serial = np.array(intensities_nonparallel)
 if np.any(intensities_serial != intensities_parallel):
     raise RuntimeError
