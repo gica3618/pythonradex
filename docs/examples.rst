@@ -12,12 +12,12 @@ The individual notebooks presented below can be downloaded from `here`_. To run 
    examples/get_started
    examples/simple_example
    examples/grid_search
+   examples/parallelisation
    examples/optically_thick_spectrum
    examples/overlapping_lines
    examples/LVG_geometry
    examples/continuum_effects
-   examples/reading_LAMDA_files
-   examples/datafile_frequencies
    examples/custom_external_background
    examples/CO_SLED
-   examples/parallelisation
+   examples/reading_LAMDA_files
+   examples/datafile_frequencies
