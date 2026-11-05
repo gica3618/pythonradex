@@ -59,9 +59,8 @@ def run_radex(
     os.system(f"{radex_executables[geometry]} < {input_filepath} > /dev/null")
     end_calc = time.time()
     start_assert = time.perf_counter()
-    assert os.path.exists(
-        output_filepath
-    ), "Radex failed? Remove /dev/null to see radex output"
+    if not os.path.exists(output_filepath):
+        raise RuntimeError("Radex failed? Remove /dev/null to see radex output")
     end_assert = time.perf_counter()
     return {
         "setup": end_setup - start_setup,

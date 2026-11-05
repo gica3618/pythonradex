@@ -46,9 +46,10 @@ class IntensityCalculator:
             if self.is_LVG_sphere
             else self.n_nu_elements["regular"]
         )
-        assert (
-            n_nu_elements % 2 == 1
-        ), "need odd number of elements to include nu0 in the array"
+        if n_nu_elements % 2 != 1:
+            raise RuntimeError(
+                "need odd number of elements to include nu0 in the array"
+            )
         middle_index = n_nu_elements // 2
         nu0 = self.emitting_molecule.nu0[transitions]
         width_nu = self.emitting_molecule.width_v / constants.c * nu0
@@ -168,7 +169,7 @@ class IntensityCalculator:
 
     def construct_tau_individual_line(self, line, nu, tau_nu0):
         # tau is prop to phi_nu/nu**2
-        normalisation = line.line_profile.phi_nu0 / line.nu0**2 / tau_nu0
+        normalisation = line.line_profile.phi_nu0 / line.line_profile.nu0**2 / tau_nu0
         return line.line_profile.phi_nu(nu) / nu**2 / normalisation
 
     def set_tau_lines(self):
@@ -224,14 +225,15 @@ class IntensityCalculator:
                     + " are optically thin!"
                 )
             for dust_func in (self.S_dust, self.tau_dust):
-                assert np.all(dust_func(self.nu) == 0), "LVG does not support dust"
+                if not np.all(dust_func(self.nu) == 0):
+                    raise RuntimeError("LVG does not support dust")
             I = np.zeros_like(self.nu)
             for line_index, line, tau_line in zip(
                 self.nu_selected_line_indices, self.nu_selected_lines, self.tau_lines
             ):
                 LVG_sphere_kwargs = {
                     "nu": self.nu,
-                    "nu0": line.nu0,
+                    "nu0": line.line_profile.nu0,
                     "V": self.V_LVG_sphere,
                 }
                 source_function = helpers.B_nu(T=self.Tex[line_index], nu=self.nu)
@@ -251,7 +253,8 @@ class IntensityCalculator:
         # this function works only if there are no overlapping lines
         # faster than calling the spectrum function, since I don't need to loop
         # over the lines
-        assert not self.emitting_molecule.any_line_has_overlap(transitions)
+        if self.emitting_molecule.any_line_has_overlap(transitions):
+            raise ValueError("overlapping lines not allowed in this function")
         nu = self.emitting_molecule.nu0[transitions]
         tau_lines = self.tau_nu0_individual_transitions[transitions]
         Tex = self.Tex[transitions]
@@ -265,7 +268,8 @@ class IntensityCalculator:
         kwargs = {"tau": tau_tot, "source_function": source_function}
         if self.is_LVG_sphere:
             for dust in (S_dust, tau_dust):
-                assert np.all(dust == 0), "LVG does not support dust"
+                if not np.all(dust == 0):
+                    raise RuntimeError("LVG does not support dust")
             return escape_probability.specific_intensity_nu0_lvg_sphere(**kwargs)
         else:
             return self.specific_intensity(**kwargs)

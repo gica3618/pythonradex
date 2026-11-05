@@ -15,7 +15,6 @@ sys.path.append("..")
 import general
 import numpy as np
 
-
 geometry = "static sphere"
 line_profile_type = "rectangular"
 width_v = 1 * constants.kilo
@@ -50,7 +49,7 @@ source.solve_radiative_transfer()
 end = time.time()
 print(f"solve time: {end-start:.3g}")
 v = np.linspace(-3 * width_v, 3 * width_v, 50)
-nu = source.emitting_molecule.rad_transitions[1].nu0 * v / constants.c
+nu = source.emitting_molecule.rad_transitions[1].line_profile.nu0 * v / constants.c
 source.spectrum(output_type="specific intensity", nu=nu)
 
 # the fast method works only if there is no dust and no overlapping lines (i.e.
@@ -83,7 +82,8 @@ end = time.time()
 lazy_time = end - start
 print(f"lazy method: {lazy_time:.3g}")
 
-assert np.allclose(T_RJ_fast, T_RJ_lazy, rtol=1e-4, atol=0)
+if not np.allclose(T_RJ_fast, T_RJ_lazy, rtol=1e-4, atol=0):
+    raise RuntimeError
 
 print(f"lazy/fast time ratio: {lazy_time/fast_time:.3g}")
 print(f"lazy/implemented time ratio: {lazy_time/imp_time}")

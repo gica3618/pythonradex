@@ -1,0 +1,121 @@
+!MOLECULE
+C+ (atomic ion)
+!MOLECULAR WEIGHT
+12.0
+!NUMBER OF ENERGY LEVELS
+8
+!LEVEL + ENERGIES(cm^-1) + WEIGHT + J
+    1     0.000000000   2.0     0.5  ! 2P^o
+    2    63.395087      4.0     1.5  ! 2P^o
+    3   43003.291       2.0     0.5  ! 4P
+    4   43025.285       4.0     1.5  ! 4P
+    5   43053.568       6.0     2.5  ! 4P
+    6   74930.074       6.0     2.5  ! 2D
+    7   74932.608       4.0     1.5  ! 2D
+    8   96493.727       2.0     0.5  ! 2S 
+!NUMBER OF RADIATIVE TRANSITIONS
+14
+!TRANS + UP + LOW + EINSTEINA(s^-1) + FREQ(GHz) + E_u(K)
+    1     4     3  2.390E-07         659.364      61903.4
+    2     5     4  3.670E-07         847.903      61944.1
+    3     5     3  3.490E-14        1507.267      61944.1
+    4     2     1  2.300E-06        1900.5369        91.21
+    5     3     2  6.550E+01     1287305.7        61871.8
+    6     4     2  5.240E+00     1287965.1        61903.4
+    7     5     2  4.320E+01     1288813.0        61944.1
+    8     3     1  5.530E+01     1289206.2        61871.8
+    9     4     1  1.710E+00     1289865.6        61903.4
+   10     6     2  2.864E+08     2244476.5       107808.4
+   11     7     2  4.773E+07     2244522.5       107810.6
+   12     7     1  2.393E+08     2246423.1       107810.6
+   13     8     2  1.526E+09     2890908.6       138832.1 
+   14     8     1  7.643E+08     2892809.2       138832.1
+!NUMBER OF COLL PARTNERS
+4
+!PARTNER 1 COLLISIONS BETWEEN
+2 C+ + pH2  ! thermal H2 J=0 and J=2, cf Wiesenfeld & Goldsmith 2014
+!NUMBER OF COLL TRANS
+1
+!NUMBER OF COLL TEMPS
+7
+!COLL TEMPS
+   10.0   20.0   50.0  100.0  200.0  300.0  500.0 
+!TRANS + UP + LOW + COLLRATES(cm^3 s^-1)
+    1     2     1  4.36E-10 4.53E-10 4.63E-10 4.72E-10 5.13E-10 5.55E-10 6.01E-10
+!PARTNER 2 COLLISIONS BETWEEN
+3 C+ + oH2  ! Lique et al. (2013), Wiesenfeld & Goldsmith (2014)
+!NUMBER OF COLL TRANS
+1
+!NUMBER OF COLL TEMPS
+7
+!COLL TEMPS
+   10.0   20.0   50.0  100.0  200.0  300.0  500.0 
+!TRANS + UP + LOW + COLLRATES(cm^3 s^-1)
+    1     2     1  5.29E-10 5.33E-10 5.37E-10 5.45E-10 5.62E-10 5.71E-10 5.79E-10
+!PARTNER 3 COLLISIONS BETWEEN
+5 C+ + H  ! Barinovs et al. 2005, ApJ, 620, 537
+!NUMBER OF COLL TRANS
+1
+!NUMBER OF COLL TEMPS
+14
+!COLL TEMPS
+ 20.  40.  60.  80. 100. 140. 200. 300. 400. 600. 800. 1000. 1500. 2000.
+!TRANS + UP + LOW + COLLRATES(cm^3 s^-1)
+    1     2     1  5.96e-10 6.79e-10 7.19e-10 7.42e-10 7.58e-10 7.84e-10 8.17e-10 8.63e-10 9.02e-10 9.67e-10 1.02e-9 1.066e-9 1.158e-9 1.231e-9
+!PARTNER 4 COLLISIONS BETWEEN
+4 C+ + e  ! Wilson & Bell, 2002, MNRAS, 337, 1027
+!NUMBER OF COLL TRANS
+7
+!NUMBER OF COLL TEMPS
+9
+!COLL TEMPS
+   10.0   20.0   50.0  100.0  316.2 1000.0 2000.0 10000. 20000. 
+!TRANS + UP + LOW + COLLRATES(cm^3 s^-1)
+    1     2     1  1.2e-06 8.4e-07 5.3e-07 3.8e-07 2.1e-07 1.2e-07 8.6e-08 4.8e-08 3.7e-08
+    2     3     1  4.0e-07 2.8e-07 1.8e-07 1.3e-07 7.1e-08 4.0e-08 2.8e-08 1.2e-08 8.5e-09
+    3     4     1  2.9e-07 2.1e-07 1.3e-07 9.3e-08 5.2e-08 2.9e-08 2.1e-08 9.0e-09 6.3e-09
+    4     5     1  1.2e-07 8.5e-08 5.3e-08 3.8e-08 2.1e-08 1.2e-08 8.5e-09 3.8e-09 2.7e-09
+    5     3     2  2.7e-07 1.9e-07 1.2e-07 8.6e-08 4.9e-08 2.7e-08 1.9e-08 8.7e-09 6.1e-09 
+    6     4     2  3.8e-07 2.7e-07 1.7e-07 1.2e-07 6.7e-08 3.8e-08 2.7e-08 1.2e-08 8.3e-09
+    7     5     2  5.5e-07 3.9e-07 2.5e-07 1.7e-07 9.8e-08 5.5e-08 3.9e-08 1.7e-08 1.2e-08
+! radiative transitions re-ordered, strictly by frequency
+! --------------------
+! In older versions of the data file, the following C+ + H rates were used:
+! COLLISIONS BETWEEN
+! 5 C+ + H  ! Launay & Roueff, 1977, JPB, 10, 879
+! NUMBER OF COLL TRANS
+! 1
+! NUMBER OF COLL TEMPS
+! 10
+! COLL TEMPS
+!    5.0   10.0   20.0   50.0  100.0  200.0  300.0  500.0 1000.0 3162.0 
+! TRANS + UP + LOW + COLLRATES(cm^3 s^-1)
+!    1     2     1  5.9e-10 6.5e-10 7.0e-10 7.7e-10 8.1e-10 8.3e-10 8.5e-10 8.9e-10 9.8e-10 1.1e-09
+! These rates have been replaced by very similar values computed by Barinovs et al. 2005
+! In older versions of the data file, the following rates for C+ + pH2 and C+ + oH2
+! were used:
+!PARTNER 1 COLLISIONS BETWEEN
+!2 C+ + pH2  ! Flower & Launay (1977, JPB, 10, 3673); no corr. for Flower (1988)
+!NUMBER OF COLL TRANS
+!1
+!NUMBER OF COLL TEMPS
+!6
+!COLL TEMPS
+!   10.0   20.0   50.0  100.0  200.0  250.0 
+!TRANS + UP + LOW + COLLRATES(cm^3 s^-1)
+!    1     2     1  3.0e-10 3.4e-10 3.9e-10 4.3e-10 4.6e-10 4.7e-10
+!PARTNER 2 COLLISIONS BETWEEN
+!3 C+ + oH2  ! Flower & Launay (1977, JPB, 10, 3673)
+!NUMBER OF COLL TRANS
+!1
+!NUMBER OF COLL TEMPS
+!6
+!COLL TEMPS
+!   10.0   20.0   50.0  100.0  200.0  250.0 
+!TRANS + UP + LOW + COLLRATES(cm^3 s^-1)
+!    1     2     1  4.4e-10 4.6e-10 4.9e-10 5.1e-10 5.6e-10 5.7e-10
+! --------------------
+! Updated 2014-08-08 for the new C+ + H2 rates computed by Lique et al. 2013
+! J. Chem. Phys. 138, 204314 and discussed further by Wiesenfeld & Goldsmith
+! 2014, ApJ, 780, 183. Note that the new rates for para-H2 assume thermalized
+! rotational populations in H2 and include H2(J=0) and (J=2). 

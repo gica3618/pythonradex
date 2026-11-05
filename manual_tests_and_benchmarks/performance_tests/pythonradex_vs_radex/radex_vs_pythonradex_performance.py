@@ -67,7 +67,8 @@ Tmin, Tmax = 60, 250
 # RADEX does other strange things with the H2 density:
 # see line 112 in io.f, line 168 in io.f, and line 225 in readdata.f
 for collider in colliders:
-    assert "H2" in collider
+    if "H2" not in collider:
+        raise RuntimeError
 
 # actually, RADEX assumes rectangular, but than converts it Gaussian for optical
 # depth and the line flux
@@ -89,7 +90,8 @@ RADEX_times = np.empty_like(pythonradex_times)
 
 def remove_pythonradex_cache():
     src_folder = "../../../src/pythonradex"
-    assert os.path.exists(src_folder)
+    if not os.path.exists(src_folder):
+        raise RuntimeError
     cache_folder = os.path.join(src_folder, "__pycache__")
     if os.path.exists(cache_folder):
         print(f"removing python cache ({cache_folder})")

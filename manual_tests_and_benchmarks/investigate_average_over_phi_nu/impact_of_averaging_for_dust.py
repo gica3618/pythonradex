@@ -58,7 +58,8 @@ test_cases = [
 
 
 def relative_diff(x):
-    assert len(x) == 2
+    if len(x) != 2:
+        raise ValueError
     return float(np.abs(np.diff(x)[0] / x[0]))
 
 

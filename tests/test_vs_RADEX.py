@@ -96,7 +96,7 @@ def read_RADEX_output(filepath, molecule):
             Tex.append(float(linedata[-7]))
             trans = molecule.rad_transitions[trans_counter]
             freq = float(linedata[-9]) * constants.giga
-            assert np.isclose(trans.nu0, freq, atol=0, rtol=1e-3)
+            assert np.isclose(trans.line_profile.nu0, freq, atol=0, rtol=1e-3)
             trans_up_x = float(linedata[-4])
             trans_low_x = float(linedata[-3])
             if np.isfinite(level_pop[trans.up.index]):
@@ -221,11 +221,11 @@ def test_vs_RADEX():
                         assert np.isclose(
                             RADEX_results["tau"][i], tau_i, atol=0, rtol=rtol_tau[geo]
                         )
-                        B_Tex = helpers.B_nu(nu=trans.nu0, T=source.Tex[i])
-                        I_bg = ext_background(trans.nu0)
+                        B_Tex = helpers.B_nu(nu=trans.line_profile.nu0, T=source.Tex[i])
+                        I_bg = ext_background(trans.line_profile.nu0)
                         I_bg_sub = (B_Tex - I_bg) * (1 - np.exp(-tau_i))
                         T_R = helpers.RJ_brightness_temperature(
-                            specific_intensity=I_bg_sub, nu=trans.nu0
+                            specific_intensity=I_bg_sub, nu=trans.line_profile.nu0
                         )
                         assert np.isclose(
                             RADEX_results["T_R"][i], T_R, atol=0, rtol=rtol_TR_flux[geo]

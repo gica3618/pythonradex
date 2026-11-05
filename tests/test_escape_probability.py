@@ -9,7 +9,6 @@ from pythonradex import escape_probability
 import numpy as np
 from scipy import constants
 
-
 flux1D = escape_probability.Flux1D()
 all_intensities = {
     "1D": flux1D.specific_intensity,
@@ -33,22 +32,23 @@ def test_intensities():
         assert np.allclose(thick_I, test_source_func, rtol=1e-3, atol=0)
 
 
-def test_flux_static_sphere():
+def test_intensity_static_sphere():
     limit_tau = 1e-2
     epsilon_tau = 0.01 * limit_tau
     source_function = 1
-    I_Taylor = escape_probability.StaticSphere.specific_intensity(
-        tau=np.array((limit_tau - epsilon_tau,)),
-        source_function=source_function,
-    )
-    I_analytical = escape_probability.StaticSphere.specific_intensity(
-        tau=np.array((limit_tau + epsilon_tau,)),
-        source_function=source_function,
-    )
-    assert np.isclose(I_Taylor, I_analytical, rtol=0.05, atol=0)
+    for sign in (-1, 1):
+        I_Taylor = escape_probability.StaticSphere.specific_intensity(
+            tau=np.array((sign * (limit_tau - epsilon_tau),)),
+            source_function=source_function,
+        )
+        I_analytical = escape_probability.StaticSphere.specific_intensity(
+            tau=np.array((sign * (limit_tau + epsilon_tau),)),
+            source_function=source_function,
+        )
+        assert np.isclose(I_Taylor, I_analytical, rtol=0.05, atol=0)
 
 
-def test_flux_LVG_sphere():
+def test_intensity_LVG_sphere():
     V = 1
     v = np.linspace(-2 * V, 2 * V, 100)
     nu0 = 100 * constants.giga

@@ -4,6 +4,7 @@ Created on Sun Nov 12 17:31:02 2017
 
 @author: gianni
 """
+
 import numpy as np
 import numba as nb
 from pythonradex import escape_probability_functions
@@ -44,7 +45,7 @@ class StaticSphere(EscapeProbabilityStaticSphere):
         # for small tau, the Osterbrock formula becomes numerically unstable,
         # so we use a Taylor expansion
         min_tau = 1e-2
-        stable_region = tau > min_tau
+        stable_region = np.abs(tau) > min_tau
         flux_nu = (
             2
             * np.pi
@@ -59,7 +60,8 @@ class StaticSphere(EscapeProbabilityStaticSphere):
             * (tau / 3 - tau**2 / 8 + tau**3 / 30 - tau**4 / 144)
         )  # from Wolfram Alpha
         flux_nu = np.where(stable_region, flux_nu, flux_nu_Taylor)
-        assert np.all(np.isfinite(flux_nu))
+        if not np.all(np.isfinite(flux_nu)):
+            raise RuntimeError
         return flux_nu / np.pi
 
 
@@ -67,7 +69,7 @@ class StaticSphere(EscapeProbabilityStaticSphere):
 def exp_tau_factor(tau):
     # for very small tau, the exp can introduce numerical errors, so we
     # take care of that when computing (1-exp(-tau))
-    return np.where(tau < 1e-5, tau, 1 - np.exp(-tau))
+    return np.where(np.abs(tau) < 1e-5, tau, 1 - np.exp(-tau))
 
 
 class Flux1D:

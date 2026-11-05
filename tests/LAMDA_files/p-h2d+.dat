@@ -1,0 +1,35 @@
+! Molecule & Reference
+  p-H2D+  Hugo, Asvany & Schlemmer 2009, JCP
+! Molecular weight
+  4.0
+! Number of energy levels
+  2
+! Level  Energy(cm^-1)  Weight  Qnum (J_Kp_Ko)
+  1      0.0            1.0     0_0_0
+  2      45.70315       3.0     1_0_1
+! Number of radiative transitions
+  1
+! trans + up + low + EinsteinA(s^-1) + Freq(GHz) + E_u(K)
+  1       2    1     4.0397e-3         1370.0853   65.7
+! Number of collision partners
+  2
+! First partner: p-H2
+  2
+! Number of collisional transitions
+  1
+! Number of temperatures
+  7
+! Collision temperatures
+  5.0 10.0 15.0 20.0 30.0 40.0 50.0
+! Transition, upper/lower level, rate coefficients
+  1  2  1  5.2e-10  5.1e-10  5.0e-10  5.0e-10  4.9e-10  4.9e-10  4.9e-10
+! Second partner: o-H2
+  3
+! Number of collisional transitions
+  1
+! Number of temperatures
+  7
+! Collision temperatures
+  5.0 10.0 15.0 20.0 30.0 40.0 50.0
+! Transition, upper/lower level, rate coefficients
+  1  2  1  2.4e-10  2.2e-10  2.1e-10  2.1e-10  2.0e-10  2.0e-10  2.0e-10

@@ -84,7 +84,8 @@ radex_output_file = "radex_test_preformance.out"
 
 def remove_pythonradex_cache():
     src_folder = "../../../src/pythonradex"
-    assert os.path.exists(src_folder)
+    if not os.path.exists(src_folder):
+        raise RuntimeError
     cache_folder = os.path.join(src_folder, "__pycache__")
     if os.path.exists(cache_folder):
         print(f"removing python cache ({cache_folder})")
@@ -100,7 +101,8 @@ for grid_name, grid in grids.items():
     # RADEX does other strange things with the H2 density:
     # see line 112 in io.f, line 168 in io.f, and line 225 in readdata.f
     for collider in grid["colliders"]:
-        assert "H2" in collider
+        if "H2" not in collider:
+            raise RuntimeError
 
     datafilepath = os.path.join(general.lamda_data_folder, grid["data_filename"])
     N_values = np.logspace(*grid["log_N_limits"], n_grid_elements)

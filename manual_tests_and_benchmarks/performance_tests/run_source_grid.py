@@ -16,7 +16,6 @@ from pythonradex import radiative_transfer, helpers
 import numpy as np
 import time
 
-
 n = 15
 N_values = np.logspace(12, 15, n) / constants.centi**2
 coll_density_values = np.logspace(3, 5, n) / constants.centi**3

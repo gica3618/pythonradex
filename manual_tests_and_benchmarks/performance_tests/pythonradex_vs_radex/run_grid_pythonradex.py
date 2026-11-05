@@ -15,7 +15,6 @@ import general
 from pythonradex import radiative_transfer, helpers
 import itertools
 
-
 ext_background = helpers.generate_CMB_background()
 
 source = radiative_transfer.Source(

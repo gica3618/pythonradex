@@ -86,11 +86,13 @@ mol = molecule.EmittingMolecule(
 )
 for i in ref_transitions:
     other_trans = [j for j in ref_transitions if j != i]
-    assert len(other_trans) == 1
+    if len(other_trans) != 1:
+        raise RuntimeError
     for j in other_trans:
-        assert j in mol.overlapping_lines[i]
-ref_nu0 = mol.rad_transitions[ref_transitions[0]].nu0
-Delta_nu0 = ref_nu0 - mol.rad_transitions[ref_transitions[1]].nu0
+        if j not in mol.overlapping_lines[i]:
+            raise RuntimeError
+ref_nu0 = mol.rad_transitions[ref_transitions[0]].line_profile.nu0
+Delta_nu0 = ref_nu0 - mol.rad_transitions[ref_transitions[1]].line_profile.nu0
 Delta_v = Delta_nu0 / ref_nu0 * constants.c
 print(f"v distance between the two ref transitions: {Delta_v/constants.kilo} km/s")
 coll_dens_nonLTE = {

@@ -152,7 +152,7 @@ for ax, y, y_radex in zip(axes, pythonradex_model, radex_model):
         color=colors["RADEX"],
     )
 axes[0].set_xticklabels([])
-axes[0].set_ylabel("$T_\mathrm{ex}$ [K]")
+axes[0].set_ylabel(r"$T_\mathrm{ex}$ [K]")
 axes[0].legend(loc="best")
 axes[1].set_ylabel(r"$\log(f_\mathrm{up})$")
 axes[2].set_ylabel(r"$\log(f_\mathrm{low})$")
