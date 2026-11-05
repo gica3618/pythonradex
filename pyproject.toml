@@ -25,6 +25,9 @@ classifiers = [
 dependencies = ['scipy>=1.14','numpy>=2.0','numba>=0.61.0']
 dynamic = ["version"]
 
+[tool.black]
+target-version = ["py310"] #lowest supported python version
+
 [project.optional-dependencies]
 notebooks = ["matplotlib", "jupyter", "pandas"]
 dev = ["pytest", "Sphinx", "nbsphinx", "sphinx_rtd_theme", "matplotlib", "jupyter", "pandas", "black[jupyter]"]
