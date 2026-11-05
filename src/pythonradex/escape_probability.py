@@ -45,7 +45,7 @@ class StaticSphere(EscapeProbabilityStaticSphere):
         # for small tau, the Osterbrock formula becomes numerically unstable,
         # so we use a Taylor expansion
         min_tau = 1e-2
-        stable_region = tau > min_tau
+        stable_region = np.abs(tau) > min_tau
         flux_nu = (
             2
             * np.pi
@@ -69,7 +69,7 @@ class StaticSphere(EscapeProbabilityStaticSphere):
 def exp_tau_factor(tau):
     # for very small tau, the exp can introduce numerical errors, so we
     # take care of that when computing (1-exp(-tau))
-    return np.where(tau < 1e-5, tau, 1 - np.exp(-tau))
+    return np.where(np.abs(tau) < 1e-5, tau, 1 - np.exp(-tau))
 
 
 class Flux1D:

@@ -32,7 +32,7 @@ initial_parameters = {"N":1e17 * constants.centi**-2,#arbitrary
                       "tau_dust":0}
 
 source.update_parameters(**initial_parameters)
-#solve once, to force JIT compilation, so that JIT compilation
+#solve once, to force JIT (numba) compilation, so that compilation
 #does not artificially inflate the execution time of the grid search
 source.solve_radiative_transfer()
 
