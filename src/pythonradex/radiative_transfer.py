@@ -431,9 +431,7 @@ class Source:
                     for i in negative_tau_transition_indices
                 ]
                 warn_message = "negative optical depth!"
-                for i, trans in zip(
-                    negative_tau_transition_indices, negative_tau_transitions
-                ):
+                for i, trans in zip(negative_tau_transition_indices, negative_tau_transitions):
                     warn_message += f" {trans.name}: tau_nu0 = {self.tau_nu0_individual_transitions[i]:.3g};"
                 warn_message = warn_message[:-1]
                 warnings.warn(warn_message)

@@ -36,13 +36,13 @@ def test_intensity_static_sphere():
     limit_tau = 1e-2
     epsilon_tau = 0.01 * limit_tau
     source_function = 1
-    for sign in (-1, 1):
+    for sign in (-1,1):
         I_Taylor = escape_probability.StaticSphere.specific_intensity(
-            tau=np.array((sign * (limit_tau - epsilon_tau),)),
+            tau=np.array(( sign*(limit_tau - epsilon_tau), )),
             source_function=source_function,
         )
         I_analytical = escape_probability.StaticSphere.specific_intensity(
-            tau=np.array((sign * (limit_tau + epsilon_tau),)),
+            tau=np.array(( sign*(limit_tau + epsilon_tau), )),
             source_function=source_function,
         )
         assert np.isclose(I_Taylor, I_analytical, rtol=0.05, atol=0)
