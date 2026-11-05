@@ -340,7 +340,6 @@ class EmissionLine(RadiativeTransition):
         )
 
     def check_DeltaE_nu0_consistency(self, nu0):
-        # TODO needs a test
         if not np.isclose(self.Delta_E_over_h, nu0, atol=0, rtol=1e-2):
             mean = (self.Delta_E_over_h + nu0) / 2
             relative_diff = abs(self.Delta_E_over_h - nu0) / mean
